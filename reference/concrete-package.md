@@ -4,11 +4,14 @@ Implements the methodology described in Rytgaard et al. (2023)
 \<doi:10.1111/biom.13856\> and Rytgaard and van der Laan (2023)
 \<doi:10.1007/s10985-022-09576-2\>. Currently can be used to estimate
 the effects of static or dynamic interventions on binary treatments
-given at baseline, cross-validated initial estimation of treatment
-propensity is done using the 'SuperLearner' package, and initial
-estimation of conditional hazards is done using ensembles of Cox
-regressions from the 'survival' package or Coxnet from the 'glmnet'
-package.
+given at baseline. Cross-validated treatment estimation is done using
+the 'SuperLearner' package, and conditional hazards are estimated from
+event-specific candidate libraries using Cox regressions from
+'survival', Coxnet from 'glmnet', random survival forests from
+'randomForestSRC', additive hazards from 'survival', or HAL from
+'hal9001'. Hazard libraries currently use cross-validated discrete
+selection. The TMLE update includes configurable stopping rules and
+adaptive update controls for numerically difficult rare-event settings.
 
 ## Details
 
@@ -30,7 +33,9 @@ Laan (2023) \<doi:10.1007/s10985-022-09576-2\>
 
 [SuperLearner](https://rdrr.io/pkg/SuperLearner/man/SuperLearner.html)
 [coxph](https://rdrr.io/pkg/survival/man/coxph.html)
-[glmnet](https://rdrr.io/pkg/glmnet/man/glmnet.html)
+[glmnet](https://glmnet.stanford.edu/reference/glmnet.html)
+[rfsrc](https://www.randomforestsrc.org//reference/rfsrc.html)
+[fit_hal](https://rdrr.io/pkg/hal9001/man/fit_hal.html)
 
 ## Examples
 

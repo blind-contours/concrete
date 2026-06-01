@@ -26,7 +26,7 @@ formatArguments(
   ReturnModels = TRUE,
   ConcreteArgs = NULL,
   RenameCovs = TRUE,
-  UpdateMethod = c("standard", "adaptive", "coordinated"),
+  UpdateMethod = c("standard", "adaptive"),
   EICStopRule = c("relative", "absolute", "hybrid"),
   EICStopAbsTol = 0,
   ...
@@ -159,10 +159,10 @@ print(x, ...)
 - UpdateMethod:
 
   character (default: "standard"): TMLE update method. Supported values
-  are `"standard"`, `"adaptive"`, and `"coordinated"`. `"adaptive"` uses
-  a line search with rollback and is usually the most stable choice for
-  difficult convergence cases. `"accelerated"` is accepted as a legacy
-  alias for `"adaptive"`.
+  are `"standard"` and `"adaptive"`. `"adaptive"` uses a line search
+  with rollback and is usually the most stable choice for difficult
+  convergence cases. `"accelerated"` is accepted as a legacy alias for
+  `"adaptive"`.
 
 - EICStopRule:
 

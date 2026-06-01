@@ -55,6 +55,9 @@
 <h3 id="stability-1-1-0">Stability<a class="anchor" aria-label="anchor" href="#stability-1-1-0"></a></h3>
 <ul><li>Added trace fields for relative and absolute EIC ratios, maximum absolute empirical EIC, failing components, and stopping-rule metadata.</li>
 <li>Improved rare-event convergence behavior with the hybrid stopping rule while preserving the original default behavior.</li>
+<li>Restricted convergence stopping checks to the requested target event/time components, excluding internal complement rows used in EIC summaries.</li>
+<li>Aligned adaptive update acceptance with the active stopping rule: relative stopping uses the target EIC norm, while absolute and hybrid stopping use the component-wise stopping ratio.</li>
+<li>Added a zero-norm hazard-update guard and default smoke-test execution in the test suite.</li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

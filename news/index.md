@@ -26,3 +26,11 @@
   metadata.
 - Improved rare-event convergence behavior with the hybrid stopping rule
   while preserving the original default behavior.
+- Restricted convergence stopping checks to the requested target
+  event/time components, excluding internal complement rows used in EIC
+  summaries.
+- Aligned adaptive update acceptance with the active stopping rule:
+  relative stopping uses the target EIC norm, while absolute and hybrid
+  stopping use the component-wise stopping ratio.
+- Added a zero-norm hazard-update guard and default smoke-test execution
+  in the test suite.

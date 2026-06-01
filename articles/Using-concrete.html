@@ -111,6 +111,9 @@
 <div class="section level2">
 <h2 id="survival-learner-library">Survival learner library<a class="anchor" aria-label="anchor" href="#survival-learner-library"></a>
 </h2>
+<p>For hazard learners, <code>concrete</code> currently uses
+cross-validated discrete selection within each event-specific
+library.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SL.glm"</span>, <span class="st">"SL.glmnet"</span><span class="op">)</span>,</span>

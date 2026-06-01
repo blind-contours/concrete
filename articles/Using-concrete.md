@@ -44,6 +44,9 @@ getTmleDiagnostics(ConcreteEst, type = "components")
 
 ## Survival learner library
 
+For hazard learners, `concrete` currently uses cross-validated discrete
+selection within each event-specific library.
+
 ``` r
 
 Model <- list(

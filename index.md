@@ -157,10 +157,12 @@ getTmleDiagnostics(ConcreteEst, type = "trace")
 
 ## Survival learner library
 
-Hazard models can mix Cox formulas with optional survival learners. The
-following aliases are supported in `Model[[event_type]]`: `"coxnet"`,
-`"rsf"` or `"randomForestSRC"`, `"aareg"` or `"additive_hazards"`, and
-`"hal"` or `"hal9001"`.
+Hazard models can mix Cox formulas with optional survival learners. For
+each event-specific hazard library, `concrete` currently uses
+cross-validated discrete selection rather than a weighted convex
+ensemble. The following aliases are supported in `Model[[event_type]]`:
+`"coxnet"`, `"rsf"` or `"randomForestSRC"`, `"aareg"` or
+`"additive_hazards"`, and `"hal"` or `"hal9001"`.
 
 ``` r
 

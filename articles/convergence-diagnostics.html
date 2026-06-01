@@ -77,8 +77,11 @@ setting.</p>
 <div class="section level2">
 <h2 id="what-convergence-means-here">What convergence means here<a class="anchor" aria-label="anchor" href="#what-convergence-means-here"></a>
 </h2>
-<p>The TMLE update tries to make the empirical mean of each target EIC
-component small. The original stopping rule checks:</p>
+<p>The TMLE update tries to make the empirical mean of each requested
+target EIC component small. Stopping is evaluated for the requested
+intervention, target event, and target time components; internal
+complement rows used to form survival contrasts are not used as
+additional stopping equations. The original stopping rule checks:</p>
 <pre class="text"><code><span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">PnEIC</span><span class="op">)</span> <span class="op">&lt;=</span> <span class="va">seEIC</span> <span class="op">/</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span></span></code></pre>
 <p>This is a relative, component-specific threshold. It can become
 extremely strict when an event is rare or a component has near-zero
@@ -354,7 +357,11 @@ library.</p>
 <h3 id="use-adaptive-updating">2. Use adaptive updating<a class="anchor" aria-label="anchor" href="#use-adaptive-updating"></a>
 </h3>
 <p>The adaptive method uses a line search with rollback and is the
-recommended first convergence fix.</p>
+recommended first convergence fix. With
+<code>EICStopRule = "relative"</code> it accepts updates that reduce the
+target empirical EIC norm. With <code>EICStopRule = "absolute"</code> or
+<code>"hybrid"</code> it accepts updates that reduce the active
+component-wise stopping ratio.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span> <span class="op">&lt;-</span> <span class="st">"adaptive"</span></span>
 <span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
