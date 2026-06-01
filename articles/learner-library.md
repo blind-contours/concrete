@@ -1,0 +1,202 @@
+# Learner library guide
+
+This guide explains the learner options exposed through
+[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md).
+There are two separate nuisance-learning tasks:
+
+- treatment assignment models, supplied through the `SuperLearner`
+  package
+- censoring and event hazard models, supplied as a candidate hazard
+  library
+
+The hazard library currently works as a cross-validated discrete
+selector: for each censoring or event type, `concrete` evaluates the
+candidate hazard learners and uses the learner with the lowest
+validation loss.
+
+## Conservative first library
+
+For first use in a trial, start with simple and stable learners.
+
+``` r
+
+Model <- list(
+  arm = c("SL.mean", "SL.glm"),
+  "0" = list(Censor = survival::Surv(time, event == 0) ~ arm + age + sex),
+  "1" = list(Event = survival::Surv(time, event == 1) ~ arm + age + sex)
+)
+```
+
+For competing risks, add one hazard model list for each positive event
+code.
+
+``` r
+
+Model <- list(
+  arm = c("SL.mean", "SL.glm"),
+  "0" = list(Censor = survival::Surv(time, event == 0) ~ arm + age + sex),
+  "1" = list(Death = survival::Surv(time, event == 1) ~ arm + age + sex),
+  "2" = list(Competing = survival::Surv(time, event == 2) ~ arm + age + sex)
+)
+```
+
+## Treatment Super Learner
+
+For randomized trials, the treatment model is often simple. If treatment
+was randomized 1:1 and the analysis is intent-to-treat, a simple library
+is a good starting point:
+
+``` r
+
+Model <- list(
+  arm = c("SL.mean", "SL.glm")
+)
+```
+
+For observational or covariate-adaptive settings, add flexible learners
+already available through `SuperLearner`.
+
+``` r
+
+Model <- list(
+  arm = c("SL.mean", "SL.glm", "SL.glmnet", "SL.xgboost")
+)
+```
+
+Only include treatment learners whose packages are installed and
+appropriate for the sample size.
+
+## Hazard learner aliases
+
+Hazard learners are specified inside `Model[["0"]]`, `Model[["1"]]`, and
+other event-specific entries.
+
+| Alias | Learner | Package |
+|----|----|----|
+| Cox formula | Cox proportional hazards | `survival` |
+| `"coxnet"` | Penalized Cox model | `glmnet` |
+| `"rsf"` or `"randomForestSRC"` | Random survival forest | `randomForestSRC` |
+| `"aareg"` or `"additive_hazards"` | Additive hazards | `survival` |
+| `"hal"` or `"hal9001"` | HAL pooled discrete-time hazard | `hal9001` |
+
+Optional packages:
+
+``` r
+
+install.packages(c("glmnet", "randomForestSRC", "hal9001"))
+```
+
+## Cox plus machine-learning hazards
+
+This example gives each event type a small candidate library. The
+selected hazard learner can differ across censoring, the event of
+interest, and competing events.
+
+``` r
+
+Model <- list(
+  arm = c("SL.mean", "SL.glm", "SL.glmnet"),
+  "0" = list(
+    Cox = survival::Surv(time, event == 0) ~ arm + age + sex + albumin,
+    Coxnet = "coxnet",
+    Aalen = "aareg"
+  ),
+  "1" = list(
+    Cox = survival::Surv(time, event == 1) ~ arm + age + sex + albumin,
+    RSF = "rsf",
+    HAL = "hal"
+  ),
+  "2" = list(
+    Cox = survival::Surv(time, event == 2) ~ arm + age + sex + albumin,
+    RSF = "rsf"
+  )
+)
+
+ConcreteArgs <- formatArguments(
+  DataTable = trial,
+  EventTime = "time",
+  EventType = "event",
+  Treatment = "arm",
+  ID = "id",
+  Intervention = makeITT(),
+  TargetTime = c(365, 730),
+  TargetEvent = 1,
+  CVArg = list(V = 5),
+  Model = Model,
+  UpdateMethod = "adaptive",
+  EICStopRule = "hybrid",
+  EICStopAbsTol = 1e-3,
+  Verbose = FALSE
+)
+
+ConcreteEst <- doConcrete(ConcreteArgs)
+```
+
+## Suggested libraries by trial size
+
+These are starting points, not rules.
+
+| Setting | Suggested treatment library | Suggested hazard library |
+|----|----|----|
+| Small trial or rare event | `SL.mean`, `SL.glm` | Cox formulas, additive hazards |
+| Moderate trial | `SL.mean`, `SL.glm`, `SL.glmnet` | Cox, Coxnet, additive hazards |
+| Larger trial with nonlinear risk | add tree/boosting learners | Cox, Coxnet, RSF, HAL |
+| First convergence debugging | `SL.mean`, `SL.glm` | Cox only |
+
+## Inspect selected hazard learners
+
+When `ReturnModels = TRUE`, fitted objects keep initial learner
+information.
+
+``` r
+
+fits <- attr(ConcreteEst, "InitFits")
+
+# Treatment model Super Learner weights.
+fits[["arm"]]
+
+# Hazard model selection risks are stored on each fitted hazard object.
+lapply(fits[setdiff(names(fits), "arm")], function(fit) {
+  attr(fit, "HazSL")
+})
+```
+
+## Practical testing sequence
+
+For a trial testing week, use the same estimand and data set across a
+ladder of learner libraries.
+
+``` r
+
+model_cox <- list(
+  arm = c("SL.mean", "SL.glm"),
+  "0" = list(Cox = survival::Surv(time, event == 0) ~ .),
+  "1" = list(Cox = survival::Surv(time, event == 1) ~ .)
+)
+
+model_penalized <- list(
+  arm = c("SL.mean", "SL.glm", "SL.glmnet"),
+  "0" = list(Cox = survival::Surv(time, event == 0) ~ ., Coxnet = "coxnet"),
+  "1" = list(Cox = survival::Surv(time, event == 1) ~ ., Coxnet = "coxnet")
+)
+
+model_flexible <- list(
+  arm = c("SL.mean", "SL.glm", "SL.glmnet"),
+  "0" = list(Cox = survival::Surv(time, event == 0) ~ ., Coxnet = "coxnet"),
+  "1" = list(
+    Cox = survival::Surv(time, event == 1) ~ .,
+    Coxnet = "coxnet",
+    RSF = "rsf",
+    Aalen = "aareg",
+    HAL = "hal"
+  )
+)
+```
+
+Compare:
+
+- point estimates and confidence intervals
+- selected hazard learners
+- convergence diagnostics
+- runtime
+- whether the result is stable to removing the most flexible learners

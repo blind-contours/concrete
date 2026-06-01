@@ -1,0 +1,166 @@
+# concrete
+
+[![CRAN](http://www.r-pkg.org/badges/version/concrete)](http://www.r-pkg.org/pkg/concrete)
+[![R-CMD-check](https://github.com/blind-contours/concrete/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/blind-contours/concrete/actions/workflows/R-CMD-check.yaml)
+[![Coverage
+Status](https://coveralls.io/repos/github/blind-contours/concrete/badge.svg?branch=main)](https://coveralls.io/github/blind-contours/concrete?branch=main)
+
+> Continuous-Time Targeted Maximum Likelihood Estimation for Survival
+> Analysis with Competing Risks
+
+## Description
+
+`concrete` is an R package designed to use targeted maximum likelihood
+estimation (TMLE) to compute covariate-adjusted marginal cumulative
+incidence estimates in right-censored survival settings with and without
+competing risks.
+
+`concrete` is intended to help trial analysts estimate clinically
+interpretable absolute risks, risk differences, and risk ratios at
+prespecified follow-up times while using flexible nuisance estimation
+and TMLE diagnostics.
+
+------------------------------------------------------------------------
+
+## Installation
+
+For standard use, we recommend installing the package from
+[CRAN](https://cran.r-project.org/) via
+
+``` r
+
+install.packages("concrete")
+```
+
+You can install a stable release of `concrete` from GitHub via
+[`devtools`](https://www.rstudio.com/products/rpackages/devtools/) with:
+
+``` r
+
+devtools::install_github("blind-contours/concrete")
+```
+
+------------------------------------------------------------------------
+
+## Start here for trial analyses
+
+If you are testing `concrete` on a randomized trial or trial-like data
+set, start with these articles:
+
+- [Trialist
+  quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.html):
+  required data layout, a first intent-to-treat analysis, output
+  interpretation, and checks to compare with standard trial summaries.
+- [Learner library
+  guide](https://blind-contours.github.io/concrete/articles/learner-library.html):
+  conservative Cox-only analyses, treatment Super Learner libraries, and
+  the hazard learner options for Coxnet, random survival forests,
+  additive hazards, and HAL.
+- [Convergence
+  diagnostics](https://blind-contours.github.io/concrete/articles/convergence-diagnostics.html):
+  how to inspect empirical EIC diagnostics and what to try when the TMLE
+  update does not converge cleanly.
+
+The minimum data columns are a subject id, observed time, event type,
+binary treatment arm, and baseline covariates. Censoring should be coded
+as `0`; event types should be positive integers. For competing risks,
+use one positive integer for the event of interest and other positive
+integers for competing events.
+
+``` r
+
+library(concrete)
+library(data.table)
+
+trial <- as.data.table(your_trial_data)
+
+ConcreteArgs <- formatArguments(
+  DataTable = trial,
+  EventTime = "time",
+  EventType = "event",
+  Treatment = "arm",
+  ID = "id",
+  Intervention = makeITT(),
+  TargetTime = c(365, 730),
+  TargetEvent = 1,
+  CVArg = list(V = 5),
+  Verbose = FALSE
+)
+
+ConcreteEst <- doConcrete(ConcreteArgs)
+ConcreteOut <- getOutput(
+  ConcreteEst,
+  Estimand = c("Risk", "RD", "RR"),
+  Intervention = c(1, 2)
+)
+
+ConcreteOut
+getTmleDiagnostics(ConcreteEst, type = "components")
+```
+
+## Advanced TMLE controls
+
+The TMLE update can be configured through
+[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md).
+The default stopping rule is the original relative empirical EIC
+criterion. For rare-event settings, a hybrid rule can be more stable
+because it combines the original relative threshold with a small
+absolute tolerance:
+
+``` r
+
+ConcreteArgs <- formatArguments(
+  DataTable = data,
+  EventTime = "time",
+  EventType = "status",
+  Treatment = "trt",
+  Intervention = 0:1,
+  TargetTime = c(365, 730),
+  TargetEvent = 1,
+  UpdateMethod = "adaptive",
+  EICStopRule = "hybrid",
+  EICStopAbsTol = 1e-3
+)
+```
+
+Use
+[`getTmleDiagnostics()`](https://blind-contours.github.io/concrete/reference/getTmleDiagnostics.md)
+on a fitted object to inspect final component-wise EIC ratios, the
+update trace, or the norm trajectory:
+
+``` r
+
+ConcreteEst <- doConcrete(ConcreteArgs)
+getTmleDiagnostics(ConcreteEst, type = "components")
+getTmleDiagnostics(ConcreteEst, type = "trace")
+```
+
+## Survival learner library
+
+Hazard models can mix Cox formulas with optional survival learners. The
+following aliases are supported in `Model[[event_type]]`: `"coxnet"`,
+`"rsf"` or `"randomForestSRC"`, `"aareg"` or `"additive_hazards"`, and
+`"hal"` or `"hal9001"`.
+
+``` r
+
+Model <- list(
+  trt = c("SL.glm", "SL.glmnet"),
+  "0" = list(Cox = survival::Surv(time, status == 0) ~ .,
+             RSF = "rsf",
+             Aareg = "aareg"),
+  "1" = list(Cox = survival::Surv(time, status == 1) ~ .,
+             HAL = "hal")
+)
+```
+
+The optional learners require their corresponding packages when
+selected: `glmnet` for Coxnet, `randomForestSRC` for random survival
+forests, and `hal9001` for HAL.
+
+------------------------------------------------------------------------
+
+## Issues
+
+If you encounter any bugs or have any specific feature requests, please
+[file an issue](https://github.com/blind-contours/concrete/issues).
