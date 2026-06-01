@@ -1,0 +1,54 @@
+url: https://blind-contours.github.io/concrete/
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+
+navbar:
+  structure:
+    left: [intro, articles, reference, news]
+    right: [github]
+  components:
+    intro:
+      text: Get started
+      href: articles/trialist-quickstart.html
+
+home:
+  title: concrete
+  description: >
+    Continuous-time TMLE for covariate-adjusted survival and competing-risk
+    absolute risks in trial and trial-like data.
+
+articles:
+  - title: Trialist guides
+    navbar: Trialist guides
+    contents:
+      - trialist-quickstart
+      - learner-library
+      - convergence-diagnostics
+      - Using-concrete
+
+reference:
+  - title: Main workflow
+    contents:
+      - formatArguments
+      - makeITT
+      - doConcrete
+      - getOutput
+      - getTmleDiagnostics
+  - title: Lower-level helpers
+    contents:
+      - getInitialEstimate
+      - getPropScore
+      - getHazFit
+      - getEIC
+      - doTmleUpdate
+  - title: Developer and internal helpers
+    contents:
+      - concrete-package
+      - printOneStepDiagnostics
+      - deepcopyEstimates
+      - submodelAndEIC
+      - applyFinalSubmodel
+      - updateHazardsWithEps
+      - updateHazard

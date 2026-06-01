@@ -1,0 +1,28 @@
+name: Estimand or interpretation question
+description: Ask how to encode a trial question or interpret concrete output.
+title: "Estimand question: "
+labels: ["estimand", "trialist-feedback"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Trial question
+      description: Describe the clinical question, endpoint, treatment comparison, and follow-up time.
+    validations:
+      required: true
+  - type: textarea
+    id: coding
+    attributes:
+      label: Data coding
+      description: Describe event coding, treatment coding, censoring, and competing risks.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or code
+      description: Paste the relevant getOutput() table or formatArguments() code if available.
+      render: r
+    validations:
+      required: false

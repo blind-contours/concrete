@@ -1,0 +1,57 @@
+name: Convergence issue
+description: Report slow convergence, non-convergence, or unclear TMLE diagnostics.
+title: "Convergence issue: "
+labels: ["convergence", "trialist-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please include enough information to distinguish numerical convergence from sparse-data or learner instability.
+  - type: input
+    id: version
+    attributes:
+      label: concrete version
+      description: Output of packageVersion("concrete").
+      placeholder: "1.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: estimand
+    attributes:
+      label: Estimand
+      description: Target event, target time, treatment comparison, and whether competing risks are present.
+      placeholder: "Target event 1 by 365 and 730 days, A=1 vs A=0, competing event 2 present."
+    validations:
+      required: true
+  - type: textarea
+    id: counts
+    attributes:
+      label: Event and censoring counts
+      description: Paste trial[, .N, by = .(arm, event)] or an equivalent table.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: controls
+    attributes:
+      label: TMLE controls
+      description: Include UpdateMethod, EICStopRule, EICStopAbsTol, MaxUpdateIter, OneStepEps, and MinNuisance.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Paste getTmleDiagnostics(ConcreteEst, type = "components") and, if useful, type = "trace".
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: reproducible
+    attributes:
+      label: Minimal reproducible example
+      description: If possible, include code that reproduces the issue on simulated or shareable data.
+      render: r
+    validations:
+      required: false

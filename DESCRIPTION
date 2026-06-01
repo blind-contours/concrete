@@ -41,7 +41,8 @@ Suggests:
     ggplot2,
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown
+    rmarkdown,
+    pkgdown
 Config/testthat/edition: 3
 URL: https://github.com/blind-contours/concrete
 BugReports: https://github.com/blind-contours/concrete/issues

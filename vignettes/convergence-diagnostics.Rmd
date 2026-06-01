@@ -1,0 +1,190 @@
+---
+title: "Convergence diagnostics"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Convergence diagnostics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = TRUE,
+  eval = FALSE
+)
+```
+
+This article explains how to evaluate the TMLE update when `concrete` reports
+slow convergence or non-convergence. The goal is to distinguish a meaningful
+targeting problem from a numerically tiny empirical efficient influence curve
+(EIC) component in a rare-event setting.
+
+## What convergence means here
+
+The TMLE update tries to make the empirical mean of each target EIC component
+small. The original stopping rule checks:
+
+```text
+abs(PnEIC) <= seEIC / (sqrt(n) * log(n))
+```
+
+This is a relative, component-specific threshold. It can become extremely strict
+when an event is rare or a component has near-zero variability.
+
+`concrete` now exposes three stopping rules:
+
+| Rule | Meaning | Typical use |
+|---|---|---|
+| `relative` | Original component-specific rule | Default, best first check |
+| `absolute` | `abs(PnEIC) <= EICStopAbsTol` | Sensitivity analyses on absolute-risk scale |
+| `hybrid` | `abs(PnEIC) <= max(relative threshold, EICStopAbsTol)` | Rare events or near-zero EIC variance |
+
+A setting such as `EICStopRule = "hybrid"` and `EICStopAbsTol = 1e-3` means:
+keep the original relative criterion unless it is stricter than an absolute
+empirical EIC tolerance of 0.001 on the risk scale.
+
+## Inspect the diagnostics
+
+```{r diagnostics}
+components <- getTmleDiagnostics(ConcreteEst, type = "components")
+components[order(ratio, decreasing = TRUE)]
+
+trace <- getTmleDiagnostics(ConcreteEst, type = "trace")
+trace
+
+norm <- getTmleDiagnostics(ConcreteEst, type = "norm")
+norm
+```
+
+The component table is usually the most useful first view.
+
+Key columns:
+
+- `PnEIC`: empirical mean EIC for the component
+- `RelativeCriteria`: original relative stopping threshold
+- `AbsoluteCriteria`: absolute threshold supplied by `EICStopAbsTol`
+- `StopCriteria`: threshold used by the selected rule
+- `ratio`: `abs(PnEIC) / StopCriteria`
+- `check`: whether that component passed the selected rule
+- `Converged`: whether the overall update converged
+- `ConvergenceStep`: update step where convergence was reached
+
+Focus first on rows with `check == FALSE`, sorted by `ratio`.
+
+```{r failing-components}
+components[check == FALSE][order(ratio, decreasing = TRUE)]
+```
+
+## Recommended escalation ladder
+
+Start simple and add flexibility only after the conservative analysis behaves as
+expected.
+
+### 1. Run a conservative baseline
+
+Use default Cox hazards and a small treatment Super Learner library.
+
+```{r conservative-baseline}
+Model <- list(
+  arm = c("SL.mean", "SL.glm"),
+  "0" = list(Censor = survival::Surv(time, event == 0) ~ arm + age + sex),
+  "1" = list(Event = survival::Surv(time, event == 1) ~ arm + age + sex)
+)
+
+ConcreteArgs <- formatArguments(
+  DataTable = trial,
+  EventTime = "time",
+  EventType = "event",
+  Treatment = "arm",
+  ID = "id",
+  Intervention = makeITT(),
+  TargetTime = c(365, 730),
+  TargetEvent = 1,
+  CVArg = list(V = 5),
+  Model = Model,
+  Verbose = FALSE
+)
+
+ConcreteEst <- doConcrete(ConcreteArgs)
+```
+
+### 2. Use adaptive updating
+
+The adaptive method uses a line search with rollback and is the recommended
+first convergence fix.
+
+```{r adaptive}
+ConcreteArgs$UpdateMethod <- "adaptive"
+ConcreteArgs <- formatArguments(ConcreteArgs)
+ConcreteEst <- doConcrete(ConcreteArgs)
+```
+
+### 3. Use the hybrid stopping rule for rare events
+
+```{r hybrid}
+ConcreteArgs$UpdateMethod <- "adaptive"
+ConcreteArgs$EICStopRule <- "hybrid"
+ConcreteArgs$EICStopAbsTol <- 1e-3
+ConcreteArgs <- formatArguments(ConcreteArgs)
+ConcreteEst <- doConcrete(ConcreteArgs)
+```
+
+Use this when the largest failing components have very small absolute `PnEIC`
+values but large ratios because the relative threshold is tiny.
+
+### 4. Increase iterations only if progress is continuing
+
+```{r max-iter}
+ConcreteArgs$MaxUpdateIter <- 1000
+ConcreteArgs <- formatArguments(ConcreteArgs)
+ConcreteEst <- doConcrete(ConcreteArgs)
+```
+
+If the trace has flattened and the same tiny components remain, increasing
+iterations may not change the practical estimate.
+
+### 5. Simplify or stabilize nuisance estimation
+
+If `abs(PnEIC)` remains large, the issue may be nuisance instability rather than
+only the stopping threshold.
+
+Try:
+
+- simpler hazard learner libraries
+- fewer high-variance learners for small trials
+- stronger propensity-score truncation through `MinNuisance`
+- fewer target times for initial debugging
+- checking for arms with no events near the target time
+
+## Interpreting common patterns
+
+| Pattern | Likely meaning | Next step |
+|---|---|---|
+| Large `ratio`, tiny `AbsPnEIC` | Relative rule is too strict on a near-zero component | Try `hybrid` with `1e-3` |
+| Large `ratio`, large `AbsPnEIC` | Targeting problem remains meaningful | Use adaptive update and inspect learners |
+| Many failing components for censoring | Censoring or positivity instability | Check censoring by arm and covariates |
+| Failure only for one rare event/time | Sparse target component | Report event counts and try hybrid rule |
+| Norm decreases then rebounds | Update overshooting | Use `UpdateMethod = "adaptive"` |
+
+## A reporting template
+
+For trial reports or issue reports, record:
+
+```{r reporting-template}
+list(
+  package_version = as.character(packageVersion("concrete")),
+  update_method = ConcreteArgs$UpdateMethod,
+  eic_stop_rule = ConcreteArgs$EICStopRule,
+  eic_stop_abs_tol = ConcreteArgs$EICStopAbsTol,
+  max_update_iter = ConcreteArgs$MaxUpdateIter,
+  target_time = ConcreteArgs$TargetTime,
+  target_event = ConcreteArgs$TargetEvent,
+  event_counts = trial[, .N, by = .(arm, event)],
+  components = getTmleDiagnostics(ConcreteEst, type = "components")
+)
+```
+
+This is usually enough to understand whether a convergence issue is numerical,
+data-sparsity related, or learner related.

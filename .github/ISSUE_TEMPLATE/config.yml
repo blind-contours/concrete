@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Trialist quickstart
+    url: https://blind-contours.github.io/concrete/articles/trialist-quickstart.html
+    about: Start here for data layout, estimands, and first analyses.
+  - name: Convergence diagnostics
+    url: https://blind-contours.github.io/concrete/articles/convergence-diagnostics.html
+    about: Use this guide before filing a convergence issue.

@@ -18,6 +18,11 @@ estimation (TMLE) to compute covariate-adjusted marginal cumulative
 incidence estimates in right-censored survival settings with and without
 competing risks.
 
+`concrete` is intended to help trial analysts estimate clinically
+interpretable absolute risks, risk differences, and risk ratios at
+prespecified follow-up times while using flexible nuisance estimation
+and TMLE diagnostics.
+
 ------------------------------------------------------------------------
 
 ## Installation
@@ -37,6 +42,61 @@ devtools::install_github("blind-contours/concrete")
 ```
 
 ------------------------------------------------------------------------
+
+## Start here for trial analyses
+
+If you are testing `concrete` on a randomized trial or trial-like data
+set, start with these articles:
+
+-   [Trialist
+    quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.html):
+    required data layout, a first intent-to-treat analysis, output
+    interpretation, and checks to compare with standard trial summaries.
+-   [Learner library
+    guide](https://blind-contours.github.io/concrete/articles/learner-library.html):
+    conservative Cox-only analyses, treatment Super Learner libraries,
+    and the hazard learner options for Coxnet, random survival forests,
+    additive hazards, and HAL.
+-   [Convergence
+    diagnostics](https://blind-contours.github.io/concrete/articles/convergence-diagnostics.html):
+    how to inspect empirical EIC diagnostics and what to try when the
+    TMLE update does not converge cleanly.
+
+The minimum data columns are a subject id, observed time, event type,
+binary treatment arm, and baseline covariates. Censoring should be coded
+as `0`; event types should be positive integers. For competing risks,
+use one positive integer for the event of interest and other positive
+integers for competing events.
+
+``` r
+library(concrete)
+library(data.table)
+
+trial <- as.data.table(your_trial_data)
+
+ConcreteArgs <- formatArguments(
+  DataTable = trial,
+  EventTime = "time",
+  EventType = "event",
+  Treatment = "arm",
+  ID = "id",
+  Intervention = makeITT(),
+  TargetTime = c(365, 730),
+  TargetEvent = 1,
+  CVArg = list(V = 5),
+  Verbose = FALSE
+)
+
+ConcreteEst <- doConcrete(ConcreteArgs)
+ConcreteOut <- getOutput(
+  ConcreteEst,
+  Estimand = c("Risk", "RD", "RR"),
+  Intervention = c(1, 2)
+)
+
+ConcreteOut
+getTmleDiagnostics(ConcreteEst, type = "components")
+```
 
 ## Advanced TMLE controls
 

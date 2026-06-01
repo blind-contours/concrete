@@ -34,6 +34,11 @@ vignettes/*.pdf
 # Temporary files created by R markdown
 *.utf8.md
 *.knit.md
+README.html
+
+# Local site builds
+docs/
+pkgdown/
 
 # R Environment Variables
 .Renviron
@@ -43,6 +48,16 @@ vignettes/*.pdf
 *.Rproj
 
 output/
+sandbox/
+.DS_Store
+scenario_*.csv
+scenario_*.rds
+scenario_*.pdf
+all_scenarios_results.rds
+comparison_table.csv
+comparison_table.rds
+bias_plot.pdf
+forest_plot.pdf
 
 scripts/sim-data/sim-diagnostics.txt
 scripts/sim-data/sim-diag/diagnostic.txt

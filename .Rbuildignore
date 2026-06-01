@@ -21,3 +21,9 @@
 ^comparison_table\.(csv|rds)$
 ^bias_plot\.pdf$
 ^forest_plot\.pdf$
+^README\.html$
+^.*\.tar\.gz$
+^sandbox$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

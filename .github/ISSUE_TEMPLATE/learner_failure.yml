@@ -1,0 +1,52 @@
+name: Learner failure
+description: Report a Super Learner or hazard learner error.
+title: "Learner failure: "
+labels: ["learners", "trialist-feedback"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: concrete version
+      placeholder: "1.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: model
+    attributes:
+      label: Model specification
+      description: Paste the Model list used in formatArguments().
+      render: r
+    validations:
+      required: true
+  - type: textarea
+    id: packages
+    attributes:
+      label: Optional learner packages
+      description: Paste packageVersion() output for glmnet, randomForestSRC, hal9001, or other learner packages used.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: error
+    attributes:
+      label: Error or warning
+      description: Paste the complete error or warning message.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: data_shape
+    attributes:
+      label: Data shape and event counts
+      description: Include nrow(data), target event/time, and event counts by arm.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: reproducible
+    attributes:
+      label: Minimal reproducible example
+      description: If possible, include code that reproduces the issue on simulated or shareable data.
+      render: r
+    validations:
+      required: false
