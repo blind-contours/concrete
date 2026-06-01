@@ -63,6 +63,14 @@ scripts/sim-data/sim-diagnostics.txt
 scripts/sim-data/sim-diag/diagnostic.txt
 scripts/sim-data/referee-sims/output/
 
+# Referee-review generated artifacts
+paper/referee_review/*.aux
+paper/referee_review/*.log
+paper/referee_review/*.out
+paper/referee_review/*.pdf
+paper/referee_review/*.docx
+paper/referee_review/checkpoint_artifacts/
+
 .covrignore
 .coveralls_github_token
 

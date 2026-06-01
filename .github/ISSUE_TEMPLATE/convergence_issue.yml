@@ -12,7 +12,7 @@ body:
     attributes:
       label: concrete version
       description: Output of packageVersion("concrete").
-      placeholder: "1.1.0"
+      placeholder: "1.1.1.9000"
     validations:
       required: true
   - type: textarea
@@ -39,6 +39,22 @@ body:
       render: text
     validations:
       required: true
+  - type: textarea
+    id: learner_library
+    attributes:
+      label: Learner library
+      description: Paste the treatment SuperLearner library and the event/censoring hazard learners, including optional learners such as coxnet, rsf, aareg, or hal.
+      render: r
+    validations:
+      required: true
+  - type: textarea
+    id: relative_absolute
+    attributes:
+      label: Relative vs absolute stopping comparison
+      description: If possible, run the same analysis with the default relative rule and with EICStopRule = "absolute", EICStopAbsTol = 0.02 / sqrt(nrow(data)). Paste convergence status, step, max ratio, and any meaningful estimate differences.
+      render: text
+    validations:
+      required: false
   - type: textarea
     id: diagnostics
     attributes:

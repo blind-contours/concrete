@@ -66,6 +66,34 @@ RR differences were larger because the event risks were small; this supports
 reporting absolute-risk and risk-difference sensitivity results alongside risk
 ratios in rare-event analyses.
 
+## Larger rare-event validation
+
+Output directory:
+
+`scripts/sim-data/referee-sims/output/alt_convergence_primary_survsl_rare_n300`
+
+Design:
+
+- 5 rare-early hard seeds
+- `n = 300`
+- target event 1
+- target times 365 and 1095
+- `MaxUpdateIter = 180`
+- full survival learner stack with HAL
+
+Summary:
+
+| Config | Jobs | Convergence | Median step | Max step | Median max abs PnEIC | Max abs PnEIC |
+|---|---:|---:|---:|---:|---:|---:|
+| absolute_nsqrt_0.02 | 5 | 5/5 | 8 | 22 | 0.00107 | 0.00111 |
+| relative_adaptive_e0.01_min0.05 | 5 | 5/5 | 5 | 24 | 0.00212 | 0.00372 |
+
+At the larger sample size both rules converged on all rare-early hard seeds.
+The absolute rule still had smaller absolute empirical EIC residuals, while the
+relative rule required a similar or smaller number of update steps in this
+particular screen. This supports keeping the relative rule as the default and
+documenting the absolute rule as the primary rare-event fallback or sensitivity.
+
 ## Interpretation
 
 The absolute n-scaled rule is the best documented fallback from these runs. It

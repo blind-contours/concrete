@@ -1,0 +1,383 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{amsmath}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!50!black,
+  citecolor=blue!50!black
+}
+
+\title{Concrete Referee Simulation Checkpoint}
+\author{Working report}
+\date{May 29, 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Purpose}
+
+This document records the current checkpoint for the referee-review simulation work before expanding to additional runs. It summarizes the simulation harness, convergence fixes and diagnostics, the new survival Super Learner extension, and the simulation results generated so far. The goal is not to be a final manuscript section, but to preserve the technical state with enough tables and figures to guide the next simulation round.
+
+\section{Current State}
+
+The package and referee simulation code now support the following:
+
+\begin{itemize}
+  \item A referee simulation harness with reproducible seed grids, row-level status files, saved replicate objects, diagnostic summaries, and performance summaries.
+  \item Concrete TMLE variants using standard and adaptive updating, with convergence diagnostics based on the empirical efficient influence curve and componentwise ratio checks.
+  \item Explicit TMLE empirical-mean EIC stopping rules: the original relative rule, an absolute tolerance rule, and a hybrid rule that accepts either criterion.
+  \item A general cause-specific survival hazard library with a discrete Super Learner selector.
+  \item Survival-SL candidate learners including Cox, Coxnet, random survival forests, additive hazards, and HAL.
+  \item Referee-focused simulation scenarios for proportional hazards, non-proportional hazards, rare early events, and a positivity-stress scenario.
+\end{itemize}
+
+The survival-SL candidates are compared using a common held-out counting-process negative log-likelihood,
+\[
+  \sum_i \widehat{\Lambda}_j(T_i) -
+  \sum_i 1(\Delta_i = j)\log\{d\widehat{\Lambda}_j(T_i)\},
+\]
+which avoids comparing non-Cox learners by Cox partial likelihood.
+
+\section{Validation}
+
+The relevant checks completed for this checkpoint were:
+
+\begin{itemize}
+  \item Package installation into \path{/private/tmp/concrete-lib}: passed.
+  \item \path{test-formatArguments.R}: passed, 71 pass and 0 fail.
+  \item \path{test-doConcrete.R}, with \texttt{data.table} attached for the existing test helper assumptions: passed, 5 pass and 0 fail.
+  \item Small HAL-inclusive survival-SL end-to-end smoke: passed.
+  \item Small survival-SL no-HAL referee harness smoke: passed.
+\end{itemize}
+
+The full ad hoc \texttt{testthat::test\_dir()} invocation still fails because the existing test files assume \texttt{data.table} is attached and the local test environment lacks \texttt{waldo}. That failure is separate from the survival-SL path.
+
+\section{Event-1 Baseline Grid}
+
+The first substantial referee grid used target event 1 only:
+
+\begin{itemize}
+  \item Output directory: \path{scripts/sim-data/referee-sims/output/event1_b100_n500}
+  \item Replicates: \(B = 100\)
+  \item Sample size: \(n = 500\)
+  \item Scenarios: proportional hazards, non-proportional hazards, rare early
+  \item Target times: 180, 365, 730, and 1460 days
+  \item Comparators: concrete variants, Aalen-Johansen, and \texttt{survtmle} with 6-month intervals
+\end{itemize}
+
+The main convergence result was that proportional-hazards and non-proportional-hazards scenarios converged reliably, while rare early targets exposed the practical convergence issue. Rare early nonconvergence occurred in 4 of 100 datasets, and each failed dataset failed across all three concrete variants.
+
+\begin{table}[H]
+\centering
+\caption{Event-1 B100 convergence diagnostics.}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_event1_convergence.tex}
+}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.82\textwidth]{checkpoint_artifacts/figures/fig_event1_convergence.pdf}
+\caption{Convergence rates in the event-1 B100 grid.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{checkpoint_artifacts/figures/fig_event1_riskdiff_rmse.pdf}
+\caption{Risk-difference RMSE averaged over target times in the event-1 B100 grid.}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Event-1 B100 performance averaged across target times.}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_event1_performance.tex}
+}
+\end{table}
+
+\subsection*{Read}
+
+The baseline event-1 grid supports three points for the referee response. First, convergence is reliable in the easier scenarios. Second, rare early targets are the scenario where convergence trouble is real and reproducible. Third, increasing iteration count alone is unlikely to be a complete fix: a representative failed rare-early seed improved with more iterations but still did not fully converge at 500 iterations.
+
+\section{Survival-SL Grid}
+
+The next grid evaluated the general survival-SL approach without HAL in the main library:
+
+\begin{itemize}
+  \item Output directory: \path{scripts/sim-data/referee-sims/output/survsl_nohal_b20_n500_all_events}
+  \item Replicates: \(B = 20\)
+  \item Sample size: \(n = 500\)
+  \item Scenarios: proportional hazards, non-proportional hazards, positivity stress, rare early
+  \item Target times: 180, 365, 730, 1095, and 1460 days
+  \item Target events: 1 and 2
+  \item Survival-SL library: Cox, Coxnet, random survival forest, additive hazards
+  \item Update cap: 200 iterations
+\end{itemize}
+
+This run completed all 80 scenario-replicates and wrote \path{row_status.csv}, \path{diagnostic_metrics.csv}, \path{diagnostics_long.csv}, \path{metrics.csv}, \path{estimates_long.csv}, and \path{summary.rds}.
+
+\begin{table}[H]
+\centering
+\caption{Survival-SL no-HAL convergence diagnostics.}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_survsl_convergence.tex}
+}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{checkpoint_artifacts/figures/fig_survsl_convergence.pdf}
+\caption{Convergence rates in the survival-SL no-HAL grid.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{checkpoint_artifacts/figures/fig_survsl_runtime.pdf}
+\caption{Mean runtime by scenario and estimator in the survival-SL no-HAL grid.}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Failed replicate seeds in the survival-SL no-HAL grid. Each listed seed failed for all five concrete estimators.}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_survsl_nonconvergence_seeds.tex}
+}
+\end{table}
+
+\subsection{Estimator Performance}
+
+Concrete TMLE generally improved absolute-risk RMSE relative to Aalen-Johansen. Survival SL was competitive and sometimes best or near-best, but it did not dominate every scenario.
+
+\begin{table}[H]
+\centering
+\caption{Best concrete absolute-risk TMLE by scenario in the survival-SL no-HAL grid.}
+\small
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_survsl_absrisk_best.tex}
+}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{checkpoint_artifacts/figures/fig_survsl_absrisk_rmse.pdf}
+\caption{Absolute-risk RMSE averaged over interventions, events, and target times in the survival-SL no-HAL grid.}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Risk-difference performance in the survival-SL no-HAL grid, averaged over events and target times.}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_survsl_riskdiff.tex}
+}
+\end{table}
+
+\subsection*{Read}
+
+The main result is that survival SL works and does not introduce new estimator errors. However, convergence failures were seed-level, not learner-specific. When a replicate failed, minimal, rich, adaptive, and survival-SL variants all failed on the same seed. This points to the targeting and update path under difficult positivity or rare-event conditions, rather than the initial hazard learner, as the primary convergence bottleneck.
+
+\section{HAL Sensitivity}
+
+Because pooled HAL scales with the number of subjects times the number of hazard-grid time points, HAL was evaluated as a focused sensitivity rather than in the full grid:
+
+\begin{itemize}
+  \item Output directory: \path{scripts/sim-data/referee-sims/output/hal_sensitivity_nonph_b3_n300}
+  \item Scenario: non-proportional hazards
+  \item Replicates: \(B = 3\)
+  \item Sample size: \(n = 300\)
+  \item Target times: 365 and 730 days
+  \item Target events: 1 and 2
+  \item Update cap: 100 iterations
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{HAL sensitivity diagnostics.}
+\small
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_hal_diagnostics.tex}
+}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{HAL sensitivity absolute-risk performance.}
+\small
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_hal_absrisk.tex}
+}
+\end{table}
+
+The HAL-inclusive survival-SL path ran and converged in all three replicates. At this scale it did not show a clear accuracy gain over the no-HAL survival-SL variants. It should remain available as an implemented learner, but the main simulation grid should probably keep HAL as a focused sensitivity unless more compute is allocated.
+
+\section{Checkpoint Interpretation}
+
+The current evidence separates two issues:
+
+\begin{enumerate}
+  \item Flexible nuisance estimation is now available. The survival-SL implementation supports Cox, Coxnet, random survival forests, additive hazards, and HAL, and the no-HAL survival-SL grid runs cleanly.
+  \item The slow or failed convergence issue is primarily an update-stability problem. The hardest failures recur on the same seeds across all concrete nuisance libraries, including the survival-SL variants.
+\end{enumerate}
+
+This means the convergence work should focus on the targeting/update step: step-size control, truncation or regularization, adaptive stopping rules, and diagnostics that identify positivity-induced targeting instability. Survival SL should be presented as the flexible nuisance-estimation extension, while convergence stabilization should be handled and reported separately.
+
+\section{Failed-Seed Update Sensitivity}
+
+After the survival-SL grid, the package was instrumented to save a per-step TMLE update trace for the standard and adaptive update paths. The trace records accepted and rejected update attempts, step sizes, norm before and after each attempted update, worst component ratio, failing component count, and the worst target component. This diagnostic was then applied to the failed seeds from the survival-SL grid.
+
+The representative matrix used one failed seed from each difficult pattern and compared the current baseline updates against stricter adaptive variants:
+
+\begin{table}[H]
+\centering
+\caption{Representative failed-seed update sensitivity.}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_failed_seed_representative.tex}
+}
+\end{table}
+
+The best candidate was the adaptive rich update with smaller initial update scale, \(\epsilon=0.01\), a 300-iteration cap, and a minimum nuisance denominator of 0.05. This candidate was then run on all eight failed seeds from the survival-SL grid:
+
+\begin{table}[H]
+\centering
+\caption{Best candidate update on all failed seeds.}
+\small
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_failed_seed_best_all.tex}
+}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{checkpoint_artifacts/figures/fig_failed_seed_best_all_maxratio.pdf}
+\caption{Final maximum stopping-rule ratio for the best candidate update on all failed seeds. The dashed line is the convergence threshold.}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Worst final component under the best candidate update.}
+\small
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_failed_seed_worst_components.tex}
+}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Update trace summary for the best candidate update.}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_failed_seed_trace_summary.tex}
+}
+\end{table}
+
+\subsection*{Read}
+
+The stricter adaptive update fixed the non-PH failed seed and both positivity failed seeds. It did not fix any of the five rare-early failed seeds. The trace shows monotone norm improvement in all cases, but for rare early targets the remaining failure is always the 180-day event-1 component. The empirical mean EIC is small in absolute terms, around \(8\times 10^{-4}\) to \(10^{-3}\), but the estimated standard-error component is extremely small, so the stopping threshold is on the order of \(10^{-5}\). This produces large final ratios despite small absolute residuals.
+
+This is an important distinction for the referee response. The non-PH and positivity convergence failures can be made to converge by taking smaller adaptive update steps and, for positivity, modestly strengthening denominator truncation. The rare-early failures behave differently: they are dominated by a near-zero-variance early target, not by failed descent of the update objective.
+
+\section{Rare-Event Stopping-Rule Sensitivity}
+
+The rare-early failures were then evaluated under explicit stopping-rule variants while keeping the update fix fixed: adaptive rich update, \(\epsilon=0.01\), a 300-iteration cap, and minimum nuisance denominator 0.05. The rules compared were the original relative criterion, two stricter hybrid absolute tolerances, and a \(10^{-3}\) absolute tolerance used either alone or in the hybrid rule.
+
+\begin{table}[H]
+\centering
+\caption{Representative rare-early stopping-rule sensitivity.}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_rare_event_stop_representative.tex}
+}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\textwidth]{checkpoint_artifacts/figures/fig_rare_event_stop_representative_ratio.pdf}
+\caption{Final stopping-rule ratio in the representative rare-early tolerance sweep. The dashed line is the convergence threshold.}
+\end{figure}
+
+The representative seed shows that \(2.5\times 10^{-4}\) and \(5\times 10^{-4}\) absolute tolerances are still too strict for this rare target at 300 iterations. The \(10^{-3}\) absolute tolerance converges at step 270. The hybrid and absolute \(10^{-3}\) rules agree here because the absolute criterion dominates the relative criterion for the near-zero-variance component.
+
+The selected hybrid rule was then run on all five rare-early failed seeds:
+
+\begin{table}[H]
+\centering
+\caption{Hybrid \(10^{-3}\) stopping rule on all rare-early failed seeds.}
+\small
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_rare_event_stop_candidate_all.tex}
+}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\textwidth]{checkpoint_artifacts/figures/fig_rare_event_stop_candidate_abs_pneic.pdf}
+\caption{Final maximum absolute empirical mean EIC under the hybrid \(10^{-3}\) rule. The dashed line is the absolute tolerance.}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Worst relative component under the hybrid \(10^{-3}\) rule.}
+\small
+\resizebox{\textwidth}{!}{%
+\input{checkpoint_artifacts/tables/tab_rare_event_stop_candidate_components.tex}
+}
+\end{table}
+
+\subsection*{Read}
+
+The hybrid \(10^{-3}\) rule converged on all five rare-early failed seeds, with final maximum absolute empirical mean EICs just below \(10^{-3}\). Every seed still had one component failing the original relative rule, always the 180-day event-1 component. This supports reporting rare-early nonconvergence as a near-zero-variance stopping-criterion issue: the algorithm reduces the absolute empirical mean EIC to a small value, but the relative threshold is extremely small because the estimated EIC standard error is near zero.
+
+\section{Suggested Next Simulation Step}
+
+The next simulation step should move from failed-seed debugging to a production comparison:
+
+\begin{itemize}
+  \item Use the stricter adaptive update as the candidate stabilization rule: \(\epsilon=0.01\), 300 maximum update iterations, and minimum nuisance denominator 0.05.
+  \item Use the hybrid stopping rule with absolute tolerance \(10^{-3}\) for the rare-event sensitivity analysis, while continuing to report the original relative ratios.
+  \item Rerun a \(B=20\), \(n=500\) all-event grid comparing the existing survival-SL estimators with the stabilized update and hybrid stopping rule.
+\end{itemize}
+
+The production grid should report both convergence under the chosen stopping rule and residual relative-rule failures. That preserves the original asymptotic diagnostic while avoiding classifying numerically small, near-zero-variance residuals as ordinary targeting failures.
+
+The corresponding runner is now parameterized through \path{scripts/sim-data/referee-sims/run_pilot.R}. The stabilized production grid can be launched with:
+
+\begin{itemize}
+  \item \texttt{include\_stabilized=true}
+  \item \texttt{max\_update\_iter=300}
+  \item \texttt{stabilized\_one\_step\_eps=0.01}
+  \item \texttt{stabilized\_min\_nuisance=0.05}
+  \item \texttt{stabilized\_stop\_rule=hybrid}
+  \item \texttt{stabilized\_stop\_abs\_tol=0.001}
+\end{itemize}
+
+\appendix
+\section{Artifact Locations}
+
+The generated checkpoint assets live in:
+
+\begin{itemize}
+  \item \path{paper/referee_review/referee_checkpoint_report.tex}
+  \item \path{paper/referee_review/checkpoint_artifacts/tables}
+  \item \path{paper/referee_review/checkpoint_artifacts/figures}
+  \item \path{paper/referee_review/make_checkpoint_artifacts.R}
+  \item \path{scripts/sim-data/referee-sims/run_failed_seed_sensitivity.R}
+  \item \path{scripts/sim-data/referee-sims/run_rare_event_stop_sensitivity.R}
+\end{itemize}
+
+\end{document}
