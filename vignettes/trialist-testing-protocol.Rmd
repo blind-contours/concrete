@@ -1,0 +1,192 @@
+---
+title: "Testing protocol and current limitations"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Testing protocol and current limitations}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = TRUE,
+  eval = FALSE
+)
+```
+
+This article gives trial analysts a short protocol for testing `concrete` on
+their own data and reporting useful feedback.
+
+## Step 1: Install and run the package smoke test
+
+Install the development version from GitHub:
+
+```{r install}
+install.packages("remotes")
+remotes::install_github("blind-contours/concrete")
+```
+
+Then run the built-in smoke test:
+
+```{r smoke-test}
+library(concrete)
+
+source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
+```
+
+The smoke test runs a small competing-risk analysis using a Cox-only hazard
+library, prints event counts, prints absolute risks, risk differences, and risk
+ratios, and returns a `smoke_summary` table.
+
+To also try optional hazard learners that are installed on your machine:
+
+```{r optional-smoke-test}
+Sys.setenv(CONCRETE_RUN_OPTIONAL_LEARNERS = "true")
+source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
+```
+
+The optional pass attempts additive hazards, Coxnet, random survival forests,
+and HAL when the required packages are installed.
+
+## Step 2: Run the conservative analysis on your trial
+
+Use a simple learner library first. This makes it easier to identify whether any
+problem is due to the data structure, the estimand, or a flexible learner.
+
+```{r conservative-trial}
+Model <- list(
+  arm = c("SL.mean", "SL.glm"),
+  "0" = list(Censor = survival::Surv(time, event == 0) ~ arm + age + sex),
+  "1" = list(Event = survival::Surv(time, event == 1) ~ arm + age + sex)
+)
+
+ConcreteArgs <- formatArguments(
+  DataTable = trial,
+  EventTime = "time",
+  EventType = "event",
+  Treatment = "arm",
+  ID = "id",
+  Intervention = makeITT(),
+  TargetTime = c(365, 730),
+  TargetEvent = 1,
+  CVArg = list(V = 5),
+  Model = Model,
+  UpdateMethod = "adaptive",
+  EICStopRule = "hybrid",
+  EICStopAbsTol = 1e-3,
+  Verbose = FALSE
+)
+
+ConcreteEst <- doConcrete(ConcreteArgs)
+ConcreteOut <- getOutput(
+  ConcreteEst,
+  Estimand = c("Risk", "RD", "RR"),
+  Intervention = c(1, 2)
+)
+
+ConcreteOut
+getTmleDiagnostics(ConcreteEst, type = "components")
+```
+
+For competing risks, add one model entry for each positive event code.
+
+## Step 3: Compare against your usual analysis
+
+Record the standard analysis that your trial team would usually report.
+
+Useful comparisons:
+
+- event and censoring counts by randomized arm
+- unadjusted cumulative incidence or Kaplan-Meier estimates at the same target
+  times
+- cause-specific Cox model output, when relevant
+- adjusted `concrete` absolute risks
+- adjusted `concrete` risk differences and risk ratios
+- g-computation plug-in estimates from `getOutput(..., GComp = TRUE)`
+
+The Cox hazard ratio is not the same estimand as the marginal risk ratio from
+`concrete`, so use it as context rather than as a direct equality check.
+
+## Step 4: Escalate learners
+
+Use the same data and estimand while changing only the learner library.
+
+```{r learner-ladder}
+model_cox <- list(
+  arm = c("SL.mean", "SL.glm"),
+  "0" = list(Cox = survival::Surv(time, event == 0) ~ .),
+  "1" = list(Cox = survival::Surv(time, event == 1) ~ .)
+)
+
+model_coxnet <- list(
+  arm = c("SL.mean", "SL.glm", "SL.glmnet"),
+  "0" = list(Cox = survival::Surv(time, event == 0) ~ ., Coxnet = "coxnet"),
+  "1" = list(Cox = survival::Surv(time, event == 1) ~ ., Coxnet = "coxnet")
+)
+
+model_flexible <- list(
+  arm = c("SL.mean", "SL.glm", "SL.glmnet"),
+  "0" = list(Cox = survival::Surv(time, event == 0) ~ ., Aalen = "aareg"),
+  "1" = list(
+    Cox = survival::Surv(time, event == 1) ~ .,
+    Coxnet = "coxnet",
+    RSF = "rsf",
+    Aalen = "aareg",
+    HAL = "hal"
+  )
+)
+```
+
+Compare point estimates, runtime, selected learners, and convergence
+diagnostics.
+
+## Current limitations
+
+The current public testing target is intentionally narrow.
+
+Supported:
+
+- one row per participant
+- right-censored event time outcome
+- optional competing risks
+- baseline binary treatment coded `0` and `1`
+- static interventions such as everyone assigned `A = 1` versus everyone
+  assigned `A = 0`
+- baseline covariate adjustment
+- target absolute risks, risk differences, and risk ratios at prespecified times
+
+Not currently supported in the main trialist workflow:
+
+- longitudinal treatment regimes
+- recurrent events
+- delayed entry or left truncation
+- multi-arm or continuous treatment without custom intervention work
+- post-baseline time-varying covariates
+- clustered trial designs requiring special variance handling
+
+Use caution when:
+
+- one arm has very few events by the target time
+- censoring is highly imbalanced by arm or covariates
+- optional machine-learning learners dominate a small trial
+- the flexible learner results differ sharply from Cox-only results
+- the TMLE update has large absolute `PnEIC` values after the adaptive update
+
+## What to send back
+
+For useful feedback, include:
+
+- package version from `packageVersion("concrete")`
+- `sessionInfo()`
+- event and censoring counts by treatment arm
+- target event and target time
+- exact `Model` list
+- `UpdateMethod`, `EICStopRule`, and `EICStopAbsTol`
+- `getOutput()` table
+- `getTmleDiagnostics(ConcreteEst, type = "components")`
+- whether the issue also occurs with a Cox-only learner library
+
+GitHub issue templates are available for convergence issues, learner failures,
+and estimand questions.

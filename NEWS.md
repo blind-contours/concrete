@@ -11,6 +11,9 @@
   objects.
 * Added documented hazard learner aliases for Coxnet, random survival forests,
   additive hazards, and HAL.
+* Added trialist-facing documentation, a pkgdown site, GitHub issue templates,
+  and an installed smoke-test script for checking Cox-only and optional learner
+  workflows.
 
 ## Stability
 
