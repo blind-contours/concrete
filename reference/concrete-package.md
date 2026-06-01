@@ -18,8 +18,8 @@ doTMLEUpdate() getOutput()
 
 ## Author
 
-David Chen, \<david.chen49@berkeley.edu\> Maintainer: David Chen
-\<david.chen49@berkeley.edu\>
+David McCoy, \<david_mccoy@berkeley.edu\> Maintainer: David McCoy
+\<david_mccoy@berkeley.edu\>
 
 ## References
 
@@ -30,7 +30,7 @@ Laan (2023) \<doi:10.1007/s10985-022-09576-2\>
 
 [SuperLearner](https://rdrr.io/pkg/SuperLearner/man/SuperLearner.html)
 [coxph](https://rdrr.io/pkg/survival/man/coxph.html)
-[glmnet](https://rdrr.io/pkg/glmnet/man/glmnet.html)
+[glmnet](https://glmnet.stanford.edu/reference/glmnet.html)
 
 ## Examples
 
