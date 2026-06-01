@@ -81,8 +81,8 @@ ConcreteArgs <- formatArguments(
   CVArg = list(V = 5),
   Model = Model,
   UpdateMethod = "adaptive",
-  EICStopRule = "hybrid",
-  EICStopAbsTol = 1e-3,
+  EICStopRule = "absolute",
+  EICStopAbsTol = 0.02 / sqrt(nrow(trial)),
   Verbose = FALSE
 )
 

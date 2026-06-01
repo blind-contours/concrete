@@ -102,8 +102,8 @@
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span> <span class="op">&lt;-</span> <span class="st">"adaptive"</span></span>
-<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopRule</span> <span class="op">&lt;-</span> <span class="st">"hybrid"</span></span>
-<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopAbsTol</span> <span class="op">&lt;-</span> <span class="fl">1e-3</span></span>
+<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopRule</span> <span class="op">&lt;-</span> <span class="st">"absolute"</span></span>
+<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopAbsTol</span> <span class="op">&lt;-</span> <span class="fl">0.02</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">Data</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
 <span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"components"</span><span class="op">)</span></span></code></pre></div>

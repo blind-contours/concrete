@@ -240,8 +240,8 @@ diagnostics article before changing the estimand.
 ``` r
 
 ConcreteArgs$UpdateMethod <- "adaptive"
-ConcreteArgs$EICStopRule <- "hybrid"
-ConcreteArgs$EICStopAbsTol <- 1e-3
+ConcreteArgs$EICStopRule <- "absolute"
+ConcreteArgs$EICStopAbsTol <- 0.02 / sqrt(nrow(ConcreteArgs$Data))
 ConcreteArgs <- formatArguments(ConcreteArgs)
 
 ConcreteEst <- doConcrete(ConcreteArgs)

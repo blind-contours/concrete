@@ -26,12 +26,14 @@ variability.
 | Rule | Meaning | Typical use |
 |----|----|----|
 | `relative` | Original component-specific rule | Default, best first check |
-| `absolute` | `abs(PnEIC) <= EICStopAbsTol` | Sensitivity analyses on absolute-risk scale |
-| `hybrid` | `abs(PnEIC) <= max(relative threshold, EICStopAbsTol)` | Rare events or near-zero EIC variance |
+| `absolute` | `abs(PnEIC) <= EICStopAbsTol` | Rare events or near-zero EIC variance |
+| `hybrid` | `abs(PnEIC) <= max(relative threshold, EICStopAbsTol)` | Sensitivity analysis combining relative and absolute checks |
 
-A setting such as `EICStopRule = "hybrid"` and `EICStopAbsTol = 1e-3`
-means: keep the original relative criterion unless it is stricter than
-an absolute empirical EIC tolerance of 0.001 on the risk scale.
+A setting such as `EICStopRule = "absolute"` and
+`EICStopAbsTol = 0.02 / sqrt(n)` means: stop when every requested target
+EIC has empirical mean no larger than this risk-scale tolerance. This is
+often more interpretable for sparse early event targets than forcing a
+relative threshold whose denominator is nearly zero.
 
 ## Inspect the diagnostics
 
@@ -146,19 +148,33 @@ ConcreteArgs <- formatArguments(ConcreteArgs)
 ConcreteEst <- doConcrete(ConcreteArgs)
 ```
 
-### 3. Use the hybrid stopping rule for rare events
+### 3. Use an absolute risk-scale stopping rule for rare events
 
 ``` r
 
 ConcreteArgs$UpdateMethod <- "adaptive"
-ConcreteArgs$EICStopRule <- "hybrid"
-ConcreteArgs$EICStopAbsTol <- 1e-3
+ConcreteArgs$EICStopRule <- "absolute"
+ConcreteArgs$EICStopAbsTol <- 0.02 / sqrt(nrow(ConcreteArgs$Data))
 ConcreteArgs <- formatArguments(ConcreteArgs)
 ConcreteEst <- doConcrete(ConcreteArgs)
 ```
 
 Use this when the largest failing components have very small absolute
 `PnEIC` values but large ratios because the relative threshold is tiny.
+Treat it as a convergence sensitivity: report the stopping rule, compare
+estimates with the relative fit when available, and focus first on
+absolute risks and risk differences when event risks are very small.
+
+A hybrid rule remains useful as a secondary sensitivity:
+
+``` r
+
+ConcreteArgs$UpdateMethod <- "adaptive"
+ConcreteArgs$EICStopRule <- "hybrid"
+ConcreteArgs$EICStopAbsTol <- 0.02 / sqrt(nrow(ConcreteArgs$Data))
+ConcreteArgs <- formatArguments(ConcreteArgs)
+ConcreteEst <- doConcrete(ConcreteArgs)
+```
 
 ### 4. Increase iterations only if progress is continuing
 
@@ -189,10 +205,10 @@ Try:
 
 | Pattern | Likely meaning | Next step |
 |----|----|----|
-| Large `ratio`, tiny `AbsPnEIC` | Relative rule is too strict on a near-zero component | Try `hybrid` with `1e-3` |
+| Large `ratio`, tiny `AbsPnEIC` | Relative rule is too strict on a near-zero component | Try `absolute` with `0.02 / sqrt(n)` |
 | Large `ratio`, large `AbsPnEIC` | Targeting problem remains meaningful | Use adaptive update and inspect learners |
 | Many failing components for censoring | Censoring or positivity instability | Check censoring by arm and covariates |
-| Failure only for one rare event/time | Sparse target component | Report event counts and try hybrid rule |
+| Failure only for one rare event/time | Sparse target component | Report event counts and try absolute stopping |
 | Norm decreases then rebounds | Update overshooting | Use `UpdateMethod = "adaptive"` |
 
 ## A reporting template

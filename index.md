@@ -123,9 +123,10 @@ source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
 The TMLE update can be configured through
 [`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md).
 The default stopping rule is the original relative empirical EIC
-criterion. For rare-event settings, a hybrid rule can be more stable
-because it combines the original relative threshold with a small
-absolute tolerance:
+criterion. For rare-event settings, an absolute risk-scale rule can be
+more stable because the relative threshold can become numerically tiny
+when the component EIC variance is near zero. A good first sensitivity
+is `EICStopAbsTol = 0.02 / sqrt(n)`:
 
 ``` r
 
@@ -138,8 +139,8 @@ ConcreteArgs <- formatArguments(
   TargetTime = c(365, 730),
   TargetEvent = 1,
   UpdateMethod = "adaptive",
-  EICStopRule = "hybrid",
-  EICStopAbsTol = 1e-3
+  EICStopRule = "absolute",
+  EICStopAbsTol = 0.02 / sqrt(nrow(data))
 )
 ```
 

@@ -107,19 +107,21 @@ variability.</p>
 <tr class="even">
 <td><code>absolute</code></td>
 <td><code>abs(PnEIC) &lt;= EICStopAbsTol</code></td>
-<td>Sensitivity analyses on absolute-risk scale</td>
+<td>Rare events or near-zero EIC variance</td>
 </tr>
 <tr class="odd">
 <td><code>hybrid</code></td>
 <td><code>abs(PnEIC) &lt;= max(relative threshold, EICStopAbsTol)</code></td>
-<td>Rare events or near-zero EIC variance</td>
+<td>Sensitivity analysis combining relative and absolute checks</td>
 </tr>
 </tbody>
 </table>
-<p>A setting such as <code>EICStopRule = "hybrid"</code> and
-<code>EICStopAbsTol = 1e-3</code> means: keep the original relative
-criterion unless it is stricter than an absolute empirical EIC tolerance
-of 0.001 on the risk scale.</p>
+<p>A setting such as <code>EICStopRule = "absolute"</code> and
+<code>EICStopAbsTol = 0.02 / sqrt(n)</code> means: stop when every
+requested target EIC has empirical mean no larger than this risk-scale
+tolerance. This is often more interpretable for sparse early event
+targets than forcing a relative threshold whose denominator is nearly
+zero.</p>
 </div>
 <div class="section level2">
 <h2 id="inspect-the-diagnostics">Inspect the diagnostics<a class="anchor" aria-label="anchor" href="#inspect-the-diagnostics"></a>
@@ -368,22 +370,32 @@ component-wise stopping ratio.</p>
 <span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="use-the-hybrid-stopping-rule-for-rare-events">3. Use the hybrid stopping rule for rare events<a class="anchor" aria-label="anchor" href="#use-the-hybrid-stopping-rule-for-rare-events"></a>
+<h3 id="use-an-absolute-risk-scale-stopping-rule-for-rare-events">3. Use an absolute risk-scale stopping rule for rare events<a class="anchor" aria-label="anchor" href="#use-an-absolute-risk-scale-stopping-rule-for-rare-events"></a>
 </h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span> <span class="op">&lt;-</span> <span class="st">"adaptive"</span></span>
-<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopRule</span> <span class="op">&lt;-</span> <span class="st">"hybrid"</span></span>
-<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopAbsTol</span> <span class="op">&lt;-</span> <span class="fl">1e-3</span></span>
+<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopRule</span> <span class="op">&lt;-</span> <span class="st">"absolute"</span></span>
+<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopAbsTol</span> <span class="op">&lt;-</span> <span class="fl">0.02</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">Data</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
 <span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span></code></pre></div>
 <p>Use this when the largest failing components have very small absolute
 <code>PnEIC</code> values but large ratios because the relative
-threshold is tiny.</p>
+threshold is tiny. Treat it as a convergence sensitivity: report the
+stopping rule, compare estimates with the relative fit when available,
+and focus first on absolute risks and risk differences when event risks
+are very small.</p>
+<p>A hybrid rule remains useful as a secondary sensitivity:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span> <span class="op">&lt;-</span> <span class="st">"adaptive"</span></span>
+<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopRule</span> <span class="op">&lt;-</span> <span class="st">"hybrid"</span></span>
+<span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopAbsTol</span> <span class="op">&lt;-</span> <span class="fl">0.02</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">Data</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
+<span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="increase-iterations-only-if-progress-is-continuing">4. Increase iterations only if progress is continuing<a class="anchor" aria-label="anchor" href="#increase-iterations-only-if-progress-is-continuing"></a>
 </h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">MaxUpdateIter</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
 <span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
 <span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span></code></pre></div>
@@ -426,7 +438,7 @@ instability rather than only the stopping threshold.</p>
 <td>Large <code>ratio</code>, tiny <code>AbsPnEIC</code>
 </td>
 <td>Relative rule is too strict on a near-zero component</td>
-<td>Try <code>hybrid</code> with <code>1e-3</code>
+<td>Try <code>absolute</code> with <code>0.02 / sqrt(n)</code>
 </td>
 </tr>
 <tr class="even">
@@ -443,7 +455,7 @@ instability rather than only the stopping threshold.</p>
 <tr class="even">
 <td>Failure only for one rare event/time</td>
 <td>Sparse target component</td>
-<td>Report event counts and try hybrid rule</td>
+<td>Report event counts and try absolute stopping</td>
 </tr>
 <tr class="odd">
 <td>Norm decreases then rebounds</td>
@@ -458,7 +470,7 @@ instability rather than only the stopping threshold.</p>
 <h2 id="a-reporting-template">A reporting template<a class="anchor" aria-label="anchor" href="#a-reporting-template"></a>
 </h2>
 <p>For trial reports or issue reports, record:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  package_version <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="st">"concrete"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  update_method <span class="op">=</span> <span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span>,</span>

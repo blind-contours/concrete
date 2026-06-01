@@ -170,16 +170,17 @@ print(x, ...)
   are `"relative"`, `"absolute"`, and `"hybrid"`. `"relative"` preserves
   the original criterion, `|PnEIC| <= seEIC / (sqrt(n) log(n))`.
   `"absolute"` checks `|PnEIC| <= EICStopAbsTol`. `"hybrid"` checks
-  `|PnEIC| <= max(seEIC / (sqrt(n) log(n)), EICStopAbsTol)`, which is
-  useful when rare-event or near-zero-variance components make the
-  relative criterion numerically too strict.
+  `|PnEIC| <= max(seEIC / (sqrt(n) log(n)), EICStopAbsTol)`. The
+  absolute rule is useful when rare-event or near-zero-variance
+  components make the relative criterion numerically too strict.
 
 - EICStopAbsTol:
 
   numeric (default: 0): absolute \|PnEIC\| tolerance used when
-  `EICStopRule` is `"absolute"` or `"hybrid"`. A value such as `1e-3`
-  gives a small absolute-risk scale tolerance while the default `0`
-  leaves the original relative rule unchanged.
+  `EICStopRule` is `"absolute"` or `"hybrid"`. A value such as
+  `0.02 / sqrt(nrow(DataTable))` gives a small sample-size-scaled
+  absolute-risk tolerance while the default `0` leaves the original
+  relative rule unchanged.
 
 - ...:
 
@@ -344,10 +345,10 @@ formatArguments(concrete.args)
 #> Cox model specifications have been renamed where necessary to reflect changed covariate names. Model specifications in .[['Model']] can be checked against the covariate names in attr(.[['DataTable']], 'CovNames')
 #> ****
 
-# For difficult rare-event settings, use an adaptive update with a hybrid
-# stopping rule:
+# For difficult rare-event settings, use an adaptive update with an
+# absolute risk-scale stopping rule:
 # concrete.args$UpdateMethod <- "adaptive"
-# concrete.args$EICStopRule <- "hybrid"
-# concrete.args$EICStopAbsTol <- 1e-3
+# concrete.args$EICStopRule <- "absolute"
+# concrete.args$EICStopAbsTol <- 0.02 / sqrt(nrow(data))
 # concrete.args <- formatArguments(concrete.args)
 ```

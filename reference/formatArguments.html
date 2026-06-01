@@ -198,16 +198,17 @@ for <code>"adaptive"</code>.</p></dd>
 <code>"relative"</code>, <code>"absolute"</code>, and <code>"hybrid"</code>. <code>"relative"</code> preserves the
 original criterion, <code>|PnEIC| &lt;= seEIC / (sqrt(n) log(n))</code>. <code>"absolute"</code>
 checks <code>|PnEIC| &lt;= EICStopAbsTol</code>. <code>"hybrid"</code> checks
-<code>|PnEIC| &lt;= max(seEIC / (sqrt(n) log(n)), EICStopAbsTol)</code>, which is useful
-when rare-event or near-zero-variance components make the relative criterion
-numerically too strict.</p></dd>
+<code>|PnEIC| &lt;= max(seEIC / (sqrt(n) log(n)), EICStopAbsTol)</code>. The
+absolute rule is useful when rare-event or near-zero-variance components
+make the relative criterion numerically too strict.</p></dd>
 
 
 <dt id="arg-eicstopabstol">EICStopAbsTol<a class="anchor" aria-label="anchor" href="#arg-eicstopabstol"></a></dt>
 <dd><p>numeric (default: 0): absolute |PnEIC| tolerance used when
-<code>EICStopRule</code> is <code>"absolute"</code> or <code>"hybrid"</code>. A value such as <code>1e-3</code>
-gives a small absolute-risk scale tolerance while the default <code>0</code>
-leaves the original relative rule unchanged.</p></dd>
+<code>EICStopRule</code> is <code>"absolute"</code> or <code>"hybrid"</code>. A value such as
+<code>0.02 / sqrt(nrow(DataTable))</code> gives a small sample-size-scaled
+absolute-risk tolerance while the default <code>0</code> leaves the original
+relative rule unchanged.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -340,11 +341,11 @@ leaves the original relative rule unchanged.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cox model specifications have been renamed where necessary to reflect changed covariate names. Model specifications in .[['Model']] can be checked against the covariate names in attr(.[['DataTable']], 'CovNames')</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ****</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># For difficult rare-event settings, use an adaptive update with a hybrid</span></span></span>
-<span class="r-in"><span><span class="co"># stopping rule:</span></span></span>
+<span class="r-in"><span><span class="co"># For difficult rare-event settings, use an adaptive update with an</span></span></span>
+<span class="r-in"><span><span class="co"># absolute risk-scale stopping rule:</span></span></span>
 <span class="r-in"><span><span class="co"># concrete.args$UpdateMethod &lt;- "adaptive"</span></span></span>
-<span class="r-in"><span><span class="co"># concrete.args$EICStopRule &lt;- "hybrid"</span></span></span>
-<span class="r-in"><span><span class="co"># concrete.args$EICStopAbsTol &lt;- 1e-3</span></span></span>
+<span class="r-in"><span><span class="co"># concrete.args$EICStopRule &lt;- "absolute"</span></span></span>
+<span class="r-in"><span><span class="co"># concrete.args$EICStopAbsTol &lt;- 0.02 / sqrt(nrow(data))</span></span></span>
 <span class="r-in"><span><span class="co"># concrete.args &lt;- formatArguments(concrete.args)</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

@@ -33,7 +33,7 @@ Laan (2023) \<doi:10.1007/s10985-022-09576-2\>
 
 [SuperLearner](https://rdrr.io/pkg/SuperLearner/man/SuperLearner.html)
 [coxph](https://rdrr.io/pkg/survival/man/coxph.html)
-[glmnet](https://glmnet.stanford.edu/reference/glmnet.html)
+[glmnet](https://rdrr.io/pkg/glmnet/man/glmnet.html)
 [rfsrc](https://www.randomforestsrc.org//reference/rfsrc.html)
 [fit_hal](https://rdrr.io/pkg/hal9001/man/fit_hal.html)
 
