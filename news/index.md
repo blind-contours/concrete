@@ -1,5 +1,32 @@
 # Changelog
 
+## concrete 1.1.1.9000
+
+### Trialist beta updates
+
+- Updated convergence guidance for rare-event analyses. The default
+  stopping rule remains the original relative empirical EIC rule, but
+  the recommended rare-event sensitivity is now
+  `EICStopRule = "absolute"` with
+  `EICStopAbsTol = 0.02 / sqrt(nrow(data))`.
+- Updated README, vignettes, help files, and the installed trialist
+  smoke test to use the sample-size-scaled absolute stopping
+  sensitivity.
+- Expanded the convergence issue template so trialist beta testers
+  report the learner library and, when possible, a relative-vs-absolute
+  stopping comparison.
+
+### Simulation support
+
+- Added project-relative referee simulation scripts for event-1,
+  failed-seed, rare-event stopping, and alternative convergence-method
+  comparisons.
+- Added notes summarizing the full survival learner rare-event
+  validation. In the primary hard-seed screen with Cox/Coxnet, random
+  survival forests, additive hazards, and HAL, absolute stopping
+  converged on all hard seeds and avoided a relative-rule failure driven
+  by a near-zero-variance rare-event component.
+
 ## concrete 1.1.0
 
 ### New features
