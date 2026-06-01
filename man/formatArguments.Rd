@@ -114,14 +114,15 @@ for \code{"adaptive"}.}
 \code{"relative"}, \code{"absolute"}, and \code{"hybrid"}. \code{"relative"} preserves the
 original criterion, \verb{|PnEIC| <= seEIC / (sqrt(n) log(n))}. \code{"absolute"}
 checks \verb{|PnEIC| <= EICStopAbsTol}. \code{"hybrid"} checks
-\verb{|PnEIC| <= max(seEIC / (sqrt(n) log(n)), EICStopAbsTol)}, which is useful
-when rare-event or near-zero-variance components make the relative criterion
-numerically too strict.}
+\verb{|PnEIC| <= max(seEIC / (sqrt(n) log(n)), EICStopAbsTol)}. The
+absolute rule is useful when rare-event or near-zero-variance components
+make the relative criterion numerically too strict.}
 
 \item{EICStopAbsTol}{numeric (default: 0): absolute |PnEIC| tolerance used when
-\code{EICStopRule} is \code{"absolute"} or \code{"hybrid"}. A value such as \code{1e-3}
-gives a small absolute-risk scale tolerance while the default \code{0}
-leaves the original relative rule unchanged.}
+\code{EICStopRule} is \code{"absolute"} or \code{"hybrid"}. A value such as
+\code{0.02 / sqrt(nrow(DataTable))} gives a small sample-size-scaled
+absolute-risk tolerance while the default \code{0} leaves the original
+relative rule unchanged.}
 
 \item{...}{additional arguments to be passed into print methods}
 
@@ -217,11 +218,11 @@ concrete.args[["Model"]][["1"]] <-
          "mod2" = Surv(time, status == 1) ~ .)
 formatArguments(concrete.args)}
 
-# For difficult rare-event settings, use an adaptive update with a hybrid
-# stopping rule:
+# For difficult rare-event settings, use an adaptive update with an
+# absolute risk-scale stopping rule:
 # concrete.args$UpdateMethod <- "adaptive"
-# concrete.args$EICStopRule <- "hybrid"
-# concrete.args$EICStopAbsTol <- 1e-3
+# concrete.args$EICStopRule <- "absolute"
+# concrete.args$EICStopAbsTol <- 0.02 / sqrt(nrow(data))
 # concrete.args <- formatArguments(concrete.args)
 
 }

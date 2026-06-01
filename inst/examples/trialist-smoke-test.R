@@ -69,8 +69,8 @@ run_concrete_smoke <- function(label, model, trial, max_update_iter = 25) {
       Model = model,
       MaxUpdateIter = max_update_iter,
       UpdateMethod = "adaptive",
-      EICStopRule = "hybrid",
-      EICStopAbsTol = 1e-3,
+      EICStopRule = "absolute",
+      EICStopAbsTol = 0.02 / sqrt(nrow(trial)),
       Verbose = FALSE,
       ReturnModels = TRUE
     )
