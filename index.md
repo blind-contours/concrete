@@ -60,6 +60,10 @@ set, start with these articles:
   diagnostics](https://blind-contours.github.io/concrete/articles/convergence-diagnostics.html):
   how to inspect empirical EIC diagnostics and what to try when the TMLE
   update does not converge cleanly.
+- [Testing protocol and current
+  limitations](https://blind-contours.github.io/concrete/articles/trialist-testing-protocol.html):
+  a built-in smoke test, a conservative-to-flexible testing ladder, and
+  the current scope of supported trial data structures.
 
 The minimum data columns are a subject id, observed time, event type,
 binary treatment arm, and baseline covariates. Censoring should be coded
@@ -96,6 +100,22 @@ ConcreteOut <- getOutput(
 
 ConcreteOut
 getTmleDiagnostics(ConcreteEst, type = "components")
+```
+
+To check that your installation works before using your own data, run
+the installed smoke test:
+
+``` r
+
+source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
+```
+
+To also try optional learners that are installed locally:
+
+``` r
+
+Sys.setenv(CONCRETE_RUN_OPTIONAL_LEARNERS = "true")
+source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
 ```
 
 ## Advanced TMLE controls

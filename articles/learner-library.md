@@ -86,6 +86,15 @@ Optional packages:
 install.packages(c("glmnet", "randomForestSRC", "hal9001"))
 ```
 
+To test optional hazard learners on a small built-in example before
+trying your own data:
+
+``` r
+
+Sys.setenv(CONCRETE_RUN_OPTIONAL_LEARNERS = "true")
+source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
+```
+
 ## Cox plus machine-learning hazards
 
 This example gives each event type a small candidate library. The

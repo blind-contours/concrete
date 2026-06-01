@@ -42,6 +42,7 @@
     <li><a class="dropdown-item" href="articles/trialist-quickstart.html">Trialist quickstart</a></li>
     <li><a class="dropdown-item" href="articles/learner-library.html">Learner library guide</a></li>
     <li><a class="dropdown-item" href="articles/convergence-diagnostics.html">Convergence diagnostics</a></li>
+    <li><a class="dropdown-item" href="articles/trialist-testing-protocol.html">Testing protocol and current limitations</a></li>
     <li><a class="dropdown-item" href="articles/Using-concrete.html">Using-concrete</a></li>
   </ul>
 </li>
@@ -93,6 +94,8 @@
 <a href="https://blind-contours.github.io/concrete/articles/learner-library.html">Learner library guide</a>: conservative Cox-only analyses, treatment Super Learner libraries, and the hazard learner options for Coxnet, random survival forests, additive hazards, and HAL.</li>
 <li>
 <a href="https://blind-contours.github.io/concrete/articles/convergence-diagnostics.html">Convergence diagnostics</a>: how to inspect empirical EIC diagnostics and what to try when the TMLE update does not converge cleanly.</li>
+<li>
+<a href="https://blind-contours.github.io/concrete/articles/trialist-testing-protocol.html">Testing protocol and current limitations</a>: a built-in smoke test, a conservative-to-flexible testing ladder, and the current scope of supported trial data structures.</li>
 </ul>
 <p>The minimum data columns are a subject id, observed time, event type, binary treatment arm, and baseline covariates. Censoring should be coded as <code>0</code>; event types should be positive integers. For competing risks, use one positive integer for the event of interest and other positive integers for competing events.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -123,12 +126,19 @@
 <span></span>
 <span><span class="va">ConcreteOut</span></span>
 <span><span class="fu"><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"components"</span><span class="op">)</span></span></code></pre></div>
+<p>To check that your installation works before using your own data, run the installed smoke test:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples"</span>, <span class="st">"trialist-smoke-test.R"</span>, package <span class="op">=</span> <span class="st">"concrete"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>To also try optional learners that are installed locally:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>CONCRETE_RUN_OPTIONAL_LEARNERS <span class="op">=</span> <span class="st">"true"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples"</span>, <span class="st">"trialist-smoke-test.R"</span>, package <span class="op">=</span> <span class="st">"concrete"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="advanced-tmle-controls">Advanced TMLE controls<a class="anchor" aria-label="anchor" href="#advanced-tmle-controls"></a>
 </h2>
 <p>The TMLE update can be configured through <code><a href="reference/formatArguments.html">formatArguments()</a></code>. The default stopping rule is the original relative empirical EIC criterion. For rare-event settings, a hybrid rule can be more stable because it combines the original relative threshold with a small absolute tolerance:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
 <span>  DataTable <span class="op">=</span> <span class="va">data</span>,</span>
 <span>  EventTime <span class="op">=</span> <span class="st">"time"</span>,</span>
@@ -142,7 +152,7 @@
 <span>  EICStopAbsTol <span class="op">=</span> <span class="fl">1e-3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Use <code><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics()</a></code> on a fitted object to inspect final component-wise EIC ratios, the update trace, or the norm trajectory:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"components"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"trace"</span><span class="op">)</span></span></code></pre></div>
@@ -151,7 +161,7 @@
 <h2 id="survival-learner-library">Survival learner library<a class="anchor" aria-label="anchor" href="#survival-learner-library"></a>
 </h2>
 <p>Hazard models can mix Cox formulas with optional survival learners. The following aliases are supported in <code>Model[[event_type]]</code>: <code>"coxnet"</code>, <code>"rsf"</code> or <code>"randomForestSRC"</code>, <code>"aareg"</code> or <code>"additive_hazards"</code>, and <code>"hal"</code> or <code>"hal9001"</code>.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SL.glm"</span>, <span class="st">"SL.glmnet"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"0"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Cox <span class="op">=</span> <span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">status</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">~</span> <span class="va">.</span>,</span>

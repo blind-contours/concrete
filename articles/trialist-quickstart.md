@@ -87,6 +87,17 @@ trial[, event := data.table::fifelse(
 trial <- trial[, .(id, time, event, arm, age, sex, albumin, bili)]
 ```
 
+Before fitting your own data, you can run the installed smoke test:
+
+``` r
+
+source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
+```
+
+This verifies that the package can run a small competing-risk analysis
+and prints the same kinds of outputs and diagnostics you should inspect
+in your trial.
+
 ## First intent-to-treat analysis
 
 Start with a conservative analysis before adding flexible hazard

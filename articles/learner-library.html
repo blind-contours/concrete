@@ -38,6 +38,7 @@
     <li><a class="dropdown-item" href="../articles/trialist-quickstart.html">Trialist quickstart</a></li>
     <li><a class="dropdown-item" href="../articles/learner-library.html">Learner library guide</a></li>
     <li><a class="dropdown-item" href="../articles/convergence-diagnostics.html">Convergence diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/trialist-testing-protocol.html">Testing protocol and current limitations</a></li>
     <li><a class="dropdown-item" href="../articles/Using-concrete.html">Using-concrete</a></li>
   </ul>
 </li>
@@ -173,6 +174,11 @@ appropriate for the sample size.</p>
 <p>Optional packages:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"glmnet"</span>, <span class="st">"randomForestSRC"</span>, <span class="st">"hal9001"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>To test optional hazard learners on a small built-in example before
+trying your own data:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>CONCRETE_RUN_OPTIONAL_LEARNERS <span class="op">=</span> <span class="st">"true"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples"</span>, <span class="st">"trialist-smoke-test.R"</span>, package <span class="op">=</span> <span class="st">"concrete"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="cox-plus-machine-learning-hazards">Cox plus machine-learning hazards<a class="anchor" aria-label="anchor" href="#cox-plus-machine-learning-hazards"></a>
@@ -180,7 +186,7 @@ appropriate for the sample size.</p>
 <p>This example gives each event type a small candidate library. The
 selected hazard learner can differ across censoring, the event of
 interest, and competing events.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  arm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SL.mean"</span>, <span class="st">"SL.glm"</span>, <span class="st">"SL.glmnet"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"0"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -269,7 +275,7 @@ interest, and competing events.</p>
 </h2>
 <p>When <code>ReturnModels = TRUE</code>, fitted objects keep initial
 learner information.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, <span class="st">"InitFits"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Treatment model Super Learner weights.</span></span>
@@ -285,7 +291,7 @@ learner information.</p>
 </h2>
 <p>For a trial testing week, use the same estimand and data set across a
 ladder of learner libraries.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  arm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SL.mean"</span>, <span class="st">"SL.glm"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"0"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Cox <span class="op">=</span> <span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">~</span> <span class="va">.</span><span class="op">)</span>,</span>
