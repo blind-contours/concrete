@@ -29,7 +29,9 @@ doConcrete(ConcreteArgs)
 \item{ask}{logical: whether or not to prompt for user input before displaying plots}
 }
 \value{
-object with s3 class "ConcreteEst"
+Object with S3 class \code{"ConcreteEst"}. The fitted object stores TMLE
+convergence metadata, including the stopping rule, update trace, and empirical
+EIC norm trajectory. Use \code{\link[=getTmleDiagnostics]{getTmleDiagnostics()}} to inspect these diagnostics.
 }
 \description{
 doConcrete
@@ -62,7 +64,7 @@ concrete.args <- formatArguments(DataTable = data,
                                  TargetEvent = c(1, 2),
                                  Intervention = makeITT(),
                                  CVArg = list(V = 2))
-                                 
+
 # doConcrete() returns tmle (and g-formula plug-in) estimates of targeted risks
 \donttest{concrete.est <- doConcrete(concrete.args)}
 }

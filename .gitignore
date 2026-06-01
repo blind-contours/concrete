@@ -46,6 +46,7 @@ output/
 
 scripts/sim-data/sim-diagnostics.txt
 scripts/sim-data/sim-diag/diagnostic.txt
+scripts/sim-data/referee-sims/output/
 
 .covrignore
 .coveralls_github_token

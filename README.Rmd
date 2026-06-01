@@ -14,8 +14,8 @@ knitr::opts_chunk$set(
 
 # concrete
 [![CRAN](http://www.r-pkg.org/badges/version/concrete)](http://www.r-pkg.org/pkg/concrete)
-[![R-CMD-check](https://github.com/imbroglio-dc/concrete/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/imbroglio-dc/concrete/actions/workflows/R-CMD-check.yaml)
-[![Coverage Status](https://coveralls.io/repos/github/imbroglio-dc/concrete/badge.svg?branch=main)](https://coveralls.io/github/imbroglio-dc/concrete?branch=main)
+[![R-CMD-check](https://github.com/blind-contours/concrete/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/blind-contours/concrete/actions/workflows/R-CMD-check.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/blind-contours/concrete/badge.svg?branch=main)](https://coveralls.io/github/blind-contours/concrete?branch=main)
 
 > Continuous-Time Targeted Maximum Likelihood Estimation for Survival Analysis with Competing Risks 
 
@@ -40,12 +40,67 @@ You can install a stable release of `concrete` from GitHub via
 [`devtools`](https://www.rstudio.com/products/rpackages/devtools/) with:
 
 ```{r gh-installation, eval = FALSE}
-devtools::install_github("imbroglio-dc/concrete")
+devtools::install_github("blind-contours/concrete")
 ```
+
+---
+
+## Advanced TMLE controls
+
+The TMLE update can be configured through `formatArguments()`. The default
+stopping rule is the original relative empirical EIC criterion. For rare-event
+settings, a hybrid rule can be more stable because it combines the original
+relative threshold with a small absolute tolerance:
+
+```{r tmle-control, eval = FALSE}
+ConcreteArgs <- formatArguments(
+  DataTable = data,
+  EventTime = "time",
+  EventType = "status",
+  Treatment = "trt",
+  Intervention = 0:1,
+  TargetTime = c(365, 730),
+  TargetEvent = 1,
+  UpdateMethod = "adaptive",
+  EICStopRule = "hybrid",
+  EICStopAbsTol = 1e-3
+)
+```
+
+Use `getTmleDiagnostics()` on a fitted object to inspect final component-wise
+EIC ratios, the update trace, or the norm trajectory:
+
+```{r diagnostics, eval = FALSE}
+ConcreteEst <- doConcrete(ConcreteArgs)
+getTmleDiagnostics(ConcreteEst, type = "components")
+getTmleDiagnostics(ConcreteEst, type = "trace")
+```
+
+## Survival learner library
+
+Hazard models can mix Cox formulas with optional survival learners. The
+following aliases are supported in `Model[[event_type]]`: `"coxnet"`, `"rsf"`
+or `"randomForestSRC"`, `"aareg"` or `"additive_hazards"`, and `"hal"` or
+`"hal9001"`.
+
+```{r hazard-learners, eval = FALSE}
+Model <- list(
+  trt = c("SL.glm", "SL.glmnet"),
+  "0" = list(Cox = survival::Surv(time, status == 0) ~ .,
+             RSF = "rsf",
+             Aareg = "aareg"),
+  "1" = list(Cox = survival::Surv(time, status == 1) ~ .,
+             HAL = "hal")
+)
+```
+
+The optional learners require their corresponding packages when selected:
+`glmnet` for Coxnet, `randomForestSRC` for random survival forests, and
+`hal9001` for HAL.
 
 ---
 
 ## Issues
 
 If you encounter any bugs or have any specific feature requests, please [file an
-issue](https://github.com/imbroglio-dc/concrete/issues).
+issue](https://github.com/blind-contours/concrete/issues).

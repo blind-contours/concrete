@@ -13,3 +13,11 @@
 ^paper$
 ^README\.Rmd$
 ^\.github$
+^\.DS_Store$
+^.*\.Rcheck$
+^src/.*\.(o|so|dll)$
+^scenario_.*\.(csv|rds|pdf)$
+^all_scenarios_results\.rds$
+^comparison_table\.(csv|rds)$
+^bias_plot\.pdf$
+^forest_plot\.pdf$

@@ -25,6 +25,9 @@ formatArguments(
   ReturnModels = TRUE,
   ConcreteArgs = NULL,
   RenameCovs = TRUE,
+  UpdateMethod = c("standard", "adaptive", "coordinated"),
+  EICStopRule = c("relative", "absolute", "hybrid"),
+  EICStopAbsTol = 0,
   ...
 )
 
@@ -75,12 +78,18 @@ binary intervention variable}
 list(n = nrow(DataTable), fold_fun = folds_vfold, cluster_ids = NULL, strata_ids = NULL)}
 
 \item{Model}{list (default: NULL): named list of models, one for each failure or censoring event
-and one for the 'Treatment' variable. If Model = NULL, then
-a template will be generated for the user to amend.}
+and one for the \code{Treatment} variable. Treatment models are
+passed to \code{SuperLearner}. Hazard models can be Cox formulas
+or one-word learner aliases. Supported hazard aliases are
+\code{"coxnet"}, \code{"rsf"}/\code{"randomForestSRC"},
+\code{"aareg"}/\code{"additive_hazards"}, and \code{"hal"}/\code{"hal9001"}.
+These optional learners require \code{glmnet}, \code{randomForestSRC},
+or \code{hal9001} when selected. If \code{Model = NULL}, a Cox model
+template is generated for the user to amend.}
 
 \item{MaxUpdateIter}{numeric (default: 500): the number of one-step update steps}
 
-\item{OneStepEps}{numeric (default: 1): the one-step tmle step size}
+\item{OneStepEps}{numeric (default: 0.1): the one-step TMLE step size}
 
 \item{MinNuisance}{numeric (default: 5/log(n)/sqrt(n)): value between (0, 1) for truncating the g-related denominator of the clever covariate}
 
@@ -94,6 +103,25 @@ a template will be generated for the user to amend.}
 calls. A non-NULL input will cause all other arguments to be ignored.}
 
 \item{RenameCovs}{boolean (default: TRUE): whether or not to rename covariates}
+
+\item{UpdateMethod}{character (default: "standard"): TMLE update method. Supported values are
+\code{"standard"}, \code{"adaptive"}, and \code{"coordinated"}. \code{"adaptive"} uses a
+line search with rollback and is usually the most stable choice for
+difficult convergence cases. \code{"accelerated"} is accepted as a legacy alias
+for \code{"adaptive"}.}
+
+\item{EICStopRule}{character (default: "relative"): TMLE stopping rule. Supported values are
+\code{"relative"}, \code{"absolute"}, and \code{"hybrid"}. \code{"relative"} preserves the
+original criterion, \verb{|PnEIC| <= seEIC / (sqrt(n) log(n))}. \code{"absolute"}
+checks \verb{|PnEIC| <= EICStopAbsTol}. \code{"hybrid"} checks
+\verb{|PnEIC| <= max(seEIC / (sqrt(n) log(n)), EICStopAbsTol)}, which is useful
+when rare-event or near-zero-variance components make the relative criterion
+numerically too strict.}
+
+\item{EICStopAbsTol}{numeric (default: 0): absolute |PnEIC| tolerance used when
+\code{EICStopRule} is \code{"absolute"} or \code{"hybrid"}. A value such as \code{1e-3}
+gives a small absolute-risk scale tolerance while the default \code{0}
+leaves the original relative rule unchanged.}
 
 \item{...}{additional arguments to be passed into print methods}
 
@@ -120,11 +148,13 @@ a list of class "ConcreteArgs"
 \item{CVFolds}{: list of cross-validation fold assignments in the structure as output by origami::make_folds()}
 \item{Model}{: named list of model specifications, one for each unique 'EventType' and one for the 'Treatment' variable.}
 \item{MaxUpdateIter}{: the number of one-step update steps}
-\item{OneStepEps}{: list of cross-validation fold assignments in the structure as output by origami::make_folds()}
+\item{OneStepEps}{: initial one-step TMLE step size}
 \item{MinNuisance}{: numeric lower bound for the propensity score denominator in the efficient influence function}
 \item{Verbose}{: boolean to print additional information}
 \item{GComp}{: boolean to return g-computation formula plug-in estimates}
 \item{ReturnModels}{: boolean to return fitted models from the initial estimation stage}
+\item{EICStopRule}{: TMLE stopping rule for empirical mean EIC checks}
+\item{EICStopAbsTol}{: absolute empirical mean EIC tolerance for absolute or hybrid stopping}
 }
 }
 \description{
@@ -175,7 +205,7 @@ concrete.args <- formatArguments(DataTable = data,
                                  TargetTime = 2500,
                                  TargetEvent = c(1, 2),
                                  Intervention = intervention,
-                                 CVArg = list(V = 2), 
+                                 CVArg = list(V = 2),
                                  Model = model)
 
 # 'ConcreteArgs' output can be modified and passed back through formatArguments()
@@ -186,5 +216,12 @@ concrete.args[["Model"]][["1"]] <-
     list("mod1" = Surv(time, status == 1) ~ trt,
          "mod2" = Surv(time, status == 1) ~ .)
 formatArguments(concrete.args)}
+
+# For difficult rare-event settings, use an adaptive update with a hybrid
+# stopping rule:
+# concrete.args$UpdateMethod <- "adaptive"
+# concrete.args$EICStopRule <- "hybrid"
+# concrete.args$EICStopAbsTol <- 1e-3
+# concrete.args <- formatArguments(concrete.args)
 
 }

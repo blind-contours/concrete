@@ -1,0 +1,21 @@
+if (getRversion() >= "2.15.1") {
+  utils::globalVariables(c(
+    ".",
+    "AbsPnEIC",
+    "AbsoluteCriteria",
+    "AbsoluteRatio",
+    "BaseHaz",
+    "Converged",
+    "ConvergenceStep",
+    "Event",
+    "Intervention",
+    "RelativeCriteria",
+    "RelativeRatio",
+    "StopAbsTol",
+    "StopCriteria",
+    "StopRule",
+    "Time",
+    "check",
+    "ratio"
+  ))
+}

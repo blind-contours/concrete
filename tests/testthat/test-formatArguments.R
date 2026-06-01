@@ -10,7 +10,7 @@ test_that("formatArguments works ", {
                                      ID = 'id',
                                      Intervention = 0:1,
                                      TargetTime = quantile(data[["time"]], probs = seq(.1, .9, .05)),
-                                     TargetEvent = unique(data[["status"]])
+                                     TargetEvent = setdiff(unique(data[["status"]]), 0)
     )
     expect_s3_class(concrete.args, class = "ConcreteArgs")
     expect_s3_class(formatArguments(concrete.args), class = "ConcreteArgs")
@@ -120,7 +120,7 @@ test_that("Boolean cheecks for non-boolean values and resets values to FALSE", {
                                      ID = 'id',
                                      Intervention = 0:1,
                                      TargetTime = mean(data[["time"]]),
-                                     TargetEvent = unique(data[["status"]]),
+                                     TargetEvent = setdiff(unique(data[["status"]]), 0),
                                      Verbose = 2,
                                      GComp = NA,
                                      ReturnModels = "c",
@@ -143,7 +143,139 @@ test_that("RenameCovs = FALSE gets processed correctly", {
                                      ID = 'id',
                                      Intervention = 0:1,
                                      TargetTime = mean(data[["time"]]),
-                                     TargetEvent = unique(data[["status"]]),
+                                     TargetEvent = setdiff(unique(data[["status"]]), 0),
                                      RenameCovs = FALSE)
     expect_equal(colnames(concrete.args$DataTable), colnames(data))
+})
+
+test_that("TargetEvent preserves requested non-censoring subset", {
+    concrete.args <- formatArguments(Data = data,
+                                     EventTime = "time",
+                                     EventType = "status",
+                                     Treatment = "trt",
+                                     ID = "id",
+                                     Intervention = 0:1,
+                                     TargetTime = 2500,
+                                     TargetEvent = 1,
+                                     CVArg = list(V = 2),
+                                     Verbose = FALSE)
+    expect_true(identical(concrete.args$TargetEvent, 1))
+
+    expect_error(formatArguments(Data = data,
+                                 EventTime = "time",
+                                 EventType = "status",
+                                 Treatment = "trt",
+                                 ID = "id",
+                                 Intervention = 0:1,
+                                 TargetTime = 2500,
+                                 TargetEvent = 0,
+                                 CVArg = list(V = 2),
+                                 Verbose = FALSE),
+                 regexp = "non-censoring")
+})
+
+test_that("UpdateMethod is scalar and simulation-safe", {
+    concrete.args <- formatArguments(Data = data,
+                                     EventTime = "time",
+                                     EventType = "status",
+                                     Treatment = "trt",
+                                     ID = "id",
+                                     Intervention = 0:1,
+                                     TargetTime = 2500,
+                                     TargetEvent = 1,
+                                     CVArg = list(V = 2),
+                                     Verbose = FALSE)
+    expect_true(identical(concrete.args$UpdateMethod, "standard"))
+
+    concrete.args <- formatArguments(Data = data,
+                                     EventTime = "time",
+                                     EventType = "status",
+                                     Treatment = "trt",
+                                     ID = "id",
+                                     Intervention = 0:1,
+                                     TargetTime = 2500,
+                                     TargetEvent = 1,
+                                     CVArg = list(V = 2),
+                                     Verbose = FALSE,
+                                     UpdateMethod = "accelerated")
+    expect_true(identical(concrete.args$UpdateMethod, "adaptive"))
+
+    expect_error(formatArguments(Data = data,
+                                 EventTime = "time",
+                                 EventType = "status",
+                                 Treatment = "trt",
+                                 ID = "id",
+                                 Intervention = 0:1,
+                                 TargetTime = 2500,
+                                 TargetEvent = 1,
+                                 CVArg = list(V = 2),
+                                 Verbose = FALSE,
+                                 UpdateMethod = "rootSolve"),
+                 regexp = "disabled")
+})
+
+test_that("EIC stopping rules are parsed and evaluated", {
+    concrete.args <- formatArguments(Data = data,
+                                     EventTime = "time",
+                                     EventType = "status",
+                                     Treatment = "trt",
+                                     ID = "id",
+                                     Intervention = 0:1,
+                                     TargetTime = 2500,
+                                     TargetEvent = 1,
+                                     CVArg = list(V = 2),
+                                     Verbose = FALSE,
+                                     EICStopRule = "hybrid",
+                                     EICStopAbsTol = 1e-3)
+    expect_true(identical(concrete.args$EICStopRule, "hybrid"))
+    expect_equal(concrete.args$EICStopAbsTol, 1e-3)
+
+    expect_error(formatArguments(Data = data,
+                                 EventTime = "time",
+                                 EventType = "status",
+                                 Treatment = "trt",
+                                 ID = "id",
+                                 Intervention = 0:1,
+                                 TargetTime = 2500,
+                                 TargetEvent = 1,
+                                 CVArg = list(V = 2),
+                                 Verbose = FALSE,
+                                 EICStopRule = "loose"),
+                 regexp = "EICStopRule")
+
+    stop_dt <- data.table::data.table(
+        Trt = "A=1",
+        Time = 180,
+        Event = 1,
+        PnEIC = 7e-4,
+        `seEIC/(sqrt(n)log(n))` = 2e-5
+    )
+    expect_false(concrete:::makeOneStepStop(stop_dt, "relative", 0)$check)
+    expect_true(concrete:::makeOneStepStop(stop_dt, "HYBRID", 1e-3)$check)
+})
+
+test_that("Survival hazard learner aliases are parsed", {
+    model <- list(
+        trt = c("SL.glm"),
+        "0" = list(RSF = "rsf", Aareg = "aareg", HAL = "hal", Coxnet = "coxnet"),
+        "1" = list(RSF = "randomForestSRC", Aareg = "additive_hazards", HAL = "hal9001")
+    )
+    concrete.args <- formatArguments(Data = data,
+                                     EventTime = "time",
+                                     EventType = "status",
+                                     Treatment = "trt",
+                                     ID = "id",
+                                     Intervention = 0:1,
+                                     TargetTime = 2500,
+                                     TargetEvent = 1,
+                                     CVArg = list(V = 2),
+                                     Model = model,
+                                     Verbose = FALSE)
+    expect_s3_class(concrete.args$Model[["0"]][["RSF"]], "Lrnr.RSF")
+    expect_s3_class(concrete.args$Model[["0"]][["Aareg"]], "Lrnr.Aareg")
+    expect_s3_class(concrete.args$Model[["0"]][["HAL"]], "Lrnr.HAL")
+    expect_s3_class(concrete.args$Model[["0"]][["Coxnet"]], "Lrnr.Coxnet")
+    expect_s3_class(concrete.args$Model[["1"]][["RSF"]], "Lrnr.RSF")
+    expect_s3_class(concrete.args$Model[["1"]][["Aareg"]], "Lrnr.Aareg")
+    expect_s3_class(concrete.args$Model[["1"]][["HAL"]], "Lrnr.HAL")
 })

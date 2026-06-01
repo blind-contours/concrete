@@ -2,7 +2,7 @@
 % Please edit documentation in R/doTmleUpdate.R
 \name{doTmleUpdate}
 \alias{doTmleUpdate}
-\title{Title}
+\title{TMLE update with multiple implementation options}
 \usage{
 doTmleUpdate(
   Estimates,
@@ -13,28 +13,47 @@ doTmleUpdate(
   MaxUpdateIter,
   OneStepEps,
   NormPnEIC,
-  Verbose
+  Verbose,
+  Method = "standard",
+  EICStopRule = "relative",
+  EICStopAbsTol = 0
 )
 }
 \arguments{
-\item{Estimates}{list}
+\item{Estimates}{list of estimates for each arm/treatment, containing Hazards, Surv, SummEIC, etc.}
 
-\item{SummEIC}{data.table}
+\item{SummEIC}{data.table summarizing the current empirical mean EIC (PnEIC), etc.}
 
-\item{Data}{data.table}
+\item{Data}{data.table containing the original data}
 
-\item{TargetEvent}{numeric vector}
+\item{TargetEvent}{numeric vector of event types}
 
-\item{TargetTime}{numeric vector}
+\item{TargetTime}{numeric vector of target times}
 
-\item{MaxUpdateIter}{numeric}
+\item{MaxUpdateIter}{maximum number of steps/iterations}
 
-\item{OneStepEps}{numeric}
+\item{OneStepEps}{initial step size for the incremental updates}
 
-\item{NormPnEIC}{numeric}
+\item{NormPnEIC}{numeric, initial ||PnEIC|| for reference}
 
-\item{Verbose}{boolean}
+\item{Verbose}{boolean, whether to print debugging output}
+
+\item{Method}{character - one of
+\itemize{
+\item "standard"
+\item "adaptive"
+\item "coordinated"
+}}
+
+\item{EICStopRule}{character stopping rule for empirical mean EIC checks.
+Supported values are \code{"relative"}, \code{"absolute"}, and \code{"hybrid"}.}
+
+\item{EICStopAbsTol}{numeric absolute \verb{|PnEIC|} tolerance used by the
+\code{"absolute"} and \code{"hybrid"} stopping rules.}
+}
+\value{
+Updated \code{Estimates} object, with updated hazards, SummEIC, etc.
 }
 \description{
-Title
+TMLE update with multiple implementation options
 }
