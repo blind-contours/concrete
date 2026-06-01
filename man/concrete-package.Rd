@@ -20,8 +20,8 @@ doTMLEUpdate()
 getOutput()
 }
 \author{
-David Chen, <david.chen49@berkeley.edu>
-Maintainer: David Chen <david.chen49@berkeley.edu>
+David McCoy, <david_mccoy@berkeley.edu>
+Maintainer: David McCoy <david_mccoy@berkeley.edu>
 }
 \references{
   Rytgaard et al. (2023) <doi:10.1111/biom.13856>  

@@ -16,18 +16,16 @@
     {
       "@type": "Person",
       "givenName": "David",
-      "familyName": "Chen",
-      "email": "david.chen49@berkeley.edu",
-      "@id": "https://orcid.org/0000-0002-9413-8152"
+      "familyName": "McCoy",
+      "email": "david_mccoy@berkeley.edu"
     }
   ],
   "maintainer": [
     {
       "@type": "Person",
       "givenName": "David",
-      "familyName": "Chen",
-      "email": "david.chen49@berkeley.edu",
-      "@id": "https://orcid.org/0000-0002-9413-8152"
+      "familyName": "McCoy",
+      "email": "david_mccoy@berkeley.edu"
     }
   ],
   "softwareSuggestions": [
@@ -158,6 +156,6 @@
       }
     }
   ],
-  "codeRepository": "https://github.com/imbroglio-dc/concrete",
-  "readme": "https://github.com/imbroglio-dc/concrete/blob/main/README.md"
+  "codeRepository": "https://github.com/blind-contours/concrete",
+  "readme": "https://github.com/blind-contours/concrete/blob/main/README.md"
 }
