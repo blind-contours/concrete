@@ -26,6 +26,24 @@ The smoke test runs a small competing-risk analysis using a Cox-only
 hazard library, prints event counts, prints absolute risks, risk
 differences, and risk ratios, and returns a `smoke_summary` table.
 
+The first table should look like this:
+
+| arm | event |   N |
+|----:|------:|----:|
+|   0 |     0 |  38 |
+|   0 |     1 |  32 |
+|   0 |     2 |   3 |
+|   1 |     0 |  49 |
+|   1 |     1 |  31 |
+|   1 |     2 |   7 |
+
+The smoke-test summary should show an `ok` status, convergence, and no
+failing components:
+
+| analysis | status | elapsed_sec | converged | step | max_ratio | failing_components |
+|----------|--------|------------:|-----------|-----:|----------:|-------------------:|
+| cox_only | ok     |         1.4 | TRUE      |    4 |     0.743 |                  0 |
+
 To also try optional hazard learners that are installed on your machine:
 
 ``` r
@@ -78,6 +96,23 @@ ConcreteOut <- getOutput(
 ConcreteOut
 getTmleDiagnostics(ConcreteEst, type = "components")
 ```
+
+For a successful first trial run, expect three linked outputs:
+
+1.  Event counts by arm showing enough events near the target time.
+2.  A
+    [`getOutput()`](https://blind-contours.github.io/concrete/reference/getOutput.md)
+    table with absolute risks, risk differences, and risk ratios.
+3.  A diagnostics table with `check = TRUE` for all targeted components.
+
+Example trial-output rows:
+
+| Time | Event | Estimand  | Intervention      | Estimator | Pt Est |   se |
+|-----:|------:|-----------|-------------------|-----------|-------:|-----:|
+|  730 |     1 | Abs Risk  | A=0               | tmle      |   0.12 | 0.03 |
+|  730 |     1 | Abs Risk  | A=1               | tmle      |   0.10 | 0.03 |
+|  730 |     1 | Risk Diff | \[A=1\] - \[A=0\] | tmle      |  -0.02 | 0.04 |
+|  730 |     1 | Rel Risk  | \[A=1\] / \[A=0\] | tmle      |   0.83 | 0.24 |
 
 For competing risks, add one model entry for each positive event code.
 

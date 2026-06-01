@@ -130,6 +130,117 @@ of 0.001 on the risk scale.</p>
 <span></span>
 <span><span class="va">norm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"norm"</span><span class="op">)</span></span>
 <span><span class="va">norm</span></span></code></pre></div>
+<p>Example component output for a converged fit:</p>
+<table class="table">
+<colgroup>
+<col width="8%">
+<col width="11%">
+<col width="11%">
+<col width="11%">
+<col width="11%">
+<col width="11%">
+<col width="11%">
+<col width="11%">
+<col width="8%">
+</colgroup>
+<thead><tr class="header">
+<th>Intervention</th>
+<th align="right">Time</th>
+<th align="right">Event</th>
+<th align="right">PnEIC</th>
+<th align="right">RelativeCriteria</th>
+<th align="right">AbsoluteCriteria</th>
+<th align="right">StopCriteria</th>
+<th align="right">ratio</th>
+<th>check</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>A=1</td>
+<td align="right">1000</td>
+<td align="right">1</td>
+<td align="right">0.00057</td>
+<td align="right">0.00077</td>
+<td align="right">0.001</td>
+<td align="right">0.001</td>
+<td align="right">0.57</td>
+<td>TRUE</td>
+</tr>
+<tr class="even">
+<td>A=0</td>
+<td align="right">1000</td>
+<td align="right">1</td>
+<td align="right">-0.00074</td>
+<td align="right">0.00089</td>
+<td align="right">0.001</td>
+<td align="right">0.001</td>
+<td align="right">0.74</td>
+<td>TRUE</td>
+</tr>
+<tr class="odd">
+<td>A=1</td>
+<td align="right">2000</td>
+<td align="right">1</td>
+<td align="right">0.00022</td>
+<td align="right">0.00110</td>
+<td align="right">0.001</td>
+<td align="right">0.00110</td>
+<td align="right">0.20</td>
+<td>TRUE</td>
+</tr>
+<tr class="even">
+<td>A=0</td>
+<td align="right">2000</td>
+<td align="right">1</td>
+<td align="right">-0.00031</td>
+<td align="right">0.00104</td>
+<td align="right">0.001</td>
+<td align="right">0.00104</td>
+<td align="right">0.30</td>
+<td>TRUE</td>
+</tr>
+</tbody>
+</table>
+<p>Example trace output:</p>
+<table class="table">
+<thead><tr class="header">
+<th align="right">Step</th>
+<th align="right">NormPnEIC</th>
+<th align="right">MaxRatio</th>
+<th align="right">FailingComponents</th>
+<th align="right">MaxAbsPnEIC</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">0</td>
+<td align="right">0.0204</td>
+<td align="right">8.12</td>
+<td align="right">4</td>
+<td align="right">0.0073</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">0.0068</td>
+<td align="right">2.45</td>
+<td align="right">2</td>
+<td align="right">0.0022</td>
+</tr>
+<tr class="odd">
+<td align="right">2</td>
+<td align="right">0.0021</td>
+<td align="right">1.08</td>
+<td align="right">1</td>
+<td align="right">0.0011</td>
+</tr>
+<tr class="even">
+<td align="right">3</td>
+<td align="right">0.0013</td>
+<td align="right">0.74</td>
+<td align="right">0</td>
+<td align="right">0.0007</td>
+</tr>
+</tbody>
+</table>
 <p>The component table is usually the most useful first view.</p>
 <p>Key columns:</p>
 <ul>
@@ -160,6 +271,51 @@ reached</li>
 <code>ratio</code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">components</span><span class="op">[</span><span class="va">check</span> <span class="op">==</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">ratio</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<p>If there are failures, the output will identify which
+event/time/intervention combination is driving the problem:</p>
+<table class="table">
+<colgroup>
+<col width="11%">
+<col width="15%">
+<col width="15%">
+<col width="15%">
+<col width="15%">
+<col width="15%">
+<col width="11%">
+</colgroup>
+<thead><tr class="header">
+<th>Intervention</th>
+<th align="right">Time</th>
+<th align="right">Event</th>
+<th align="right">AbsPnEIC</th>
+<th align="right">StopCriteria</th>
+<th align="right">ratio</th>
+<th>check</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>A=1</td>
+<td align="right">730</td>
+<td align="right">1</td>
+<td align="right">0.0048</td>
+<td align="right">0.0010</td>
+<td align="right">4.8</td>
+<td>FALSE</td>
+</tr>
+<tr class="even">
+<td>A=0</td>
+<td align="right">730</td>
+<td align="right">1</td>
+<td align="right">0.0017</td>
+<td align="right">0.0010</td>
+<td align="right">1.7</td>
+<td>FALSE</td>
+</tr>
+</tbody>
+</table>
+<p>This pattern says the empirical EIC is still materially larger than
+the chosen threshold. Start with adaptive updating and a simpler learner
+library before loosening the stopping rule.</p>
 </div>
 <div class="section level2">
 <h2 id="recommended-escalation-ladder">Recommended escalation ladder<a class="anchor" aria-label="anchor" href="#recommended-escalation-ladder"></a>

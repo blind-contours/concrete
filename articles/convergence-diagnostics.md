@@ -44,6 +44,24 @@ norm <- getTmleDiagnostics(ConcreteEst, type = "norm")
 norm
 ```
 
+Example component output for a converged fit:
+
+| Intervention | Time | Event | PnEIC | RelativeCriteria | AbsoluteCriteria | StopCriteria | ratio | check |
+|----|---:|---:|---:|---:|---:|---:|---:|----|
+| A=1 | 1000 | 1 | 0.00057 | 0.00077 | 0.001 | 0.001 | 0.57 | TRUE |
+| A=0 | 1000 | 1 | -0.00074 | 0.00089 | 0.001 | 0.001 | 0.74 | TRUE |
+| A=1 | 2000 | 1 | 0.00022 | 0.00110 | 0.001 | 0.00110 | 0.20 | TRUE |
+| A=0 | 2000 | 1 | -0.00031 | 0.00104 | 0.001 | 0.00104 | 0.30 | TRUE |
+
+Example trace output:
+
+| Step | NormPnEIC | MaxRatio | FailingComponents | MaxAbsPnEIC |
+|-----:|----------:|---------:|------------------:|------------:|
+|    0 |    0.0204 |     8.12 |                 4 |      0.0073 |
+|    1 |    0.0068 |     2.45 |                 2 |      0.0022 |
+|    2 |    0.0021 |     1.08 |                 1 |      0.0011 |
+|    3 |    0.0013 |     0.74 |                 0 |      0.0007 |
+
 The component table is usually the most useful first view.
 
 Key columns:
@@ -63,6 +81,18 @@ Focus first on rows with `check == FALSE`, sorted by `ratio`.
 
 components[check == FALSE][order(ratio, decreasing = TRUE)]
 ```
+
+If there are failures, the output will identify which
+event/time/intervention combination is driving the problem:
+
+| Intervention | Time | Event | AbsPnEIC | StopCriteria | ratio | check |
+|--------------|-----:|------:|---------:|-------------:|------:|-------|
+| A=1          |  730 |     1 |   0.0048 |       0.0010 |   4.8 | FALSE |
+| A=0          |  730 |     1 |   0.0017 |       0.0010 |   1.7 | FALSE |
+
+This pattern says the empirical EIC is still materially larger than the
+chosen threshold. Start with adaptive updating and a simpler learner
+library before loosening the stopping rule.
 
 ## Recommended escalation ladder
 

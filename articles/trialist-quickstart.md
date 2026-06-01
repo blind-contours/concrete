@@ -147,6 +147,21 @@ ConcreteOut <- getOutput(
 ConcreteOut[Event == 1]
 ```
 
+Example output will look like this. The exact values will change with
+your data, target times, learner library, and confidence-interval
+settings.
+
+| Time | Event | Estimand  | Intervention      | Estimator | Pt Est |    se | CI Low | CI Hi |
+|-----:|------:|-----------|-------------------|-----------|-------:|------:|-------:|------:|
+| 1000 |     1 | Abs Risk  | A=0               | tmle      |   0.19 | 0.036 |   0.11 |  0.26 |
+| 1000 |     1 | Abs Risk  | A=1               | tmle      |   0.21 | 0.042 |   0.12 |  0.29 |
+| 1000 |     1 | Risk Diff | \[A=1\] - \[A=0\] | tmle      |  0.021 | 0.052 | -0.082 |  0.12 |
+| 1000 |     1 | Rel Risk  | \[A=1\] / \[A=0\] | tmle      |   1.10 |  0.30 |   0.53 |  1.70 |
+| 2000 |     1 | Abs Risk  | A=0               | tmle      |   0.34 | 0.053 |   0.24 |  0.44 |
+| 2000 |     1 | Abs Risk  | A=1               | tmle      |   0.33 | 0.047 |   0.24 |  0.43 |
+| 2000 |     1 | Risk Diff | \[A=1\] - \[A=0\] | tmle      | -0.007 | 0.065 |  -0.14 |  0.12 |
+| 2000 |     1 | Rel Risk  | \[A=1\] / \[A=0\] | tmle      |   0.98 |  0.19 |   0.61 |  1.40 |
+
 Important columns:
 
 - `Time`: target follow-up time
@@ -210,6 +225,14 @@ components[order(ratio, decreasing = TRUE)][1:10]
 trace <- getTmleDiagnostics(ConcreteEst, type = "trace")
 trace
 ```
+
+For a clean fit, the component diagnostics should have `check = TRUE`
+for all targeted components under the selected stopping rule. A compact
+success summary from the smoke test looks like:
+
+| analysis | status | converged | step | max_ratio | failing_components |
+|----------|--------|-----------|-----:|----------:|-------------------:|
+| cox_only | ok     | TRUE      |    4 |     0.743 |                  0 |
 
 If the fit does not converge, try the settings in the convergence
 diagnostics article before changing the estimand.

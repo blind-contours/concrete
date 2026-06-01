@@ -88,6 +88,77 @@ feedback.</p>
 hazard library, prints event counts, prints absolute risks, risk
 differences, and risk ratios, and returns a <code>smoke_summary</code>
 table.</p>
+<p>The first table should look like this:</p>
+<table class="table">
+<thead><tr class="header">
+<th align="right">arm</th>
+<th align="right">event</th>
+<th align="right">N</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">38</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">32</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+<td align="right">2</td>
+<td align="right">3</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">49</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">31</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">7</td>
+</tr>
+</tbody>
+</table>
+<p>The smoke-test summary should show an <code>ok</code> status,
+convergence, and no failing components:</p>
+<table class="table">
+<colgroup>
+<col width="12%">
+<col width="12%">
+<col width="16%">
+<col width="12%">
+<col width="16%">
+<col width="16%">
+<col width="16%">
+</colgroup>
+<thead><tr class="header">
+<th>analysis</th>
+<th>status</th>
+<th align="right">elapsed_sec</th>
+<th>converged</th>
+<th align="right">step</th>
+<th align="right">max_ratio</th>
+<th align="right">failing_components</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td>cox_only</td>
+<td>ok</td>
+<td align="right">1.4</td>
+<td>TRUE</td>
+<td align="right">4</td>
+<td align="right">0.743</td>
+<td align="right">0</td>
+</tr></tbody>
+</table>
 <p>To also try optional hazard learners that are installed on your
 machine:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -135,6 +206,64 @@ flexible learner.</p>
 <span></span>
 <span><span class="va">ConcreteOut</span></span>
 <span><span class="fu"><a href="../reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"components"</span><span class="op">)</span></span></code></pre></div>
+<p>For a successful first trial run, expect three linked outputs:</p>
+<ol style="list-style-type: decimal">
+<li>Event counts by arm showing enough events near the target time.</li>
+<li>A <code><a href="../reference/getOutput.html">getOutput()</a></code> table with absolute risks, risk
+differences, and risk ratios.</li>
+<li>A diagnostics table with <code>check = TRUE</code> for all targeted
+components.</li>
+</ol>
+<p>Example trial-output rows:</p>
+<table class="table">
+<thead><tr class="header">
+<th align="right">Time</th>
+<th align="right">Event</th>
+<th>Estimand</th>
+<th>Intervention</th>
+<th>Estimator</th>
+<th align="right">Pt Est</th>
+<th align="right">se</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">730</td>
+<td align="right">1</td>
+<td>Abs Risk</td>
+<td>A=0</td>
+<td>tmle</td>
+<td align="right">0.12</td>
+<td align="right">0.03</td>
+</tr>
+<tr class="even">
+<td align="right">730</td>
+<td align="right">1</td>
+<td>Abs Risk</td>
+<td>A=1</td>
+<td>tmle</td>
+<td align="right">0.10</td>
+<td align="right">0.03</td>
+</tr>
+<tr class="odd">
+<td align="right">730</td>
+<td align="right">1</td>
+<td>Risk Diff</td>
+<td>[A=1] - [A=0]</td>
+<td>tmle</td>
+<td align="right">-0.02</td>
+<td align="right">0.04</td>
+</tr>
+<tr class="even">
+<td align="right">730</td>
+<td align="right">1</td>
+<td>Rel Risk</td>
+<td>[A=1] / [A=0]</td>
+<td>tmle</td>
+<td align="right">0.83</td>
+<td align="right">0.24</td>
+</tr>
+</tbody>
+</table>
 <p>For competing risks, add one model entry for each positive event
 code.</p>
 </div>

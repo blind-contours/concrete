@@ -225,6 +225,123 @@ when the treatment column is the randomized treatment assignment.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ConcreteOut</span><span class="op">[</span><span class="va">Event</span> <span class="op">==</span> <span class="fl">1</span><span class="op">]</span></span></code></pre></div>
+<p>Example output will look like this. The exact values will change with
+your data, target times, learner library, and confidence-interval
+settings.</p>
+<table class="table">
+<colgroup>
+<col width="12%">
+<col width="12%">
+<col width="9%">
+<col width="9%">
+<col width="9%">
+<col width="12%">
+<col width="12%">
+<col width="12%">
+<col width="12%">
+</colgroup>
+<thead><tr class="header">
+<th align="right">Time</th>
+<th align="right">Event</th>
+<th>Estimand</th>
+<th>Intervention</th>
+<th>Estimator</th>
+<th align="right">Pt Est</th>
+<th align="right">se</th>
+<th align="right">CI Low</th>
+<th align="right">CI Hi</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="right">1000</td>
+<td align="right">1</td>
+<td>Abs Risk</td>
+<td>A=0</td>
+<td>tmle</td>
+<td align="right">0.19</td>
+<td align="right">0.036</td>
+<td align="right">0.11</td>
+<td align="right">0.26</td>
+</tr>
+<tr class="even">
+<td align="right">1000</td>
+<td align="right">1</td>
+<td>Abs Risk</td>
+<td>A=1</td>
+<td>tmle</td>
+<td align="right">0.21</td>
+<td align="right">0.042</td>
+<td align="right">0.12</td>
+<td align="right">0.29</td>
+</tr>
+<tr class="odd">
+<td align="right">1000</td>
+<td align="right">1</td>
+<td>Risk Diff</td>
+<td>[A=1] - [A=0]</td>
+<td>tmle</td>
+<td align="right">0.021</td>
+<td align="right">0.052</td>
+<td align="right">-0.082</td>
+<td align="right">0.12</td>
+</tr>
+<tr class="even">
+<td align="right">1000</td>
+<td align="right">1</td>
+<td>Rel Risk</td>
+<td>[A=1] / [A=0]</td>
+<td>tmle</td>
+<td align="right">1.10</td>
+<td align="right">0.30</td>
+<td align="right">0.53</td>
+<td align="right">1.70</td>
+</tr>
+<tr class="odd">
+<td align="right">2000</td>
+<td align="right">1</td>
+<td>Abs Risk</td>
+<td>A=0</td>
+<td>tmle</td>
+<td align="right">0.34</td>
+<td align="right">0.053</td>
+<td align="right">0.24</td>
+<td align="right">0.44</td>
+</tr>
+<tr class="even">
+<td align="right">2000</td>
+<td align="right">1</td>
+<td>Abs Risk</td>
+<td>A=1</td>
+<td>tmle</td>
+<td align="right">0.33</td>
+<td align="right">0.047</td>
+<td align="right">0.24</td>
+<td align="right">0.43</td>
+</tr>
+<tr class="odd">
+<td align="right">2000</td>
+<td align="right">1</td>
+<td>Risk Diff</td>
+<td>[A=1] - [A=0]</td>
+<td>tmle</td>
+<td align="right">-0.007</td>
+<td align="right">0.065</td>
+<td align="right">-0.14</td>
+<td align="right">0.12</td>
+</tr>
+<tr class="even">
+<td align="right">2000</td>
+<td align="right">1</td>
+<td>Rel Risk</td>
+<td>[A=1] / [A=0]</td>
+<td>tmle</td>
+<td align="right">0.98</td>
+<td align="right">0.19</td>
+<td align="right">0.61</td>
+<td align="right">1.40</td>
+</tr>
+</tbody>
+</table>
 <p>Important columns:</p>
 <ul>
 <li>
@@ -297,6 +414,36 @@ close?</li>
 <span></span>
 <span><span class="va">trace</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"trace"</span><span class="op">)</span></span>
 <span><span class="va">trace</span></span></code></pre></div>
+<p>For a clean fit, the component diagnostics should have
+<code>check = TRUE</code> for all targeted components under the selected
+stopping rule. A compact success summary from the smoke test looks
+like:</p>
+<table class="table">
+<colgroup>
+<col width="14%">
+<col width="14%">
+<col width="14%">
+<col width="19%">
+<col width="19%">
+<col width="19%">
+</colgroup>
+<thead><tr class="header">
+<th>analysis</th>
+<th>status</th>
+<th>converged</th>
+<th align="right">step</th>
+<th align="right">max_ratio</th>
+<th align="right">failing_components</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td>cox_only</td>
+<td>ok</td>
+<td>TRUE</td>
+<td align="right">4</td>
+<td align="right">0.743</td>
+<td align="right">0</td>
+</tr></tbody>
+</table>
 <p>If the fit does not converge, try the settings in the convergence
 diagnostics article before changing the estimand.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">

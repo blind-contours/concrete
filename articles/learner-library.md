@@ -95,6 +95,21 @@ Sys.setenv(CONCRETE_RUN_OPTIONAL_LEARNERS = "true")
 source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
 ```
 
+When optional learners are installed, the smoke test prints a summary
+like this:
+
+| analysis | status | elapsed_sec | converged | step | max_ratio | failing_components |
+|----|----|---:|----|---:|---:|---:|
+| cox_only | ok | 1.2 | TRUE | 4 | 0.743 | 0 |
+| additive_hazards | ok | 1.2 | TRUE | 4 | 0.899 | 0 |
+| coxnet | ok | 2.3 | TRUE | 13 | 0.838 | 0 |
+| rsf | ok | 1.1 | TRUE | 4 | 0.748 | 0 |
+| hal | ok | 1.5 | TRUE | 4 | 0.747 | 0 |
+
+This table is not a benchmark. It is a quick installation and
+learner-path check. On real trial data, compare estimates, convergence
+diagnostics, and runtime across the learner ladder.
+
 ## Cox plus machine-learning hazards
 
 This example gives each event type a small candidate library. The
@@ -169,6 +184,23 @@ lapply(fits[setdiff(names(fits), "arm")], function(fit) {
   attr(fit, "HazSL")
 })
 ```
+
+The hazard learner output records cross-validated risks and the selected
+candidate for each event type. A simplified example looks like:
+
+``` text
+$`1`
+$`1`$SupLrnCVRisks
+      Cox    Coxnet       RSF       HAL
+   118.20    116.75    117.40    119.05
+
+$`1`$SLCoef
+   Cox Coxnet    RSF    HAL
+     0      1      0      0
+```
+
+Here, `Coxnet` was selected for event type `1`. The exact object names
+depend on the names you used in `Model`.
 
 ## Practical testing sequence
 
