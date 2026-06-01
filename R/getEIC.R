@@ -10,8 +10,8 @@
 #'
 #' @useDynLib concrete
 #' @importFrom Rcpp evalCpp
-#' @export
 #' @importFrom stats var
+#' @keywords internal
 
 getEIC <- function(Estimates, Data, Regime, TargetEvent, TargetTime, MinNuisance, GComp = FALSE) {
     EvalTimes <- attr(Estimates, "Times")

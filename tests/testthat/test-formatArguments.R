@@ -200,6 +200,32 @@ test_that("UpdateMethod is scalar and simulation-safe", {
                                      UpdateMethod = "accelerated")
     expect_true(identical(concrete.args$UpdateMethod, "adaptive"))
 
+    concrete.args <- formatArguments(Data = data,
+                                     EventTime = "time",
+                                     EventType = "status",
+                                     Treatment = "trt",
+                                     ID = "id",
+                                     Intervention = 0:1,
+                                     TargetTime = 2500,
+                                     TargetEvent = 1,
+                                     CVArg = list(V = 2),
+                                     Verbose = FALSE,
+                                     UpdateMethod = " Adaptive ")
+    expect_true(identical(concrete.args$UpdateMethod, "adaptive"))
+
+    expect_error(formatArguments(Data = data,
+                                 EventTime = "time",
+                                 EventType = "status",
+                                 Treatment = "trt",
+                                 ID = "id",
+                                 Intervention = 0:1,
+                                 TargetTime = 2500,
+                                 TargetEvent = 1,
+                                 CVArg = list(V = 2),
+                                 Verbose = FALSE,
+                                 UpdateMethod = "coordinated"),
+                 regexp = "disabled")
+
     expect_error(formatArguments(Data = data,
                                  EventTime = "time",
                                  EventType = "status",
@@ -252,6 +278,50 @@ test_that("EIC stopping rules are parsed and evaluated", {
     )
     expect_false(concrete:::makeOneStepStop(stop_dt, "relative", 0)$check)
     expect_true(concrete:::makeOneStepStop(stop_dt, "HYBRID", 1e-3)$check)
+})
+
+test_that("Target convergence helpers ignore internal complement rows", {
+    stop_dt <- data.table::data.table(
+        Trt = c("A=1", "A=1"),
+        Time = c(180, 180),
+        Event = c(1, -1),
+        PnEIC = c(7e-4, 1),
+        `seEIC/(sqrt(n)log(n))` = c(1e-3, 1e-3)
+    )
+
+    expect_false(all(concrete:::makeOneStepStop(stop_dt, "relative", 0)$check))
+    target_stop <- concrete:::targetOneStepStop(
+        stop_dt,
+        TargetTime = 180,
+        TargetEvent = 1,
+        EICStopRule = "relative",
+        EICStopAbsTol = 0
+    )
+    expect_equal(nrow(target_stop), 1)
+    expect_true(all(target_stop$check))
+})
+
+test_that("Hazard update is a no-op when target norm is numerically zero", {
+    haz <- matrix(0.1, nrow = 2, ncol = 2)
+    attr(haz, "j") <- 1
+    hazards <- list("1" = haz)
+    out <- concrete:::updateHazard(
+        GStar = c(1, 1),
+        Hazards = hazards,
+        TotalSurv = matrix(0.9, nrow = 2, ncol = 2),
+        NuisanceWeight = matrix(1, nrow = 2, ncol = 2),
+        EvalTimes = c(0, 1),
+        T.tilde = c(1, 1),
+        Delta = c(1, 1),
+        PnEIC = data.table::data.table(Time = 1, Event = 1, PnEIC = 0),
+        NormPnEIC = 0,
+        OneStepEps = 0.1,
+        TargetEvent = 1,
+        TargetTime = 1
+    )
+
+    expect_equal(out[["1"]], haz)
+    expect_equal(attr(out[["1"]], "j"), 1)
 })
 
 test_that("Survival hazard learner aliases are parsed", {

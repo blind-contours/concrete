@@ -14,6 +14,7 @@
 #'
 #' @param OneStepStop data.table with convergence check results
 #' @param NormPnEIC numeric, the current norm of PnEIC
+#' @keywords internal
 printOneStepDiagnostics <- function(OneStepStop, NormPnEIC) {
   ratio <- NULL
   # Sort by the ratio, pick top 3
@@ -27,6 +28,7 @@ printOneStepDiagnostics <- function(OneStepStop, NormPnEIC) {
 #' @param E The original Estimates object (list of arms).
 #'
 #' @return A new, independent copy of E.
+#' @keywords internal
 deepcopyEstimates <- function(E) {
   copy_obj <- function(x) {
     if (inherits(x, "data.table")) {
@@ -53,9 +55,7 @@ summarizeUpdateState <- function(SummEIC, TargetTime, TargetEvent,
   Time <- Event <- PnEIC <- `seEIC/(sqrt(n)log(n))` <- ratio <-
     RelativeRatio <- AbsoluteRatio <- AbsPnEIC <- StopCriteria <- check <- NULL
 
-  target <- data.table::copy(
-    SummEIC[Time %in% TargetTime & Event %in% TargetEvent]
-  )
+  target <- data.table::copy(targetSummEIC(SummEIC, TargetTime, TargetEvent))
   if (!nrow(target)) {
     return(list(
       max_ratio = NA_real_,
@@ -183,7 +183,6 @@ appendUpdateTrace <- function(trace, method, step, line_iter, status, alpha,
 #' @param Method character - one of
 #'   - "standard"
 #'   - "adaptive"
-#'   - "coordinated"
 #' @param EICStopRule character stopping rule for empirical mean EIC checks.
 #'   Supported values are `"relative"`, `"absolute"`, and `"hybrid"`.
 #' @param EICStopAbsTol numeric absolute `|PnEIC|` tolerance used by the
@@ -194,6 +193,7 @@ appendUpdateTrace <- function(trace, method, step, line_iter, status, alpha,
 #' @import foreach
 #' @import doParallel
 #' @import parallel
+#' @keywords internal
 doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
                          MaxUpdateIter, OneStepEps, NormPnEIC, Verbose,
                          Method = "standard",
@@ -243,6 +243,14 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
       if (Verbose) {
         cat("Starting step", StepNum, "with update epsilon =", WorkingEps, "\n")
       }
+
+      CurrentObjective <- targetUpdateObjective(
+        SummEIC = SummEIC,
+        TargetTime = TargetTime,
+        TargetEvent = TargetEvent,
+        EICStopRule = EICStopRule,
+        EICStopAbsTol = EICStopAbsTol
+      )
 
       # Update hazards and EIC for each arm
       newEsts <- lapply(Estimates, function(est.a) {
@@ -295,9 +303,17 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
       NewSummEIC <- do.call(rbind, lapply(seq_along(newEsts), function(a) {
         cbind("Trt" = names(newEsts)[a], newEsts[[a]][["SummEIC"]])
       }))
-      NewNormPnEIC <- getNormPnEIC(NewSummEIC[Time %in% TargetTime & Event %in% TargetEvent, PnEIC])
+      NewNormPnEIC <- getNormPnEIC(targetSummEIC(NewSummEIC, TargetTime, TargetEvent)[, PnEIC])
+      NewObjective <- targetUpdateObjective(
+        SummEIC = NewSummEIC,
+        TargetTime = TargetTime,
+        TargetEvent = TargetEvent,
+        EICStopRule = EICStopRule,
+        EICStopAbsTol = EICStopAbsTol
+      )
 
-      if (anyNA(NewNormPnEIC) || is.nan(NewNormPnEIC) || is.infinite(NewNormPnEIC)) {
+      if (anyNA(NewNormPnEIC) || is.nan(NewNormPnEIC) || is.infinite(NewNormPnEIC) ||
+          anyNA(NewObjective) || is.nan(NewObjective) || is.infinite(NewObjective)) {
         UpdateTrace <- appendUpdateTrace(
           trace = UpdateTrace,
           method = Method,
@@ -317,13 +333,13 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
         WorkingEps <- WorkingEps / 2
         next
       }
-      if (NormPnEIC < NewNormPnEIC) {
+      if (CurrentObjective < NewObjective) {
         UpdateTrace <- appendUpdateTrace(
           trace = UpdateTrace,
           method = Method,
           step = StepNum,
           line_iter = NA_integer_,
-          status = "rejected_increased_norm",
+          status = "rejected_increased_objective",
           alpha = WorkingEps,
           norm_before = NormPnEIC,
           norm_after = NewNormPnEIC,
@@ -333,7 +349,7 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
           EICStopRule = EICStopRule,
           EICStopAbsTol = EICStopAbsTol
         )
-        if (Verbose) cat("Update increased ||PnEIC||, halving OneStepEps\n")
+        if (Verbose) cat("Update increased the active convergence objective, halving OneStepEps\n")
         WorkingEps <- WorkingEps / 2
         next
       }
@@ -366,8 +382,10 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
         EICStopAbsTol = EICStopAbsTol
       )
 
-      OneStepStop <- makeOneStepStop(
+      OneStepStop <- targetOneStepStop(
         SummEIC = NewSummEIC,
+        TargetTime = TargetTime,
+        TargetEvent = TargetEvent,
         EICStopRule = EICStopRule,
         EICStopAbsTol = EICStopAbsTol
       )
@@ -447,6 +465,13 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
       line_iter <- 0
       improvement_found <- FALSE
       current_norm <- NormPnEIC
+      current_objective <- targetUpdateObjective(
+        SummEIC = SummEIC,
+        TargetTime = TargetTime,
+        TargetEvent = TargetEvent,
+        EICStopRule = EICStopRule,
+        EICStopAbsTol = EICStopAbsTol
+      )
 
       while (line_iter < max_line_iterations && !improvement_found) {
         line_iter <- line_iter + 1
@@ -579,13 +604,26 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
 
         # compute new norm
         NewNormPnEIC <- tryCatch({
-          getNormPnEIC(NewSummEIC[Time %in% TargetTime & Event %in% TargetEvent, PnEIC])
+          getNormPnEIC(targetSummEIC(NewSummEIC, TargetTime, TargetEvent)[, PnEIC])
         }, error = function(e) {
           if (Verbose) cat("    norm error:", e$message, "\n")
           Inf
         })
+        NewObjective <- tryCatch({
+          targetUpdateObjective(
+            SummEIC = NewSummEIC,
+            TargetTime = TargetTime,
+            TargetEvent = TargetEvent,
+            EICStopRule = EICStopRule,
+            EICStopAbsTol = EICStopAbsTol
+          )
+        }, error = function(e) {
+          if (Verbose) cat("    objective error:", e$message, "\n")
+          Inf
+        })
 
-        if (anyNA(NewNormPnEIC) || is.nan(NewNormPnEIC) || is.infinite(NewNormPnEIC)) {
+        if (anyNA(NewNormPnEIC) || is.nan(NewNormPnEIC) || is.infinite(NewNormPnEIC) ||
+            anyNA(NewObjective) || is.nan(NewObjective) || is.infinite(NewObjective)) {
           UpdateTrace <- appendUpdateTrace(
             trace = UpdateTrace,
             method = Method,
@@ -609,11 +647,11 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
           next
         }
 
-        # Armijo condition or "did the norm actually go down?"
-        expected_reduction <- c1 * alpha * current_norm
-        actual_reduction   <- current_norm - NewNormPnEIC
+        # Armijo condition on the active convergence objective.
+        expected_reduction <- c1 * alpha * current_objective
+        actual_reduction   <- current_objective - NewObjective
 
-        if ((NewNormPnEIC >= current_norm) || (actual_reduction < expected_reduction)) {
+        if ((NewObjective >= current_objective) || (actual_reduction < expected_reduction)) {
           # NO improvement => revert, reduce alpha
           UpdateTrace <- appendUpdateTrace(
             trace = UpdateTrace,
@@ -631,8 +669,8 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
             EICStopAbsTol = EICStopAbsTol
           )
           if (Verbose) {
-            cat("    Norm went up or Armijo not satisfied => revert & reduce alpha\n")
-            cat("    old norm:", current_norm, " new norm:", NewNormPnEIC, "\n")
+            cat("    Objective went up or Armijo not satisfied => revert & reduce alpha\n")
+            cat("    old objective:", current_objective, " new objective:", NewObjective, "\n")
           }
           Estimates <- oldEstimates
           SummEIC   <- oldSummEIC
@@ -670,7 +708,11 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
           # Track momentum
           prev_alpha <- alpha
           if (!is.null(prev_norm) && !is.null(prev_reduction_ratio)) {
-            local_ratio <- actual_reduction / expected_reduction
+            local_ratio <- if (expected_reduction > 0) {
+              actual_reduction / expected_reduction
+            } else {
+              Inf
+            }
             if (local_ratio > prev_reduction_ratio) {
               consecutive_gains <- consecutive_gains + 1
             } else {
@@ -679,7 +721,11 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
             prev_reduction_ratio <- local_ratio
           } else {
             # first time we track a ratio
-            prev_reduction_ratio <- actual_reduction / expected_reduction
+            prev_reduction_ratio <- if (expected_reduction > 0) {
+              actual_reduction / expected_reduction
+            } else {
+              Inf
+            }
           }
           prev_norm <- current_norm
         }
@@ -707,8 +753,10 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
       }
 
       # check convergence
-      OneStepStop <- makeOneStepStop(
+      OneStepStop <- targetOneStepStop(
         SummEIC = SummEIC,
+        TargetTime = TargetTime,
+        TargetEvent = TargetEvent,
         EICStopRule = EICStopRule,
         EICStopAbsTol = EICStopAbsTol
       )
@@ -874,15 +922,20 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
       } # end for coords
 
       # check global
-      OneStepStop <- makeOneStepStop(
+      OneStepStop <- targetOneStepStop(
         SummEIC = SummEIC,
+        TargetTime = TargetTime,
+        TargetEvent = TargetEvent,
         EICStopRule = EICStopRule,
         EICStopAbsTol = EICStopAbsTol
       )
 
       if (Verbose) {
         cat("End of iteration", StepNum, "\n")
-        printOneStepDiagnostics(OneStepStop, getNormPnEIC(SummEIC[, PnEIC]))
+        printOneStepDiagnostics(
+          OneStepStop,
+          getNormPnEIC(targetSummEIC(SummEIC, TargetTime, TargetEvent)[, PnEIC])
+        )
       }
       if (all(sapply(OneStepStop[["check"]], isTRUE))) {
         global_converged <- TRUE
@@ -897,7 +950,7 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
       warning("Coordinate-wise TMLE not converged by iteration ", MaxUpdateIter)
       attr(Estimates, "TmleConverged") <- list(converged = FALSE, step = StepNum - 1)
     }
-    final_norm <- getNormPnEIC(SummEIC[Time %in% TargetTime & Event %in% TargetEvent, PnEIC])
+    final_norm <- getNormPnEIC(targetSummEIC(SummEIC, TargetTime, TargetEvent)[, PnEIC])
     attr(Estimates, "NormPnEICs") <- c(NormPnEIC, final_norm)
     return(Estimates)
 
@@ -1014,15 +1067,20 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
         cbind("Trt" = names(Estimates)[xi], Estimates[[xi]][["SummEIC"]])
       }))
 
-      OneStepStop <- makeOneStepStop(
+      OneStepStop <- targetOneStepStop(
         SummEIC = SummEIC,
+        TargetTime = TargetTime,
+        TargetEvent = TargetEvent,
         EICStopRule = EICStopRule,
         EICStopAbsTol = EICStopAbsTol
       )
 
       if (Verbose) {
         cat("End of Jacobi iteration", StepNum, "\n")
-        printOneStepDiagnostics(OneStepStop, getNormPnEIC(SummEIC[, PnEIC]))
+        printOneStepDiagnostics(
+          OneStepStop,
+          getNormPnEIC(targetSummEIC(SummEIC, TargetTime, TargetEvent)[, PnEIC])
+        )
       }
       if (all(sapply(OneStepStop[["check"]], isTRUE))) {
         global_converged <- TRUE
@@ -1035,7 +1093,7 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
     if (!global_converged) {
       warning("Jacobi-style TMLE not converged by iteration ", MaxUpdateIter)
     }
-    finalNorm <- getNormPnEIC(SummEIC[Time %in% TargetTime & Event %in% TargetEvent, PnEIC])
+    finalNorm <- getNormPnEIC(targetSummEIC(SummEIC, TargetTime, TargetEvent)[, PnEIC])
     attr(Estimates, "TmleConverged") <- list(converged = global_converged, step = StepNum - 1)
     attr(Estimates, "NormPnEICs")    <- c(NormPnEIC, finalNorm)
     return(Estimates)
@@ -1102,7 +1160,7 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
       NewSummEIC <- do.call(rbind, lapply(seq_along(newEsts), function(a) {
         cbind("Trt" = names(newEsts)[a], newEsts[[a]][["SummEIC"]])
       }))
-      NewNormPnEIC <- getNormPnEIC(NewSummEIC[Time %in% TargetTime & Event %in% TargetEvent, PnEIC])
+      NewNormPnEIC <- getNormPnEIC(targetSummEIC(NewSummEIC, TargetTime, TargetEvent)[, PnEIC])
 
       if (NewNormPnEIC > NormPnEIC) {
         if (Verbose) cat("    Norm increased, halving step =>", WorkingEps / 2, "\n")
@@ -1122,8 +1180,10 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
       NormPnEICs<- c(NormPnEICs, NormPnEIC)
 
       # Check if converged
-      OneStepStop <- makeOneStepStop(
+      OneStepStop <- targetOneStepStop(
         SummEIC = SummEIC,
+        TargetTime = TargetTime,
+        TargetEvent = TargetEvent,
         EICStopRule = EICStopRule,
         EICStopAbsTol = EICStopAbsTol
       )
@@ -1192,7 +1252,7 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
     finalSummEIC <- do.call(rbind, lapply(seq_along(updatedRes), function(a) {
       cbind("Trt" = names(updatedRes)[a], updatedRes[[a]][["SummEIC"]])
     }))
-    finalNorm <- getNormPnEIC(finalSummEIC[Time %in% TargetTime & Event %in% TargetEvent, PnEIC])
+    finalNorm <- getNormPnEIC(targetSummEIC(finalSummEIC, TargetTime, TargetEvent)[, PnEIC])
     if (Verbose) cat("Final norm of PnEIC after hybrid rootSolve:", finalNorm, "\n")
 
     # 4) Return with TmleConverged attribute
@@ -1236,6 +1296,7 @@ doTmleUpdate <- function(Estimates, SummEIC, Data, TargetEvent, TargetTime,
 #' @param TargetTime numeric vector of target times
 #'
 #' @return list of updated hazard matrices
+#' @keywords internal
 updateHazard <- function(GStar, Hazards, TotalSurv, NuisanceWeight, EvalTimes, T.tilde,
                          Delta, PnEIC, NormPnEIC, OneStepEps,
                          TargetEvent, TargetTime) {
@@ -1248,6 +1309,13 @@ updateHazard <- function(GStar, Hazards, TotalSurv, NuisanceWeight, EvalTimes, T
   }
   if (Iterative) {
     warning("Iterative TMLE not yet implemented. Performing one-step TMLE instead.")
+  }
+  if (!is.numeric(NormPnEIC) || length(NormPnEIC) != 1 ||
+      !is.finite(NormPnEIC) || NormPnEIC <= .Machine$double.eps) {
+    return(lapply(Hazards, function(haz.al) {
+      attr(haz.al, "j") <- attr(haz.al, "j")
+      haz.al
+    }))
   }
 
   # We do a single-step universal LFM update
@@ -1305,8 +1373,9 @@ updateHazard <- function(GStar, Hazards, TotalSurv, NuisanceWeight, EvalTimes, T
 #' @param Verbose boolean
 #'
 #' @return numeric vector of length k, the Pn(EIC) values
+#' @keywords internal
 submodelAndEIC <- function(Estimates, epsVec, Data, TargetEvent, TargetTime, Verbose = FALSE) {
-  Time <- Event <- NULL
+  Trt <- Time <- Event <- NULL
 
   # 1) Make an ephemeral copy
   localEst <- deepcopyEstimates(Estimates)
@@ -1364,6 +1433,7 @@ submodelAndEIC <- function(Estimates, epsVec, Data, TargetEvent, TargetTime, Ver
 #' @param Verbose boolean
 #'
 #' @return The updated localEst (ephemeral)
+#' @keywords internal
 updateHazardsWithEps <- function(localEst, epsVec, Data, TargetEvent, TargetTime, Verbose=FALSE) {
   # Example approach: assume ordering in epsVec is (arm1, event1, time1), ...
   arms <- names(localEst)
@@ -1409,6 +1479,7 @@ updateHazardsWithEps <- function(localEst, epsVec, Data, TargetEvent, TargetTime
 #' @param Verbose boolean
 #'
 #' @return Updated \code{Estimates} object with final hazards + EIC
+#' @keywords internal
 applyFinalSubmodel <- function(Estimates, final_eps, Data, TargetEvent, TargetTime, Verbose=FALSE) {
   if (Verbose) cat("applyFinalSubmodel: applying final eps => updating hazards & EIC in-place\n")
 

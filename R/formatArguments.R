@@ -57,7 +57,7 @@
 #' @param ReturnModels boolean (default: TRUE): return fitted models from the initial estimation stage
 #' @param RenameCovs boolean (default: TRUE): whether or not to rename covariates
 #' @param UpdateMethod character (default: "standard"): TMLE update method. Supported values are
-#'                     `"standard"`, `"adaptive"`, and `"coordinated"`. `"adaptive"` uses a
+#'                     `"standard"` and `"adaptive"`. `"adaptive"` uses a
 #'                     line search with rollback and is usually the most stable choice for
 #'                     difficult convergence cases. `"accelerated"` is accepted as a legacy alias
 #'                     for `"adaptive"`.
@@ -191,7 +191,7 @@ formatArguments <- function(DataTable,
                             ConcreteArgs = NULL,
                             # LongTime = NULL,
                             RenameCovs = TRUE,
-                            UpdateMethod = c("standard", "adaptive", "coordinated"),
+                            UpdateMethod = c("standard", "adaptive"),
                             EICStopRule = c("relative", "absolute", "hybrid"),
                             EICStopAbsTol = 0,
                             ...)
@@ -876,8 +876,8 @@ getMinNuisance <- function(MinNuisance = 0.05) {
 }
 
 getUpdateMethod <- function(UpdateMethod) {
-  choices <- c("standard", "adaptive", "coordinated")
-  disabled <- c("jacobi", "rootSolve")
+  choices <- c("standard", "adaptive")
+  disabled <- c("coordinated", "jacobi", "rootsolve")
 
   if (is.null(UpdateMethod) || length(UpdateMethod) == 0) {
     return("standard")
@@ -888,10 +888,12 @@ getUpdateMethod <- function(UpdateMethod) {
   if (!is.character(UpdateMethod) || is.na(UpdateMethod)) {
     stop("UpdateMethod must be one of: ", paste(choices, collapse = ", "))
   }
+  UpdateMethod <- trimws(UpdateMethod)
   if (identical(UpdateMethod, "accelerated")) {
     message("UpdateMethod = 'accelerated' has been renamed to 'adaptive'.")
     UpdateMethod <- "adaptive"
   }
+  UpdateMethod <- tolower(UpdateMethod)
   if (UpdateMethod %in% disabled) {
     stop("UpdateMethod = '", UpdateMethod, "' is disabled because it is experimental ",
          "and not safe for simulation runs. Use one of: ", paste(choices, collapse = ", "))

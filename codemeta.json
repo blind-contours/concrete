@@ -2,16 +2,16 @@
   "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
   "@type": "SoftwareSourceCode",
   "identifier": "concrete",
-  "description": "Continuous-time estimation of survival estimands using targeted maximumum likelihood estimation methodology described by Helene Rytgaard, Thomas Gerds, and Mark van der Laan 2021. Currently supported - Estimation of cause-specific hazards using Cox models, binary treatments, and simultaneously targeting survival estimands at multiple time points. ",
+  "description": "One-step continuous-time Targeted Minimum Loss-Based Estimation (TMLE) for outcome-specific absolute risk estimands in right-censored survival settings with or without competing risks. Treatment estimation uses SuperLearner, and event-specific hazard candidate libraries can include Cox, Coxnet, random survival forests, additive hazards, and HAL with cross-validated discrete selection.",
   "name": "concrete: Continuous-Time Competing Risks Estimation using TMLE",
   "license": "https://spdx.org/licenses/GPL-3.0",
-  "version": "0.0.0.9",
+  "version": "1.1.0",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "R",
     "url": "https://r-project.org"
   },
-  "runtimePlatform": "R version 4.2.1 (2022-06-23)",
+  "runtimePlatform": "R >= 3.5.0",
   "author": [
     {
       "@type": "Person",
@@ -130,32 +130,7 @@
     },
     "SystemRequirements": null
   },
-  "fileSize": "2141.678KB",
-  "citation": [
-    {
-      "@type": "ScholarlyArticle",
-      "datePublished": "TBD",
-      "author": [
-        {
-          "@type": "Organization",
-          "name": "TBD"
-        }
-      ],
-      "name": "TBD",
-      "url": "TBD",
-      "pagination": "TBD",
-      "isPartOf": {
-        "@type": "PublicationIssue",
-        "issueNumber": "TBD",
-        "datePublished": "TBD",
-        "isPartOf": {
-          "@type": ["PublicationVolume", "Periodical"],
-          "volumeNumber": "TBD",
-          "name": "TBD"
-        }
-      }
-    }
-  ],
+  "dateModified": "2026-06-01",
   "codeRepository": "https://github.com/blind-contours/concrete",
   "readme": "https://github.com/blind-contours/concrete/blob/main/README.md"
 }

@@ -37,19 +37,6 @@ reference:
       - doConcrete
       - getOutput
       - getTmleDiagnostics
-  - title: Lower-level helpers
-    contents:
-      - getInitialEstimate
-      - getPropScore
-      - getHazFit
-      - getEIC
-      - doTmleUpdate
-  - title: Developer and internal helpers
+  - title: Package overview
     contents:
       - concrete-package
-      - printOneStepDiagnostics
-      - deepcopyEstimates
-      - submodelAndEIC
-      - applyFinalSubmodel
-      - updateHazardsWithEps
-      - updateHazard

@@ -25,7 +25,7 @@ formatArguments(
   ReturnModels = TRUE,
   ConcreteArgs = NULL,
   RenameCovs = TRUE,
-  UpdateMethod = c("standard", "adaptive", "coordinated"),
+  UpdateMethod = c("standard", "adaptive"),
   EICStopRule = c("relative", "absolute", "hybrid"),
   EICStopAbsTol = 0,
   ...
@@ -105,7 +105,7 @@ calls. A non-NULL input will cause all other arguments to be ignored.}
 \item{RenameCovs}{boolean (default: TRUE): whether or not to rename covariates}
 
 \item{UpdateMethod}{character (default: "standard"): TMLE update method. Supported values are
-\code{"standard"}, \code{"adaptive"}, and \code{"coordinated"}. \code{"adaptive"} uses a
+\code{"standard"} and \code{"adaptive"}. \code{"adaptive"} uses a
 line search with rollback and is usually the most stable choice for
 difficult convergence cases. \code{"accelerated"} is accepted as a legacy alias
 for \code{"adaptive"}.}

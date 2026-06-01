@@ -8,6 +8,7 @@
 #' @param TargetTime numeric vector
 #' @param Regime list
 #' @param ReturnModels boolean
+#' @keywords internal
 
 getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, TargetTime, 
                                Regime, ReturnModels) {
@@ -118,4 +119,3 @@ truncNuisanceWeight <- function(NuisanceDenom, MinNuisance, RegimeName) {
 #     CovSelected <- rank(-FitRanger$variable.importance, na.last = NA, ties.method = "first") <= nVar
 #     return(CovSelected)
 # }
-

@@ -83,14 +83,15 @@ getTmleDiagnostics <- function(ConcreteEst,
   )
   data.table::setcolorder(SummEIC, c("Trt", setdiff(names(SummEIC), "Trt")))
 
-  diagnostics <- makeOneStepStop(
+  diagnostics <- targetOneStepStop(
     SummEIC = SummEIC,
+    TargetTime = TargetTime,
+    TargetEvent = TargetEvent,
     EICStopRule = EICStopRule,
     EICStopAbsTol = EICStopAbsTol
   )
-  diagnostics <- diagnostics[Time %in% TargetTime & Event %in% TargetEvent]
   data.table::setnames(diagnostics, "Trt", "Intervention")
-  diagnostics[, Converged := all(check %in% TRUE)]
+  diagnostics[, Converged := isTRUE(attr(ConcreteEst, "TmleConverged")$converged)]
   diagnostics[, ConvergenceStep := attr(ConcreteEst, "TmleConverged")$step]
   diagnostics[]
 }

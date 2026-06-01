@@ -23,8 +23,11 @@ targeting problem from a numerically tiny empirical efficient influence curve
 
 ## What convergence means here
 
-The TMLE update tries to make the empirical mean of each target EIC component
-small. The original stopping rule checks:
+The TMLE update tries to make the empirical mean of each requested target EIC
+component small. Stopping is evaluated for the requested intervention, target
+event, and target time components; internal complement rows used to form
+survival contrasts are not used as additional stopping equations. The original
+stopping rule checks:
 
 ```text
 abs(PnEIC) <= seEIC / (sqrt(n) * log(n))
@@ -143,7 +146,10 @@ ConcreteEst <- doConcrete(ConcreteArgs)
 ### 2. Use adaptive updating
 
 The adaptive method uses a line search with rollback and is the recommended
-first convergence fix.
+first convergence fix. With `EICStopRule = "relative"` it accepts updates that
+reduce the target empirical EIC norm. With `EICStopRule = "absolute"` or
+`"hybrid"` it accepts updates that reduce the active component-wise stopping
+ratio.
 
 ```{r adaptive}
 ConcreteArgs$UpdateMethod <- "adaptive"

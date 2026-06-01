@@ -6,7 +6,7 @@
   One-step continuous-time Targeted Minimum Loss-Based Estimator (TMLE) for outcome-specific absolute risk estimands in right-censored survival settings with or without competing risks
 }
 \description{
-Implements the methodology described in Rytgaard et al. (2023) <doi:10.1111/biom.13856> and Rytgaard and van der Laan (2023) <doi:10.1007/s10985-022-09576-2>. Currently can be used to estimate the effects of static or dynamic interventions on binary treatments given at baseline, cross-validated initial estimation of treatment propensity is done using the 'SuperLearner' package, and initial estimation of conditional hazards is done using ensembles of Cox regressions from the 'survival' package or Coxnet from the 'glmnet' package.
+Implements the methodology described in Rytgaard et al. (2023) <doi:10.1111/biom.13856> and Rytgaard and van der Laan (2023) <doi:10.1007/s10985-022-09576-2>. Currently can be used to estimate the effects of static or dynamic interventions on binary treatments given at baseline. Cross-validated treatment estimation is done using the 'SuperLearner' package, and conditional hazards are estimated from event-specific candidate libraries using Cox regressions from 'survival', Coxnet from 'glmnet', random survival forests from 'randomForestSRC', additive hazards from 'survival', or HAL from 'hal9001'. Hazard libraries currently use cross-validated discrete selection. The TMLE update includes configurable stopping rules and adaptive update controls for numerically difficult rare-event settings.
 }
 \details{
 formatArguments()
@@ -32,6 +32,8 @@ Maintainer: David McCoy <david_mccoy@berkeley.edu>
   \link[SuperLearner]{SuperLearner}  
   \link[survival]{coxph}
   \link[glmnet]{glmnet}
+  \link[randomForestSRC]{rfsrc}
+  \link[hal9001]{fit_hal}
 }
 \examples{
 library(concrete)

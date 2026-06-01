@@ -24,6 +24,7 @@ test_that("getTmleDiagnostics extracts component, trace, and norm diagnostics", 
     expect_false(components[Time == 365, check])
     expect_equal(components[Time == 180, StopCriteria], 1e-3)
     expect_equal(components[Time == 365, ConvergenceStep], 5)
+    expect_false(unique(components$Converged))
 
     trace <- getTmleDiagnostics(est, type = "trace")
     expect_equal(trace$Status, "initial")

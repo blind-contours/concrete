@@ -88,9 +88,11 @@ doConCRTmle <- function(DataTable, TargetTime, TargetEvent, Regime, CVFolds, Mod
     ## check PnEIC <= seEIC / (sqrt(n) log(n))
     SummEIC <- do.call(rbind, lapply(seq_along(Estimates), function(a) {
         cbind("Trt" = names(Estimates)[a], Estimates[[a]][["SummEIC"]])}))
-    NormPnEIC <- getNormPnEIC(SummEIC[Time %in% TargetTime & Event %in% TargetEvent, PnEIC])
-    OneStepStop <- makeOneStepStop(
+    NormPnEIC <- getNormPnEIC(targetSummEIC(SummEIC, TargetTime, TargetEvent)[, PnEIC])
+    OneStepStop <- targetOneStepStop(
         SummEIC = SummEIC,
+        TargetTime = TargetTime,
+        TargetEvent = TargetEvent,
         EICStopRule = EICStopRule,
         EICStopAbsTol = EICStopAbsTol
     )
@@ -165,10 +167,9 @@ print.ConcreteEst <- function(x, ...) {
     if (!(isTRUE(attr(x, "TmleConverged")$converged))) {
         PnEICs <- do.call(rbind, lapply(seq_along(x), function(a)
             cbind("Intervention" = names(x)[a], x[[a]]$SummEIC)))
+        PnEICs <- PnEICs[Time %in% attr(x, "TargetTime") & Event %in% attr(x, "TargetEvent")]
         Risks <- getRisk(x, TargetTime = attr(x, "TargetTime"), TargetEvent = attr(x, "TargetEvent"),
                          GComp = FALSE)[, .SD, .SDcols = c("Intervention", "Time", "Event", "Pt Est", "se")]
-        Risks <- rbind(Risks, Risks[, list("Event" = -1, "Pt Est" = 1 - sum(`Pt Est`),
-                                           "se" = sqrt(sum(se^2))), by = c("Intervention", "Time")])
         PnEICs <- merge(PnEICs, Risks, by = c("Intervention", "Time", "Event"))
         StopDT <- data.table::copy(PnEICs)
         data.table::setnames(StopDT, "Intervention", "Trt")

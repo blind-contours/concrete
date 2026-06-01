@@ -31,6 +31,12 @@ getEICStopAbsTol <- function(EICStopAbsTol) {
   EICStopAbsTol
 }
 
+targetSummEIC <- function(SummEIC, TargetTime, TargetEvent) {
+  Time <- Event <- NULL
+
+  SummEIC[Time %in% TargetTime & Event %in% TargetEvent]
+}
+
 safeEICRatio <- function(abs_pneic, threshold) {
   out <- rep(Inf, length(abs_pneic))
   positive <- is.finite(threshold) & threshold > 0
@@ -71,4 +77,50 @@ makeOneStepStop <- function(SummEIC,
   out[, StopRule := EICStopRule]
   out[, StopAbsTol := EICStopAbsTol]
   out[]
+}
+
+targetOneStepStop <- function(SummEIC,
+                              TargetTime,
+                              TargetEvent,
+                              EICStopRule = "relative",
+                              EICStopAbsTol = 0) {
+  makeOneStepStop(
+    SummEIC = targetSummEIC(SummEIC, TargetTime, TargetEvent),
+    EICStopRule = EICStopRule,
+    EICStopAbsTol = EICStopAbsTol
+  )
+}
+
+targetUpdateObjective <- function(SummEIC,
+                                  TargetTime,
+                                  TargetEvent,
+                                  EICStopRule = "relative",
+                                  EICStopAbsTol = 0) {
+  PnEIC <- ratio <- NULL
+
+  target <- targetSummEIC(SummEIC, TargetTime, TargetEvent)
+  if (!nrow(target)) {
+    return(Inf)
+  }
+
+  norm <- getNormPnEIC(target[, PnEIC])
+  if (!is.finite(norm)) {
+    return(Inf)
+  }
+
+  EICStopRule <- getEICStopRule(EICStopRule)
+  if (identical(EICStopRule, "relative")) {
+    return(norm)
+  }
+
+  target_stop <- makeOneStepStop(
+    SummEIC = target,
+    EICStopRule = EICStopRule,
+    EICStopAbsTol = EICStopAbsTol
+  )
+  max_ratio <- suppressWarnings(max(target_stop[, ratio], na.rm = TRUE))
+  if (!is.finite(max_ratio)) {
+    return(norm)
+  }
+  max_ratio
 }

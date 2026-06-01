@@ -11,6 +11,7 @@
 #' 
 #' @import SuperLearner
 #' @importFrom stats binomial gaussian
+#' @keywords internal
 
 getPropScore <- function(TrtVal, CovDT, TrtModel, MinNuisance, Regime, 
                          CVFolds, TrtLoss = NULL, ReturnModels) {
@@ -96,4 +97,3 @@ getPropScore <- function(TrtVal, CovDT, TrtModel, MinNuisance, Regime,
     attr(PropScores, "warnings") <- summary(warnings())
     return(PropScores)
 }
-

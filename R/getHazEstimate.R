@@ -1,4 +1,4 @@
-#' Title
+#' Fit candidate hazard learners
 #'
 #' @param Data data.table
 #' @param Model list
@@ -13,6 +13,7 @@
 # #' @param Censored boolean
 #' @import survival
 #' @importFrom stats predict
+#' @keywords internal
 #'
 
 getHazFit <- function(Data, Model, CVFolds, Hazards, ReturnModels) {
