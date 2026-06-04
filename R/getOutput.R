@@ -9,8 +9,15 @@
 #' @param GComp logical: return g-formula point estimates based on initial nuisance parameter estimation
 #' @param Simultaneous logical: return simultaneous confidence intervals
 #' @param Signif numeric (default = 0.05): alpha for 2-tailed hypothesis testing
+#' @param NIMargin numeric (optional): a non-inferiority margin for the
+#'          comparative (RD/RR) estimands. When supplied, a one-sided
+#'          non-inferiority assessment is added (`NIpValue`, `NonInferior`).
+#' @param NIDirection one of `"lower"` or `"upper"`: which side of the margin is
+#'          "non-inferior". Use `"upper"` when a smaller estimate is better (the
+#'          usual risk-difference case) and `"lower"` when larger is better.
 #'
-#' @return data.table of point estimates and standard deviations
+#' @return data.table of point estimates and standard deviations. Comparative
+#'   estimands carry a two-sided Wald `pValue`.
 #' @export getOutput
 #'
 #' @examples
@@ -47,9 +54,11 @@
 #' @importFrom MASS mvrnorm
 #' @importFrom stats cor
 
-getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_along(ConcreteEst), 
-                      GComp = NULL, Simultaneous = TRUE, Signif = 0.05) {
+getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_along(ConcreteEst),
+                      GComp = NULL, Simultaneous = TRUE, Signif = 0.05,
+                      NIMargin = NULL, NIDirection = c("lower", "upper")) {
   `CI Low` <- `CI Hi` <- `Pt Est` <- `se` <- NULL
+  NIDirection <- match.arg(NIDirection)
   if (!inherits(ConcreteEst, "ConcreteEst")) 
     stop("ConcreteEst must be a 'ConcreteEst' class object")
   TargetTime <- attr(ConcreteEst, "TargetTime")
@@ -118,10 +127,14 @@ getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_alon
   Output[, `CI Hi` := `Pt Est` + qnorm(1 - Signif/2)*se]
   
   if (Simultaneous)
-    Output <- getSimultaneous(ConcreteEst = ConcreteEst, Output = Output, EstimandType = EstimandType, 
+    Output <- getSimultaneous(ConcreteEst = ConcreteEst, Output = Output, EstimandType = EstimandType,
                               Intervention = Intervention, Signif = Signif)
-  
-  setorderv(Output, cols = c("Time", "Event", "Estimand", "Intervention", "Estimator"), 
+
+  # Wald p-values for the comparative estimands (and optional non-inferiority).
+  Output <- addWaldInference(Output, Signif = Signif, NIMargin = NIMargin,
+                             NIDirection = NIDirection)
+
+  setorderv(Output, cols = c("Time", "Event", "Estimand", "Intervention", "Estimator"),
             order = c(1, 1, 1, 1, -1))
   setcolorder(Output, c("Time", "Event", "Estimand", "Intervention", "Estimator"))
   
@@ -267,9 +280,12 @@ getSimultaneous <- function(ConcreteEst, Output, EstimandType, Intervention, Sig
 #' @param ... additional arguments to be passed into print methods
 #' @exportS3Method print ConcreteOut
 print.ConcreteOut <- function(x, ...) {
-  num.cols <- intersect(c("Pt Est", "se", "CI Low", "CI Hi", "SimCI Low", "SimCI Hi"), 
+  num.cols <- intersect(c("Pt Est", "se", "CI Low", "CI Hi", "SimCI Low", "SimCI Hi"),
                         colnames(x))
-  dt <- x[, (num.cols) := lapply(.SD, function(y) signif(y, 2)), .SDcols = num.cols]
+  # 3 significant figures keeps small risks (0.21) and large RMSTs (1770) legible.
+  dt <- x[, (num.cols) := lapply(.SD, function(y) signif(y, 3)), .SDcols = num.cols]
+  if ("pValue" %in% colnames(dt))
+    dt[, "pValue" := signif(.SD[["pValue"]], 2)]
   NextMethod(generic = "print", object = dt)
 }
 

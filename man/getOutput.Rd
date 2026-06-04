@@ -11,7 +11,9 @@ getOutput(
   Intervention = seq_along(ConcreteEst),
   GComp = NULL,
   Simultaneous = TRUE,
-  Signif = 0.05
+  Signif = 0.05,
+  NIMargin = NULL,
+  NIDirection = c("lower", "upper")
 )
 
 \method{plot}{ConcreteOut}(x, NullLine = TRUE, ask = TRUE, ...)
@@ -32,6 +34,14 @@ Intervention should be a numeric vector with length 2, the first term designatin
 
 \item{Signif}{numeric (default = 0.05): alpha for 2-tailed hypothesis testing}
 
+\item{NIMargin}{numeric (optional): a non-inferiority margin for the
+comparative (RD/RR) estimands. When supplied, a one-sided
+non-inferiority assessment is added (\code{NIpValue}, \code{NonInferior}).}
+
+\item{NIDirection}{one of \code{"lower"} or \code{"upper"}: which side of the margin is
+"non-inferior". Use \code{"upper"} when a smaller estimate is better (the
+usual risk-difference case) and \code{"lower"} when larger is better.}
+
 \item{x}{a ConcreteOut object}
 
 \item{NullLine}{logical: to plot a red line at y=1 for RR plots and at y=0 for RD plots}
@@ -41,7 +51,8 @@ Intervention should be a numeric vector with length 2, the first term designatin
 \item{...}{additional arguments to be passed into plot methods}
 }
 \value{
-data.table of point estimates and standard deviations
+data.table of point estimates and standard deviations. Comparative
+estimands carry a two-sided Wald \code{pValue}.
 }
 \description{
 getOutput

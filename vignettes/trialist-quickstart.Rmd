@@ -190,6 +190,60 @@ For risk differences, positive values mean the first intervention listed in
 `Intervention = c(1, 2)` has higher risk than the second. With `makeITT()`, that
 is `A=1` minus `A=0`.
 
+`getOutput()` also reports a two-sided Wald `pValue` for the risk difference and
+risk ratio, and can run a one-sided non-inferiority assessment against a margin:
+
+```{r non-inferiority}
+getOutput(
+  ConcreteEst, Estimand = "RD", Intervention = c(1, 2),
+  NIMargin = 0.05, NIDirection = "upper"   # active is non-inferior if its excess risk stays below 0.05
+)
+```
+
+## Restricted mean survival time and life-years lost
+
+Because the hazard ratio is non-collapsible and depends on proportional
+hazards, many trials report a restricted mean survival time (RMST) instead.
+`getRMST()` integrates the targeted cumulative incidence over the follow-up
+horizon, so request a reasonably dense `TargetTime` grid when you plan to use it.
+
+```{r rmst}
+# RMST (event-free time) and cause-specific life-years lost, with the
+# between-arm difference in restricted mean times:
+getRMST(ConcreteEst, Horizon = 1095, Intervention = c(1, 2))
+```
+
+The `RMST Diff` row is the difference in mean event-free time up to the horizon
+(e.g. "extra days alive and event-free under the active arm"); `LYL Diff` rows
+are the cause-specific differences in time lost.
+
+## How much did covariate adjustment buy you?
+
+Covariate adjustment does not change the estimand in a randomized trial, but it
+can tighten the confidence intervals. Fit an unadjusted (treatment-only) version
+and compare with `getRelativeEfficiency()`:
+
+```{r relative-efficiency}
+unadj_args <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetTime = c(365, 730, 1095),
+  TargetEvent = 1, CVArg = list(V = 5),
+  Model = list(arm = "SL.mean",
+               "0" = list(Cox = survival::Surv(time, event == 0) ~ arm),
+               "1" = list(Cox = survival::Surv(time, event == 1) ~ arm))
+)
+unadj_est <- doConcrete(unadj_args)
+
+getRelativeEfficiency(
+  Adjusted   = getOutput(ConcreteEst, Estimand = c("Risk", "RD"), Intervention = c(1, 2)),
+  Unadjusted = getOutput(unadj_est,   Estimand = c("Risk", "RD"), Intervention = c(1, 2))
+)
+```
+
+`RelEfficiency` above 1 and a positive `VarReductionPct` mean adjustment was
+worth it: a value of 1.25 says the adjusted analysis on these `n` participants
+has the precision of an unadjusted analysis on 25% more.
+
 ## Compare with familiar analyses
 
 Use standard analyses as context, not as exact substitutes. A Cox hazard ratio is

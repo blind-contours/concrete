@@ -1,5 +1,21 @@
 # concrete 1.1.1.9000
 
+## New RCT estimands and reporting
+
+* Added `getRMST()` for restricted mean survival time (event-free) and
+  cause-specific life-years lost. These are collapsible, clinically
+  interpretable estimands obtained by integrating the targeted cumulative
+  incidence over the fitted target-time grid; their influence functions are the
+  time-integrals of the absolute-risk influence functions, so standard errors,
+  differences, and ratios reuse the existing machinery.
+* `getOutput()` now reports a two-sided Wald `pValue` for the comparative
+  (risk-difference and risk-ratio) estimands, and gains optional `NIMargin` /
+  `NIDirection` arguments for one-sided non-inferiority assessment.
+* Added `getRelativeEfficiency()` to quantify the precision gain from covariate
+  adjustment versus an unadjusted analysis (relative efficiency, percentage
+  variance reduction, and effective sample-size multiplier), as in the FDA 2023
+  covariate-adjustment guidance.
+
 ## Trialist beta updates
 
 * Updated convergence guidance for rare-event analyses. The default stopping
