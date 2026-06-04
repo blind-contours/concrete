@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# concrete
+# concrete <img src="man/figures/logo.png" align="right" height="139" alt="concrete hex logo" />
 
 [![CRAN](http://www.r-pkg.org/badges/version/concrete)](http://www.r-pkg.org/pkg/concrete)
 [![R-CMD-check](https://github.com/blind-contours/concrete/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/blind-contours/concrete/actions/workflows/R-CMD-check.yaml)
@@ -22,6 +22,27 @@ competing risks.
 interpretable absolute risks, risk differences, and risk ratios at
 prespecified follow-up times while using flexible nuisance estimation
 and TMLE diagnostics.
+
+### What you get
+
+The core output is a covariate-adjusted absolute-risk (cumulative
+incidence) curve for each intervention, with pointwise and simultaneous
+confidence intervals, plus the implied risk differences and risk ratios.
+The figure below is real output from the worked PBC example used in the
+[quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.html).
+
+<img src="man/figures/readme-hero.png" width="100%" alt="Covariate-adjusted absolute risk by arm with confidence intervals" />
+
+### How it works
+
+`concrete` fits treatment and event/censoring hazards with
+cross-validated learners, forms a plug-in cumulative incidence, then
+applies a one-step TMLE update that targets the efficient influence
+function for each requested risk. The [How concrete
+works](https://blind-contours.github.io/concrete/articles/how-concrete-works.html)
+article walks through each stage.
+
+<img src="man/figures/schematic-py_pipeline_flowchart.png" width="85%" alt="concrete pipeline: nuisance estimation, plug-in, targeting, report" />
 
 ------------------------------------------------------------------------
 
@@ -65,6 +86,17 @@ set, start with these articles:
     limitations](https://blind-contours.github.io/concrete/articles/trialist-testing-protocol.html):
     a built-in smoke test, a conservative-to-flexible testing ladder,
     and the current scope of supported trial data structures.
+
+To understand the estimator and see how it performs:
+
+-   [How concrete
+    works](https://blind-contours.github.io/concrete/articles/how-concrete-works.html):
+    the target estimand, the efficient influence function, and the
+    targeting loop, explained with diagrams.
+-   [Simulation
+    evidence](https://blind-contours.github.io/concrete/articles/simulation-evidence.html):
+    bias reduction, standard-error calibration, and confidence-interval
+    coverage across four simulation scenarios.
 
 The minimum data columns are a subject id, observed time, event type,
 binary treatment arm, and baseline covariates. Censoring should be coded
@@ -120,10 +152,11 @@ source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
 
 The TMLE update can be configured through `formatArguments()`. The
 default stopping rule is the original relative empirical EIC criterion.
-For rare-event settings, an absolute risk-scale rule can be more stable
-because the relative threshold can become numerically tiny when the
-component EIC variance is near zero. A good first sensitivity is
-`EICStopAbsTol = 0.02 / sqrt(n)`:
+For rare-event or competing-risk settings the relative threshold can
+become numerically tiny, so an absolute risk-scale rule is often more
+stable. A good first sensitivity is `EICStopAbsTol = 0.02 / sqrt(n)`,
+which is also applied automatically if you select the `"absolute"` or
+`"hybrid"` rule without setting a tolerance:
 
 ``` r
 ConcreteArgs <- formatArguments(
@@ -151,12 +184,10 @@ getTmleDiagnostics(ConcreteEst, type = "trace")
 
 ## Survival learner library
 
-Hazard models can mix Cox formulas with optional survival learners. For each
-event-specific hazard library, `concrete` currently uses cross-validated
-discrete selection rather than a weighted convex ensemble. The following aliases
-are supported in `Model[[event_type]]`: `"coxnet"`, `"rsf"` or
-`"randomForestSRC"`, `"aareg"` or `"additive_hazards"`, and `"hal"` or
-`"hal9001"`.
+Hazard models can mix Cox formulas with optional survival learners. The
+following aliases are supported in `Model[[event_type]]`: `"coxnet"`,
+`"rsf"` or `"randomForestSRC"`, `"aareg"` or `"additive_hazards"`, and
+`"hal"` or `"hal9001"`.
 
 ``` r
 Model <- list(

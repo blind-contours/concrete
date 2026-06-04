@@ -27,6 +27,14 @@ articles:
       - learner-library
       - convergence-diagnostics
       - trialist-testing-protocol
+  - title: Methodology and evidence
+    navbar: Methodology & evidence
+    contents:
+      - how-concrete-works
+      - simulation-evidence
+  - title: Reference walkthrough
+    navbar: ~
+    contents:
       - Using-concrete
 
 reference:

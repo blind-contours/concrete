@@ -154,19 +154,27 @@ ConcreteOut <- getOutput(
 ConcreteOut[Event == 1]
 ```
 
-Example output will look like this. The exact values will change with your data,
+The table below is the actual TMLE output from this PBC example (event of
+interest, selected target times). The exact values will change with your data,
 target times, learner library, and confidence-interval settings.
 
-| Time | Event | Estimand | Intervention | Estimator | Pt Est | se | CI Low | CI Hi |
-|---:|---:|---|---|---|---:|---:|---:|---:|
-| 1000 | 1 | Abs Risk | A=0 | tmle | 0.19 | 0.036 | 0.11 | 0.26 |
-| 1000 | 1 | Abs Risk | A=1 | tmle | 0.21 | 0.042 | 0.12 | 0.29 |
-| 1000 | 1 | Risk Diff | [A=1] - [A=0] | tmle | 0.021 | 0.052 | -0.082 | 0.12 |
-| 1000 | 1 | Rel Risk | [A=1] / [A=0] | tmle | 1.10 | 0.30 | 0.53 | 1.70 |
-| 2000 | 1 | Abs Risk | A=0 | tmle | 0.34 | 0.053 | 0.24 | 0.44 |
-| 2000 | 1 | Abs Risk | A=1 | tmle | 0.33 | 0.047 | 0.24 | 0.43 |
-| 2000 | 1 | Risk Diff | [A=1] - [A=0] | tmle | -0.007 | 0.065 | -0.14 | 0.12 |
-| 2000 | 1 | Rel Risk | [A=1] / [A=0] | tmle | 0.98 | 0.19 | 0.61 | 1.40 |
+```{r output-table, eval = TRUE, echo = FALSE}
+out <- readRDS("figures/quickstart-output.rds")
+knitr::kable(out[out$Estimator == "tmle" & out$Time %in% c(730, 1460, 2190), ],
+             align = "r")
+```
+
+`plot(ConcreteOut)` draws the same estimates as covariate-adjusted absolute-risk
+curves by arm, with pointwise error bars and a shaded simultaneous confidence
+band:
+
+```{r risk-plot, eval = FALSE}
+plot(ConcreteOut, ask = FALSE)
+```
+
+```{r risk-plot-img, eval = TRUE, echo = FALSE, out.width = "100%", fig.alt = "Adjusted absolute risk by arm"}
+knitr::include_graphics("figures/quickstart-risk.png")
+```
 
 Important columns:
 
