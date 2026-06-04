@@ -14,6 +14,10 @@ selector: for each censoring or event type, `concrete` evaluates the
 candidate hazard learners and uses the learner with the lowest
 validation loss.
 
+The code snippets below assume a `trial` `data.table` as built in the
+[Trialist
+quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.md).
+
 ## Conservative first library
 
 For first use in a trial, start with simple and stable learners.

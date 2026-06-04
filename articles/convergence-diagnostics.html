@@ -39,7 +39,11 @@
     <li><a class="dropdown-item" href="../articles/learner-library.html">Learner library guide</a></li>
     <li><a class="dropdown-item" href="../articles/convergence-diagnostics.html">Convergence diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/trialist-testing-protocol.html">Testing protocol and current limitations</a></li>
-    <li><a class="dropdown-item" href="../articles/Using-concrete.html">Using-concrete</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Methodology &amp; evidence</h6></li>
+    <li><a class="dropdown-item" href="../articles/how-concrete-works.html">How concrete works</a></li>
+    <li><a class="dropdown-item" href="../articles/simulation-evidence.html">Simulation evidence</a></li>
+    <li><a class="dropdown-item" href="../articles/Using-concrete.html">Reference walkthrough</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -59,8 +63,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Convergence diagnostics</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Convergence diagnostics</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/blind-contours/concrete/blob/main/vignettes/convergence-diagnostics.Rmd" class="external-link"><code>vignettes/convergence-diagnostics.Rmd</code></a></small>
@@ -74,6 +77,10 @@
 goal is to distinguish a meaningful targeting problem from a numerically
 tiny empirical efficient influence curve (EIC) component in a rare-event
 setting.</p>
+<p>The illustrative code snippets assume a <code>trial</code>
+<code>data.table</code> and a fitted <code>ConcreteEst</code> object as
+built in the <a href="trialist-quickstart.html">Trialist
+quickstart</a>.</p>
 <div class="section level2">
 <h2 id="what-convergence-means-here">What convergence means here<a class="anchor" aria-label="anchor" href="#what-convergence-means-here"></a>
 </h2>
@@ -121,7 +128,11 @@ variability.</p>
 requested target EIC has empirical mean no larger than this risk-scale
 tolerance. This is often more interpretable for sparse early event
 targets than forcing a relative threshold whose denominator is nearly
-zero.</p>
+zero. (If you choose <code>"absolute"</code> or <code>"hybrid"</code>
+and leave <code>EICStopAbsTol</code> at its default of <code>0</code>,
+<code>concrete</code> substitutes <code>0.02 / sqrt(n)</code> for you,
+since a tolerance of <code>0</code> can never be met.)</p>
+<p><img src="figures/schematic-r_stop_rules.png" class="r-plt" alt="relative vs absolute stopping rule" width="75%"></p>
 </div>
 <div class="section level2">
 <h2 id="inspect-the-diagnostics">Inspect the diagnostics<a class="anchor" aria-label="anchor" href="#inspect-the-diagnostics"></a>
@@ -246,7 +257,16 @@ zero.</p>
 </tr>
 </tbody>
 </table>
-<p>The component table is usually the most useful first view.</p>
+<p>The component table is usually the most useful first view.
+<code>plot(ConcreteEst, convergence = TRUE)</code> shows the norm of the
+empirical EIC falling across update steps, and
+<code>plot(ConcreteEst, gweights = TRUE)</code> shows the distribution
+of the treatment/censoring nuisance weights with the positivity-risk
+threshold marked:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, convergence <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, gweights <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="figures/diagnostics-convergence.png" class="r-plt" alt="convergence trace and nuisance weights" width="49%"><img src="figures/diagnostics-nuisance-weights.png" class="r-plt" alt="convergence trace and nuisance weights" width="49%"></p>
 <p>Key columns:</p>
 <ul>
 <li>
@@ -274,7 +294,7 @@ reached</li>
 </ul>
 <p>Focus first on rows with <code>check == FALSE</code>, sorted by
 <code>ratio</code>.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">components</span><span class="op">[</span><span class="va">check</span> <span class="op">==</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">ratio</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <p>If there are failures, the output will identify which
 event/time/intervention combination is driving the problem:</p>
@@ -323,6 +343,145 @@ the chosen threshold. Start with adaptive updating and a simpler learner
 library before loosening the stopping rule.</p>
 </div>
 <div class="section level2">
+<h2 id="a-worked-rare-event-example">A worked rare-event example<a class="anchor" aria-label="anchor" href="#a-worked-rare-event-example"></a>
+</h2>
+<p>The tables below are real <code><a href="../reference/getTmleDiagnostics.html">getTmleDiagnostics()</a></code> output
+from the PBC competing- risks example, targeting both death (event 1)
+and the rarer transplant (event 2) at four times. Under the
+<strong>relative</strong> rule, the rare event-2 components have a tiny
+standard-error scale, so their stopping threshold is minuscule and the
+<code>ratio</code> blows up even though the absolute <code>PnEIC</code>
+is small — the fit is flagged as not converged:</p>
+<table class="table">
+<colgroup>
+<col width="4%">
+<col width="20%">
+<col width="7%">
+<col width="9%">
+<col width="14%">
+<col width="20%">
+<col width="14%">
+<col width="9%">
+</colgroup>
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">Intervention</th>
+<th align="right">Time</th>
+<th align="right">Event</th>
+<th align="right">PnEIC</th>
+<th align="right">StopCriteria</th>
+<th align="right">ratio</th>
+<th align="right">check</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">6</td>
+<td align="right">A=1</td>
+<td align="right">730</td>
+<td align="right">2</td>
+<td align="right">-0.00145</td>
+<td align="right">0.00003</td>
+<td align="right">53.31646</td>
+<td align="right">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">14</td>
+<td align="right">A=0</td>
+<td align="right">730</td>
+<td align="right">2</td>
+<td align="right">0.00057</td>
+<td align="right">0.00092</td>
+<td align="right">0.61972</td>
+<td align="right">TRUE</td>
+</tr>
+<tr class="odd">
+<td align="left">7</td>
+<td align="right">A=1</td>
+<td align="right">1460</td>
+<td align="right">2</td>
+<td align="right">-0.00083</td>
+<td align="right">0.00196</td>
+<td align="right">0.42503</td>
+<td align="right">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">8</td>
+<td align="right">A=1</td>
+<td align="right">2190</td>
+<td align="right">2</td>
+<td align="right">0.00070</td>
+<td align="right">0.00248</td>
+<td align="right">0.28114</td>
+<td align="right">TRUE</td>
+</tr>
+</tbody>
+</table>
+<p>Switching to the <strong>absolute</strong> rule
+(<code>0.02 / sqrt(n)</code>) judges those same small <code>PnEIC</code>
+values against a risk-scale tolerance. The spurious blow-up disappears —
+the worst ratio drops from roughly 50 to about 2 — leaving only a
+genuinely harder component that the escalation ladder addresses:</p>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">Intervention</th>
+<th align="right">Time</th>
+<th align="right">Event</th>
+<th align="right">PnEIC</th>
+<th align="right">StopCriteria</th>
+<th align="right">ratio</th>
+<th align="right">check</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">7</td>
+<td align="right">A=1</td>
+<td align="right">1460</td>
+<td align="right">2</td>
+<td align="right">-0.00226</td>
+<td align="right">0.00113</td>
+<td align="right">1.99585</td>
+<td align="right">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">8</td>
+<td align="right">A=1</td>
+<td align="right">2190</td>
+<td align="right">2</td>
+<td align="right">0.00220</td>
+<td align="right">0.00113</td>
+<td align="right">1.94196</td>
+<td align="right">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">6</td>
+<td align="right">A=1</td>
+<td align="right">730</td>
+<td align="right">2</td>
+<td align="right">-0.00210</td>
+<td align="right">0.00113</td>
+<td align="right">1.85473</td>
+<td align="right">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">14</td>
+<td align="right">A=0</td>
+<td align="right">730</td>
+<td align="right">2</td>
+<td align="right">0.00094</td>
+<td align="right">0.00113</td>
+<td align="right">0.83213</td>
+<td align="right">TRUE</td>
+</tr>
+</tbody>
+</table>
+<p>This is the canonical rare-event pattern: under the relative rule a
+large <code>ratio</code> is driven by a near-zero threshold rather than
+by a meaningful targeting failure. The absolute rule removes that
+artifact; any remaining failures (here, the sparse transplant event) are
+real sparsity to work through with the escalation ladder below.</p>
+</div>
+<div class="section level2">
 <h2 id="recommended-escalation-ladder">Recommended escalation ladder<a class="anchor" aria-label="anchor" href="#recommended-escalation-ladder"></a>
 </h2>
 <p>Start simple and add flexibility only after the conservative analysis
@@ -332,7 +491,7 @@ behaves as expected.</p>
 </h3>
 <p>Use default Cox hazards and a small treatment Super Learner
 library.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  arm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SL.mean"</span>, <span class="st">"SL.glm"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"0"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Censor <span class="op">=</span> <span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">~</span> <span class="va">arm</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">sex</span><span class="op">)</span>,</span>
@@ -364,7 +523,7 @@ recommended first convergence fix. With
 target empirical EIC norm. With <code>EICStopRule = "absolute"</code> or
 <code>"hybrid"</code> it accepts updates that reduce the active
 component-wise stopping ratio.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span> <span class="op">&lt;-</span> <span class="st">"adaptive"</span></span>
 <span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
 <span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span></code></pre></div>
@@ -372,7 +531,7 @@ component-wise stopping ratio.</p>
 <div class="section level3">
 <h3 id="use-an-absolute-risk-scale-stopping-rule-for-rare-events">3. Use an absolute risk-scale stopping rule for rare events<a class="anchor" aria-label="anchor" href="#use-an-absolute-risk-scale-stopping-rule-for-rare-events"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span> <span class="op">&lt;-</span> <span class="st">"adaptive"</span></span>
 <span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopRule</span> <span class="op">&lt;-</span> <span class="st">"absolute"</span></span>
 <span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopAbsTol</span> <span class="op">&lt;-</span> <span class="fl">0.02</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">Data</span><span class="op">)</span><span class="op">)</span></span>
@@ -385,7 +544,7 @@ stopping rule, compare estimates with the relative fit when available,
 and focus first on absolute risks and risk differences when event risks
 are very small.</p>
 <p>A hybrid rule remains useful as a secondary sensitivity:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span> <span class="op">&lt;-</span> <span class="st">"adaptive"</span></span>
 <span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopRule</span> <span class="op">&lt;-</span> <span class="st">"hybrid"</span></span>
 <span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopAbsTol</span> <span class="op">&lt;-</span> <span class="fl">0.02</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">Data</span><span class="op">)</span><span class="op">)</span></span>
@@ -395,7 +554,7 @@ are very small.</p>
 <div class="section level3">
 <h3 id="increase-iterations-only-if-progress-is-continuing">4. Increase iterations only if progress is continuing<a class="anchor" aria-label="anchor" href="#increase-iterations-only-if-progress-is-continuing"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">MaxUpdateIter</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
 <span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
 <span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span></code></pre></div>
@@ -470,7 +629,7 @@ instability rather than only the stopping threshold.</p>
 <h2 id="a-reporting-template">A reporting template<a class="anchor" aria-label="anchor" href="#a-reporting-template"></a>
 </h2>
 <p>For trial reports or issue reports, record:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  package_version <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="st">"concrete"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  update_method <span class="op">=</span> <span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span>,</span>

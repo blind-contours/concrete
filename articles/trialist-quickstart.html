@@ -39,7 +39,11 @@
     <li><a class="dropdown-item" href="../articles/learner-library.html">Learner library guide</a></li>
     <li><a class="dropdown-item" href="../articles/convergence-diagnostics.html">Convergence diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/trialist-testing-protocol.html">Testing protocol and current limitations</a></li>
-    <li><a class="dropdown-item" href="../articles/Using-concrete.html">Using-concrete</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Methodology &amp; evidence</h6></li>
+    <li><a class="dropdown-item" href="../articles/how-concrete-works.html">How concrete works</a></li>
+    <li><a class="dropdown-item" href="../articles/simulation-evidence.html">Simulation evidence</a></li>
+    <li><a class="dropdown-item" href="../articles/Using-concrete.html">Reference walkthrough</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -59,8 +63,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Trialist quickstart</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Trialist quickstart</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/blind-contours/concrete/blob/main/vignettes/trialist-quickstart.Rmd" class="external-link"><code>vignettes/trialist-quickstart.Rmd</code></a></small>
@@ -225,27 +228,30 @@ when the treatment column is the randomized treatment assignment.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ConcreteOut</span><span class="op">[</span><span class="va">Event</span> <span class="op">==</span> <span class="fl">1</span><span class="op">]</span></span></code></pre></div>
-<p>Example output will look like this. The exact values will change with
-your data, target times, learner library, and confidence-interval
+<p>The table below is the actual TMLE output from this PBC example
+(event of interest, selected target times). The exact values will change
+with your data, target times, learner library, and confidence-interval
 settings.</p>
 <table class="table">
 <colgroup>
-<col width="12%">
-<col width="12%">
+<col width="4%">
+<col width="6%">
+<col width="8%">
+<col width="13%">
+<col width="18%">
+<col width="13%">
 <col width="9%">
+<col width="8%">
 <col width="9%">
-<col width="9%">
-<col width="12%">
-<col width="12%">
-<col width="12%">
-<col width="12%">
+<col width="8%">
 </colgroup>
 <thead><tr class="header">
+<th align="left"></th>
 <th align="right">Time</th>
 <th align="right">Event</th>
-<th>Estimand</th>
-<th>Intervention</th>
-<th>Estimator</th>
+<th align="right">Estimand</th>
+<th align="right">Intervention</th>
+<th align="right">Estimator</th>
 <th align="right">Pt Est</th>
 <th align="right">se</th>
 <th align="right">CI Low</th>
@@ -253,95 +259,157 @@ settings.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="right">1000</td>
+<td align="left">9</td>
+<td align="right">730</td>
 <td align="right">1</td>
-<td>Abs Risk</td>
-<td>A=0</td>
-<td>tmle</td>
-<td align="right">0.19</td>
-<td align="right">0.036</td>
-<td align="right">0.11</td>
-<td align="right">0.26</td>
+<td align="right">Abs Risk</td>
+<td align="right">A=0</td>
+<td align="right">tmle</td>
+<td align="right">0.097</td>
+<td align="right">0.022</td>
+<td align="right">0.054</td>
+<td align="right">0.140</td>
 </tr>
 <tr class="even">
-<td align="right">1000</td>
+<td align="left">11</td>
+<td align="right">730</td>
 <td align="right">1</td>
-<td>Abs Risk</td>
-<td>A=1</td>
-<td>tmle</td>
-<td align="right">0.21</td>
-<td align="right">0.042</td>
-<td align="right">0.12</td>
-<td align="right">0.29</td>
+<td align="right">Abs Risk</td>
+<td align="right">A=1</td>
+<td align="right">tmle</td>
+<td align="right">0.112</td>
+<td align="right">0.027</td>
+<td align="right">0.061</td>
+<td align="right">0.164</td>
 </tr>
 <tr class="odd">
-<td align="right">1000</td>
+<td align="left">13</td>
+<td align="right">730</td>
 <td align="right">1</td>
-<td>Risk Diff</td>
-<td>[A=1] - [A=0]</td>
-<td>tmle</td>
-<td align="right">0.021</td>
-<td align="right">0.052</td>
-<td align="right">-0.082</td>
-<td align="right">0.12</td>
+<td align="right">Rel Risk</td>
+<td align="right">[A=1] / [A=0]</td>
+<td align="right">tmle</td>
+<td align="right">1.156</td>
+<td align="right">0.378</td>
+<td align="right">0.416</td>
+<td align="right">1.896</td>
 </tr>
 <tr class="even">
-<td align="right">1000</td>
+<td align="left">15</td>
+<td align="right">730</td>
 <td align="right">1</td>
-<td>Rel Risk</td>
-<td>[A=1] / [A=0]</td>
-<td>tmle</td>
-<td align="right">1.10</td>
-<td align="right">0.30</td>
-<td align="right">0.53</td>
-<td align="right">1.70</td>
+<td align="right">Risk Diff</td>
+<td align="right">[A=1] - [A=0]</td>
+<td align="right">tmle</td>
+<td align="right">0.015</td>
+<td align="right">0.034</td>
+<td align="right">-0.052</td>
+<td align="right">0.083</td>
 </tr>
 <tr class="odd">
-<td align="right">2000</td>
+<td align="left">17</td>
+<td align="right">1460</td>
 <td align="right">1</td>
-<td>Abs Risk</td>
-<td>A=0</td>
-<td>tmle</td>
-<td align="right">0.34</td>
-<td align="right">0.053</td>
-<td align="right">0.24</td>
-<td align="right">0.44</td>
+<td align="right">Abs Risk</td>
+<td align="right">A=0</td>
+<td align="right">tmle</td>
+<td align="right">0.241</td>
+<td align="right">0.034</td>
+<td align="right">0.174</td>
+<td align="right">0.307</td>
 </tr>
 <tr class="even">
-<td align="right">2000</td>
+<td align="left">19</td>
+<td align="right">1460</td>
 <td align="right">1</td>
-<td>Abs Risk</td>
-<td>A=1</td>
-<td>tmle</td>
-<td align="right">0.33</td>
-<td align="right">0.047</td>
-<td align="right">0.24</td>
-<td align="right">0.43</td>
+<td align="right">Abs Risk</td>
+<td align="right">A=1</td>
+<td align="right">tmle</td>
+<td align="right">0.244</td>
+<td align="right">0.035</td>
+<td align="right">0.176</td>
+<td align="right">0.313</td>
 </tr>
 <tr class="odd">
-<td align="right">2000</td>
+<td align="left">21</td>
+<td align="right">1460</td>
 <td align="right">1</td>
-<td>Risk Diff</td>
-<td>[A=1] - [A=0]</td>
-<td>tmle</td>
-<td align="right">-0.007</td>
-<td align="right">0.065</td>
-<td align="right">-0.14</td>
-<td align="right">0.12</td>
+<td align="right">Rel Risk</td>
+<td align="right">[A=1] / [A=0]</td>
+<td align="right">tmle</td>
+<td align="right">1.015</td>
+<td align="right">0.204</td>
+<td align="right">0.615</td>
+<td align="right">1.416</td>
 </tr>
 <tr class="even">
-<td align="right">2000</td>
+<td align="left">23</td>
+<td align="right">1460</td>
 <td align="right">1</td>
-<td>Rel Risk</td>
-<td>[A=1] / [A=0]</td>
-<td>tmle</td>
-<td align="right">0.98</td>
-<td align="right">0.19</td>
-<td align="right">0.61</td>
-<td align="right">1.40</td>
+<td align="right">Risk Diff</td>
+<td align="right">[A=1] - [A=0]</td>
+<td align="right">tmle</td>
+<td align="right">0.004</td>
+<td align="right">0.049</td>
+<td align="right">-0.092</td>
+<td align="right">0.099</td>
+</tr>
+<tr class="odd">
+<td align="left">25</td>
+<td align="right">2190</td>
+<td align="right">1</td>
+<td align="right">Abs Risk</td>
+<td align="right">A=0</td>
+<td align="right">tmle</td>
+<td align="right">0.325</td>
+<td align="right">0.040</td>
+<td align="right">0.247</td>
+<td align="right">0.402</td>
+</tr>
+<tr class="even">
+<td align="left">27</td>
+<td align="right">2190</td>
+<td align="right">1</td>
+<td align="right">Abs Risk</td>
+<td align="right">A=1</td>
+<td align="right">tmle</td>
+<td align="right">0.304</td>
+<td align="right">0.038</td>
+<td align="right">0.229</td>
+<td align="right">0.379</td>
+</tr>
+<tr class="odd">
+<td align="left">29</td>
+<td align="right">2190</td>
+<td align="right">1</td>
+<td align="right">Rel Risk</td>
+<td align="right">[A=1] / [A=0]</td>
+<td align="right">tmle</td>
+<td align="right">0.937</td>
+<td align="right">0.165</td>
+<td align="right">0.614</td>
+<td align="right">1.259</td>
+</tr>
+<tr class="even">
+<td align="left">31</td>
+<td align="right">2190</td>
+<td align="right">1</td>
+<td align="right">Risk Diff</td>
+<td align="right">[A=1] - [A=0]</td>
+<td align="right">tmle</td>
+<td align="right">-0.021</td>
+<td align="right">0.055</td>
+<td align="right">-0.129</td>
+<td align="right">0.088</td>
 </tr>
 </tbody>
 </table>
+<p><code>plot(ConcreteOut)</code> draws the same estimates as
+covariate-adjusted absolute-risk curves by arm, with pointwise error
+bars and a shaded simultaneous confidence band:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ConcreteOut</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="figures/quickstart-risk.png" class="r-plt" alt="Adjusted absolute risk by arm" width="100%"></p>
 <p>Important columns:</p>
 <ul>
 <li>
@@ -373,7 +441,7 @@ second. With <code><a href="../reference/formatArguments.html">makeITT()</a></co
 <p>Use standard analyses as context, not as exact substitutes. A Cox
 hazard ratio is not the same estimand as a marginal risk difference or
 cumulative incidence risk ratio.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Event counts by arm are always the first check.</span></span>
 <span><span class="va">trial</span><span class="op">[</span>, <span class="va">.N</span>, by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">arm</span>, <span class="va">event</span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
@@ -408,7 +476,7 @@ close?</li>
 <div class="section level2">
 <h2 id="check-convergence">Check convergence<a class="anchor" aria-label="anchor" href="#check-convergence"></a>
 </h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">components</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"components"</span><span class="op">)</span></span>
 <span><span class="va">components</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">ratio</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span></span>
 <span></span>
@@ -446,7 +514,7 @@ like:</p>
 </table>
 <p>If the fit does not converge, try the settings in the convergence
 diagnostics article before changing the estimand.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span> <span class="op">&lt;-</span> <span class="st">"adaptive"</span></span>
 <span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopRule</span> <span class="op">&lt;-</span> <span class="st">"absolute"</span></span>
 <span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopAbsTol</span> <span class="op">&lt;-</span> <span class="fl">0.02</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">Data</span><span class="op">)</span><span class="op">)</span></span>

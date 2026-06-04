@@ -1,4 +1,11 @@
-# Using-concrete
+# Reference walkthrough
+
+This is a compact reference walkthrough of the main workflow on the
+[`survival::pbc`](https://rdrr.io/pkg/survival/man/pbc.html) data,
+including a joint-intervention example. New users should start with the
+[Trialist
+quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.md);
+this article is a fuller tour of the available options.
 
 ## PBC competing risks data example
 

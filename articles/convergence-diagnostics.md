@@ -5,6 +5,10 @@ reports slow convergence or non-convergence. The goal is to distinguish
 a meaningful targeting problem from a numerically tiny empirical
 efficient influence curve (EIC) component in a rare-event setting.
 
+The illustrative code snippets assume a `trial` `data.table` and a
+fitted `ConcreteEst` object as built in the [Trialist
+quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.md).
+
 ## What convergence means here
 
 The TMLE update tries to make the empirical mean of each requested
@@ -33,7 +37,13 @@ A setting such as `EICStopRule = "absolute"` and
 `EICStopAbsTol = 0.02 / sqrt(n)` means: stop when every requested target
 EIC has empirical mean no larger than this risk-scale tolerance. This is
 often more interpretable for sparse early event targets than forcing a
-relative threshold whose denominator is nearly zero.
+relative threshold whose denominator is nearly zero. (If you choose
+`"absolute"` or `"hybrid"` and leave `EICStopAbsTol` at its default of
+`0`, `concrete` substitutes `0.02 / sqrt(n)` for you, since a tolerance
+of `0` can never be met.)
+
+![relative vs absolute stopping
+rule](figures/schematic-r_stop_rules.png)
 
 ## Inspect the diagnostics
 
@@ -68,6 +78,21 @@ Example trace output:
 |    3 |    0.0013 |     0.74 |                 0 |      0.0007 |
 
 The component table is usually the most useful first view.
+`plot(ConcreteEst, convergence = TRUE)` shows the norm of the empirical
+EIC falling across update steps, and
+`plot(ConcreteEst, gweights = TRUE)` shows the distribution of the
+treatment/censoring nuisance weights with the positivity-risk threshold
+marked:
+
+``` r
+
+plot(ConcreteEst, convergence = TRUE)
+plot(ConcreteEst, gweights = TRUE)
+```
+
+![convergence trace and nuisance
+weights](figures/diagnostics-convergence.png)![convergence trace and
+nuisance weights](figures/diagnostics-nuisance-weights.png)
 
 Key columns:
 
@@ -98,6 +123,43 @@ event/time/intervention combination is driving the problem:
 This pattern says the empirical EIC is still materially larger than the
 chosen threshold. Start with adaptive updating and a simpler learner
 library before loosening the stopping rule.
+
+## A worked rare-event example
+
+The tables below are real
+[`getTmleDiagnostics()`](https://blind-contours.github.io/concrete/reference/getTmleDiagnostics.md)
+output from the PBC competing- risks example, targeting both death
+(event 1) and the rarer transplant (event 2) at four times. Under the
+**relative** rule, the rare event-2 components have a tiny
+standard-error scale, so their stopping threshold is minuscule and the
+`ratio` blows up even though the absolute `PnEIC` is small — the fit is
+flagged as not converged:
+
+|     | Intervention | Time | Event |    PnEIC | StopCriteria |    ratio | check |
+|:----|-------------:|-----:|------:|---------:|-------------:|---------:|------:|
+| 6   |          A=1 |  730 |     2 | -0.00145 |      0.00003 | 53.31646 | FALSE |
+| 14  |          A=0 |  730 |     2 |  0.00057 |      0.00092 |  0.61972 |  TRUE |
+| 7   |          A=1 | 1460 |     2 | -0.00083 |      0.00196 |  0.42503 |  TRUE |
+| 8   |          A=1 | 2190 |     2 |  0.00070 |      0.00248 |  0.28114 |  TRUE |
+
+Switching to the **absolute** rule (`0.02 / sqrt(n)`) judges those same
+small `PnEIC` values against a risk-scale tolerance. The spurious
+blow-up disappears — the worst ratio drops from roughly 50 to about 2 —
+leaving only a genuinely harder component that the escalation ladder
+addresses:
+
+|     | Intervention | Time | Event |    PnEIC | StopCriteria |   ratio | check |
+|:----|-------------:|-----:|------:|---------:|-------------:|--------:|------:|
+| 7   |          A=1 | 1460 |     2 | -0.00226 |      0.00113 | 1.99585 | FALSE |
+| 8   |          A=1 | 2190 |     2 |  0.00220 |      0.00113 | 1.94196 | FALSE |
+| 6   |          A=1 |  730 |     2 | -0.00210 |      0.00113 | 1.85473 | FALSE |
+| 14  |          A=0 |  730 |     2 |  0.00094 |      0.00113 | 0.83213 |  TRUE |
+
+This is the canonical rare-event pattern: under the relative rule a
+large `ratio` is driven by a near-zero threshold rather than by a
+meaningful targeting failure. The absolute rule removes that artifact;
+any remaining failures (here, the sparse transplant event) are real
+sparsity to work through with the escalation ladder below.
 
 ## Recommended escalation ladder
 

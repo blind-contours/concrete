@@ -147,20 +147,36 @@ ConcreteOut <- getOutput(
 ConcreteOut[Event == 1]
 ```
 
-Example output will look like this. The exact values will change with
+The table below is the actual TMLE output from this PBC example (event
+of interest, selected target times). The exact values will change with
 your data, target times, learner library, and confidence-interval
 settings.
 
-| Time | Event | Estimand  | Intervention      | Estimator | Pt Est |    se | CI Low | CI Hi |
-|-----:|------:|-----------|-------------------|-----------|-------:|------:|-------:|------:|
-| 1000 |     1 | Abs Risk  | A=0               | tmle      |   0.19 | 0.036 |   0.11 |  0.26 |
-| 1000 |     1 | Abs Risk  | A=1               | tmle      |   0.21 | 0.042 |   0.12 |  0.29 |
-| 1000 |     1 | Risk Diff | \[A=1\] - \[A=0\] | tmle      |  0.021 | 0.052 | -0.082 |  0.12 |
-| 1000 |     1 | Rel Risk  | \[A=1\] / \[A=0\] | tmle      |   1.10 |  0.30 |   0.53 |  1.70 |
-| 2000 |     1 | Abs Risk  | A=0               | tmle      |   0.34 | 0.053 |   0.24 |  0.44 |
-| 2000 |     1 | Abs Risk  | A=1               | tmle      |   0.33 | 0.047 |   0.24 |  0.43 |
-| 2000 |     1 | Risk Diff | \[A=1\] - \[A=0\] | tmle      | -0.007 | 0.065 |  -0.14 |  0.12 |
-| 2000 |     1 | Rel Risk  | \[A=1\] / \[A=0\] | tmle      |   0.98 |  0.19 |   0.61 |  1.40 |
+|     | Time | Event |  Estimand |      Intervention | Estimator | Pt Est |    se | CI Low | CI Hi |
+|:----|-----:|------:|----------:|------------------:|----------:|-------:|------:|-------:|------:|
+| 9   |  730 |     1 |  Abs Risk |               A=0 |      tmle |  0.097 | 0.022 |  0.054 | 0.140 |
+| 11  |  730 |     1 |  Abs Risk |               A=1 |      tmle |  0.112 | 0.027 |  0.061 | 0.164 |
+| 13  |  730 |     1 |  Rel Risk | \[A=1\] / \[A=0\] |      tmle |  1.156 | 0.378 |  0.416 | 1.896 |
+| 15  |  730 |     1 | Risk Diff | \[A=1\] - \[A=0\] |      tmle |  0.015 | 0.034 | -0.052 | 0.083 |
+| 17  | 1460 |     1 |  Abs Risk |               A=0 |      tmle |  0.241 | 0.034 |  0.174 | 0.307 |
+| 19  | 1460 |     1 |  Abs Risk |               A=1 |      tmle |  0.244 | 0.035 |  0.176 | 0.313 |
+| 21  | 1460 |     1 |  Rel Risk | \[A=1\] / \[A=0\] |      tmle |  1.015 | 0.204 |  0.615 | 1.416 |
+| 23  | 1460 |     1 | Risk Diff | \[A=1\] - \[A=0\] |      tmle |  0.004 | 0.049 | -0.092 | 0.099 |
+| 25  | 2190 |     1 |  Abs Risk |               A=0 |      tmle |  0.325 | 0.040 |  0.247 | 0.402 |
+| 27  | 2190 |     1 |  Abs Risk |               A=1 |      tmle |  0.304 | 0.038 |  0.229 | 0.379 |
+| 29  | 2190 |     1 |  Rel Risk | \[A=1\] / \[A=0\] |      tmle |  0.937 | 0.165 |  0.614 | 1.259 |
+| 31  | 2190 |     1 | Risk Diff | \[A=1\] - \[A=0\] |      tmle | -0.021 | 0.055 | -0.129 | 0.088 |
+
+`plot(ConcreteOut)` draws the same estimates as covariate-adjusted
+absolute-risk curves by arm, with pointwise error bars and a shaded
+simultaneous confidence band:
+
+``` r
+
+plot(ConcreteOut, ask = FALSE)
+```
+
+![Adjusted absolute risk by arm](figures/quickstart-risk.png)
 
 Important columns:
 

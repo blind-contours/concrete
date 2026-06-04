@@ -10,4 +10,15 @@
   diagnostics](https://blind-contours.github.io/concrete/articles/convergence-diagnostics.md):
 - [Testing protocol and current
   limitations](https://blind-contours.github.io/concrete/articles/trialist-testing-protocol.md):
-- [Using-concrete](https://blind-contours.github.io/concrete/articles/Using-concrete.md):
+
+### Methodology and evidence
+
+- [How concrete
+  works](https://blind-contours.github.io/concrete/articles/how-concrete-works.md):
+- [Simulation
+  evidence](https://blind-contours.github.io/concrete/articles/simulation-evidence.md):
+
+### Reference walkthrough
+
+- [Reference
+  walkthrough](https://blind-contours.github.io/concrete/articles/Using-concrete.md):

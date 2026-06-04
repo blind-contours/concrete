@@ -15,6 +15,7 @@
 ">
 <meta property="og:description" content="Continuous-time TMLE for covariate-adjusted survival and competing-risk absolute risks in trial and trial-like data.
 ">
+<meta property="og:image" content="https://blind-contours.github.io/concrete/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -43,7 +44,11 @@
     <li><a class="dropdown-item" href="articles/learner-library.html">Learner library guide</a></li>
     <li><a class="dropdown-item" href="articles/convergence-diagnostics.html">Convergence diagnostics</a></li>
     <li><a class="dropdown-item" href="articles/trialist-testing-protocol.html">Testing protocol and current limitations</a></li>
-    <li><a class="dropdown-item" href="articles/Using-concrete.html">Using-concrete</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Methodology &amp; evidence</h6></li>
+    <li><a class="dropdown-item" href="articles/how-concrete-works.html">How concrete works</a></li>
+    <li><a class="dropdown-item" href="articles/simulation-evidence.html">Simulation evidence</a></li>
+    <li><a class="dropdown-item" href="articles/Using-concrete.html">Reference walkthrough</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
@@ -59,8 +64,10 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="concrete">concrete<a class="anchor" aria-label="anchor" href="#concrete"></a>
-</h1></div>
+<div class="page-header">
+<img src="logo.png" class="logo" alt=""><h1 id="concrete-">concrete <a class="anchor" aria-label="anchor" href="#concrete-"></a>
+</h1>
+</div>
 <p><a href="http://www.r-pkg.org/pkg/concrete" class="external-link"><img src="http://www.r-pkg.org/badges/version/concrete" alt="CRAN"></a> <a href="https://github.com/blind-contours/concrete/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/blind-contours/concrete/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://coveralls.io/github/blind-contours/concrete?branch=main" class="external-link"><img src="https://coveralls.io/repos/github/blind-contours/concrete/badge.svg?branch=main" alt="Coverage Status"></a></p>
 <blockquote>
 <p>Continuous-Time Targeted Maximum Likelihood Estimation for Survival Analysis with Competing Risks</p>
@@ -70,7 +77,19 @@
 </h2>
 <p><code>concrete</code> is an R package designed to use targeted maximum likelihood estimation (TMLE) to compute covariate-adjusted marginal cumulative incidence estimates in right-censored survival settings with and without competing risks.</p>
 <p><code>concrete</code> is intended to help trial analysts estimate clinically interpretable absolute risks, risk differences, and risk ratios at prespecified follow-up times while using flexible nuisance estimation and TMLE diagnostics.</p>
+<div class="section level3">
+<h3 id="what-you-get">What you get<a class="anchor" aria-label="anchor" href="#what-you-get"></a>
+</h3>
+<p>The core output is a covariate-adjusted absolute-risk (cumulative incidence) curve for each intervention, with pointwise and simultaneous confidence intervals, plus the implied risk differences and risk ratios. The figure below is real output from the worked PBC example used in the <a href="https://blind-contours.github.io/concrete/articles/trialist-quickstart.html">quickstart</a>.</p>
+<p><img src="reference/figures/readme-hero.png" width="100%" alt="Covariate-adjusted absolute risk by arm with confidence intervals"></p>
+</div>
+<div class="section level3">
+<h3 id="how-it-works">How it works<a class="anchor" aria-label="anchor" href="#how-it-works"></a>
+</h3>
+<p><code>concrete</code> fits treatment and event/censoring hazards with cross-validated learners, forms a plug-in cumulative incidence, then applies a one-step TMLE update that targets the efficient influence function for each requested risk. The <a href="https://blind-contours.github.io/concrete/articles/how-concrete-works.html">How concrete works</a> article walks through each stage.</p>
+<p><img src="reference/figures/schematic-py_pipeline_flowchart.png" width="85%" alt="concrete pipeline: nuisance estimation, plug-in, targeting, report"></p>
 <hr>
+</div>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -96,6 +115,13 @@
 <a href="https://blind-contours.github.io/concrete/articles/convergence-diagnostics.html">Convergence diagnostics</a>: how to inspect empirical EIC diagnostics and what to try when the TMLE update does not converge cleanly.</li>
 <li>
 <a href="https://blind-contours.github.io/concrete/articles/trialist-testing-protocol.html">Testing protocol and current limitations</a>: a built-in smoke test, a conservative-to-flexible testing ladder, and the current scope of supported trial data structures.</li>
+</ul>
+<p>To understand the estimator and see how it performs:</p>
+<ul>
+<li>
+<a href="https://blind-contours.github.io/concrete/articles/how-concrete-works.html">How concrete works</a>: the target estimand, the efficient influence function, and the targeting loop, explained with diagrams.</li>
+<li>
+<a href="https://blind-contours.github.io/concrete/articles/simulation-evidence.html">Simulation evidence</a>: bias reduction, standard-error calibration, and confidence-interval coverage across four simulation scenarios.</li>
 </ul>
 <p>The minimum data columns are a subject id, observed time, event type, binary treatment arm, and baseline covariates. Censoring should be coded as <code>0</code>; event types should be positive integers. For competing risks, use one positive integer for the event of interest and other positive integers for competing events.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -137,7 +163,7 @@
 <div class="section level2">
 <h2 id="advanced-tmle-controls">Advanced TMLE controls<a class="anchor" aria-label="anchor" href="#advanced-tmle-controls"></a>
 </h2>
-<p>The TMLE update can be configured through <code><a href="reference/formatArguments.html">formatArguments()</a></code>. The default stopping rule is the original relative empirical EIC criterion. For rare-event settings, an absolute risk-scale rule can be more stable because the relative threshold can become numerically tiny when the component EIC variance is near zero. A good first sensitivity is <code>EICStopAbsTol = 0.02 / sqrt(n)</code>:</p>
+<p>The TMLE update can be configured through <code><a href="reference/formatArguments.html">formatArguments()</a></code>. The default stopping rule is the original relative empirical EIC criterion. For rare-event or competing-risk settings the relative threshold can become numerically tiny, so an absolute risk-scale rule is often more stable. A good first sensitivity is <code>EICStopAbsTol = 0.02 / sqrt(n)</code>, which is also applied automatically if you select the <code>"absolute"</code> or <code>"hybrid"</code> rule without setting a tolerance:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
 <span>  DataTable <span class="op">=</span> <span class="va">data</span>,</span>
@@ -160,7 +186,7 @@
 <div class="section level2">
 <h2 id="survival-learner-library">Survival learner library<a class="anchor" aria-label="anchor" href="#survival-learner-library"></a>
 </h2>
-<p>Hazard models can mix Cox formulas with optional survival learners. For each event-specific hazard library, <code>concrete</code> currently uses cross-validated discrete selection rather than a weighted convex ensemble. The following aliases are supported in <code>Model[[event_type]]</code>: <code>"coxnet"</code>, <code>"rsf"</code> or <code>"randomForestSRC"</code>, <code>"aareg"</code> or <code>"additive_hazards"</code>, and <code>"hal"</code> or <code>"hal9001"</code>.</p>
+<p>Hazard models can mix Cox formulas with optional survival learners. The following aliases are supported in <code>Model[[event_type]]</code>: <code>"coxnet"</code>, <code>"rsf"</code> or <code>"randomForestSRC"</code>, <code>"aareg"</code> or <code>"additive_hazards"</code>, and <code>"hal"</code> or <code>"hal9001"</code>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SL.glm"</span>, <span class="st">"SL.glmnet"</span><span class="op">)</span>,</span>
