@@ -50,6 +50,10 @@ pkgdown/
 
 *.RDS
 
+# Vignette figure data is read at vignette build time and must be tracked
+# (the broad *.RDS rule above matches *.rds case-insensitively on macOS).
+!vignettes/figures/*.rds
+
 *.Rproj
 
 output/

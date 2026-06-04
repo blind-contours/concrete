@@ -24,6 +24,7 @@
 ^README\.html$
 ^.*\.tar\.gz$
 ^sandbox$
+^slides$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$

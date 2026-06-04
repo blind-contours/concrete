@@ -21,6 +21,10 @@ slow convergence or non-convergence. The goal is to distinguish a meaningful
 targeting problem from a numerically tiny empirical efficient influence curve
 (EIC) component in a rare-event setting.
 
+The illustrative code snippets assume a `trial` `data.table` and a fitted
+`ConcreteEst` object as built in the
+[Trialist quickstart](trialist-quickstart.html).
+
 ## What convergence means here
 
 The TMLE update tries to make the empirical mean of each requested target EIC
@@ -48,7 +52,13 @@ A setting such as `EICStopRule = "absolute"` and
 `EICStopAbsTol = 0.02 / sqrt(n)` means: stop when every requested target EIC
 has empirical mean no larger than this risk-scale tolerance. This is often more
 interpretable for sparse early event targets than forcing a relative threshold
-whose denominator is nearly zero.
+whose denominator is nearly zero. (If you choose `"absolute"` or `"hybrid"` and
+leave `EICStopAbsTol` at its default of `0`, `concrete` substitutes
+`0.02 / sqrt(n)` for you, since a tolerance of `0` can never be met.)
+
+```{r stop-rules-img, echo = FALSE, eval = TRUE, out.width = "75%", fig.alt = "relative vs absolute stopping rule"}
+knitr::include_graphics("figures/schematic-r_stop_rules.png")
+```
 
 ## Inspect the diagnostics
 
@@ -81,7 +91,20 @@ Example trace output:
 | 2 | 0.0021 | 1.08 | 1 | 0.0011 |
 | 3 | 0.0013 | 0.74 | 0 | 0.0007 |
 
-The component table is usually the most useful first view.
+The component table is usually the most useful first view. `plot(ConcreteEst,
+convergence = TRUE)` shows the norm of the empirical EIC falling across update
+steps, and `plot(ConcreteEst, gweights = TRUE)` shows the distribution of the
+treatment/censoring nuisance weights with the positivity-risk threshold marked:
+
+```{r diag-plots, eval = FALSE}
+plot(ConcreteEst, convergence = TRUE)
+plot(ConcreteEst, gweights = TRUE)
+```
+
+```{r diag-conv-img, echo = FALSE, eval = TRUE, out.width = "49%", fig.show = "hold", fig.alt = "convergence trace and nuisance weights"}
+knitr::include_graphics(c("figures/diagnostics-convergence.png",
+                          "figures/diagnostics-nuisance-weights.png"))
+```
 
 Key columns:
 
@@ -111,6 +134,42 @@ combination is driving the problem:
 This pattern says the empirical EIC is still materially larger than the chosen
 threshold. Start with adaptive updating and a simpler learner library before
 loosening the stopping rule.
+
+## A worked rare-event example
+
+The tables below are real `getTmleDiagnostics()` output from the PBC competing-
+risks example, targeting both death (event 1) and the rarer transplant (event 2)
+at four times. Under the **relative** rule, the rare event-2 components have a
+tiny standard-error scale, so their stopping threshold is minuscule and the
+`ratio` blows up even though the absolute `PnEIC` is small — the fit is flagged
+as not converged:
+
+```{r rel-example, eval = TRUE, echo = FALSE}
+rel <- readRDS("figures/convergence-relative-components.rds")
+rel <- rel[order(-rel$ratio), ]
+knitr::kable(head(rel[, c("Intervention", "Time", "Event", "PnEIC",
+                          "StopCriteria", "ratio", "check")], 4),
+             digits = 5, align = "r")
+```
+
+Switching to the **absolute** rule (`0.02 / sqrt(n)`) judges those same small
+`PnEIC` values against a risk-scale tolerance. The spurious blow-up disappears —
+the worst ratio drops from roughly 50 to about 2 — leaving only a genuinely
+harder component that the escalation ladder addresses:
+
+```{r abs-example, eval = TRUE, echo = FALSE}
+abs_c <- readRDS("figures/convergence-absolute-components.rds")
+abs_c <- abs_c[order(-abs_c$ratio), ]
+knitr::kable(head(abs_c[, c("Intervention", "Time", "Event", "PnEIC",
+                            "StopCriteria", "ratio", "check")], 4),
+             digits = 5, align = "r")
+```
+
+This is the canonical rare-event pattern: under the relative rule a large
+`ratio` is driven by a near-zero threshold rather than by a meaningful targeting
+failure. The absolute rule removes that artifact; any remaining failures (here,
+the sparse transplant event) are real sparsity to work through with the
+escalation ladder below.
 
 ## Recommended escalation ladder
 

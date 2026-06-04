@@ -1,8 +1,8 @@
 ---
-title: "Using-concrete"
+title: "Reference walkthrough"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Using-concrete}
+  %\VignetteIndexEntry{Reference walkthrough}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -10,11 +10,16 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>", 
-  echo = TRUE, 
+  comment = "#>",
+  echo = TRUE,
   eval = FALSE
 )
 ```
+
+This is a compact reference walkthrough of the main workflow on the
+`survival::pbc` data, including a joint-intervention example. New users should
+start with the [Trialist quickstart](trialist-quickstart.html); this article is
+a fuller tour of the available options.
 
 ## PBC competing risks data example
 ```{r setup}
