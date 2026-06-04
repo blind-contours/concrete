@@ -45,7 +45,7 @@
 #' plot(concrete.out, ask = FALSE)
 #' }
 #' @importFrom MASS mvrnorm
-#' @importFrom stats cor cov
+#' @importFrom stats cor
 
 getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_along(ConcreteEst), 
                       GComp = NULL, Simultaneous = TRUE, Signif = 0.05) {
@@ -244,8 +244,6 @@ getSimultaneous <- function(ConcreteEst, Output, EstimandType, Intervention, Sig
   
   ICs <- dcast(ICs[, Time := as.character(Time)], 
                ID ~ Intervention + Time + Event, value.var = "IC")[, !c("ID")]
-  CovEIC <- cov(subset(ICs, select = sapply(1:ncol(ICs), function(j) !(max(unlist(ICs[[j]])) == 0))))
-  CovEIC[is.na(CovEIC)] <- 1e-9
   CorrEIC <- cor(subset(ICs, select = sapply(1:ncol(ICs), function(j) !(max(unlist(ICs[[j]])) == 0))))
   n <- length(attr(ConcreteEst, "T.tilde"))
   
