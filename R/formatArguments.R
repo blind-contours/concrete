@@ -256,6 +256,14 @@ formatArguments <- function(DataTable,
     UpdateMethod <- getUpdateMethod(UpdateMethod)
     EICStopRule <- getEICStopRule(EICStopRule)
     EICStopAbsTol <- getEICStopAbsTol(EICStopAbsTol)
+    # The "absolute"/"hybrid" rules compare |PnEIC| to EICStopAbsTol; a tolerance
+    # of 0 can never be met, so the update would never converge. Fall back to the
+    # documented data-adaptive default rather than silently exhausting MaxUpdateIter.
+    if (EICStopRule %in% c("absolute", "hybrid") && EICStopAbsTol == 0) {
+      EICStopAbsTol <- 0.02 / sqrt(nrow(DataTable))
+      message("EICStopRule = \"", EICStopRule, "\" requires a positive EICStopAbsTol; ",
+              "defaulting to 0.02 / sqrt(n) = ", signif(EICStopAbsTol, 4), "\n")
+    }
   })
   return(ConcreteArgs)
 }
@@ -878,7 +886,7 @@ getMinNuisance <- function(MinNuisance = 0.05) {
 
 getUpdateMethod <- function(UpdateMethod) {
   choices <- c("standard", "adaptive")
-  disabled <- c("coordinated", "jacobi", "rootsolve")
+  removed <- c("coordinated", "jacobi", "rootsolve")
 
   if (is.null(UpdateMethod) || length(UpdateMethod) == 0) {
     return("standard")
@@ -895,9 +903,9 @@ getUpdateMethod <- function(UpdateMethod) {
     UpdateMethod <- "adaptive"
   }
   UpdateMethod <- tolower(UpdateMethod)
-  if (UpdateMethod %in% disabled) {
-    stop("UpdateMethod = '", UpdateMethod, "' is disabled because it is experimental ",
-         "and not safe for simulation runs. Use one of: ", paste(choices, collapse = ", "))
+  if (UpdateMethod %in% removed) {
+    stop("UpdateMethod = '", UpdateMethod, "' was experimental and has been removed. ",
+         "Use one of: ", paste(choices, collapse = ", "))
   }
   if (!(UpdateMethod %in% choices)) {
     stop("UpdateMethod must be one of: ", paste(choices, collapse = ", "))

@@ -72,8 +72,8 @@ truncNuisanceWeight <- function(NuisanceDenom, MinNuisance, RegimeName) {
             if (min(NuisanceDenom) < MinNuisance) {
                 PositivityWarning <- paste(
                     "For Intervention \"", RegimeName, "\", ",
-                    round(mean(apply(NuisanceDenom, 2, function(subj) any(subj < MinNuisance)), 3) * 100),
-                    "% of subjects had at least one G-related nuisance weight falling below ", 
+                    round(mean(apply(NuisanceDenom, 2, function(subj) any(subj < MinNuisance))) * 100),
+                    "% of subjects had at least one G-related nuisance weight falling below ",
                     signif(MinNuisance, 3), ", and ", 
                     round(mean(NuisanceDenom < MinNuisance), 3) * 100, "% of total G-related ", 
                     "nuisance weights were bounded to ", signif(MinNuisance, 3), sep = "")
