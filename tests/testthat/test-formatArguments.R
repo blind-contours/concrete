@@ -224,7 +224,7 @@ test_that("UpdateMethod is scalar and simulation-safe", {
                                  CVArg = list(V = 2),
                                  Verbose = FALSE,
                                  UpdateMethod = "coordinated"),
-                 regexp = "disabled")
+                 regexp = "removed")
 
     expect_error(formatArguments(Data = data,
                                  EventTime = "time",
@@ -237,7 +237,7 @@ test_that("UpdateMethod is scalar and simulation-safe", {
                                  CVArg = list(V = 2),
                                  Verbose = FALSE,
                                  UpdateMethod = "rootSolve"),
-                 regexp = "disabled")
+                 regexp = "removed")
 })
 
 test_that("EIC stopping rules are parsed and evaluated", {
