@@ -1,5 +1,16 @@
 # concrete 1.1.1.9000
 
+## Win ratio
+
+* `getWinRatio()` estimates the covariate-adjusted **restricted win ratio**,
+  **win odds**, and **net benefit** for a single terminal time-to-event outcome,
+  as functionals of the targeted counterfactual survival curves. Because the
+  win/loss probabilities are smooth functionals of those curves, inference uses
+  the influence functions already produced by the estimator (delta method),
+  giving doubly-robust, covariate-adjusted, censoring-corrected win statistics --
+  unlike the standard unadjusted, censoring-sensitive win ratio. A hierarchical /
+  competing-risk win ratio is planned.
+
 ## Hazard learner: ensemble Super Learner and a baseline-hazard fix
 
 * **Bug fix (Cox hazards):** the Cox hazard learner took its baseline hazard
