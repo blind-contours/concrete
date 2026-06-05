@@ -295,16 +295,48 @@ fitCoxnetHazLearner <- function(Data, j, TimeCol, TypeCol, TrtCol, IDCol, Hazard
                                   nfolds = nfolds,
                                   penalty.factor = c(rep(0, length(TrtCol)),
                                                      rep(1, length(CovCols) - length(TrtCol))))
-    BaseHazJ <- fitTreatmentBaseHazard(Data = Data, j = j, TimeCol = TimeCol,
-                                       TypeCol = TypeCol, TrtCol = TrtCol,
-                                       Hazards = Hazards)
+    # Breslow baseline from the glmnet linear predictor itself (centered for
+    # numerical stability); combined with predict(type = "link") - Center at
+    # prediction time this reconstructs the conditional hazard consistently. The
+    # old treatment-only baseline mis-scaled the covariate-adjusted Coxnet hazard.
+    eta <- as.numeric(stats::predict(ModelFit, newx = x, s = ModelFit$lambda.min, type = "link"))
+    Center <- mean(eta)
+    BaseHazJ <- breslowBaseHazIncrements(eta - Center, Data[[TimeCol]],
+                                         Data[[TypeCol]] == j, Hazards)
     Fit <- list("Learner" = "coxnet",
                 "HazFit" = ModelFit,
                 "BaseHaz" = BaseHazJ,
+                "Center" = Center,
                 "CovCols" = CovCols,
                 "Hazards" = Hazards)
     attr(Fit, "j") <- j
     return(Fit)
+}
+
+#' Breslow baseline cumulative-hazard increments on the evaluation grid
+#'
+#' For a fitted linear predictor `eta` (centered), the Breslow estimator of the
+#' baseline cause-specific hazard increments d\eqn{\Lambda_0}(t) =
+#' (events at t) / sum_{at risk} exp(eta).
+#' @keywords internal
+breslowBaseHazIncrements <- function(eta, time, eventj, Hazards) {
+    Time <- BaseHaz <- NULL
+    expEta <- exp(eta)
+    et <- sort(unique(time[eventj & time <= max(Hazards[["Time"]])]))
+    if (!length(et)) return(data.table::data.table(Time = Hazards[["Time"]], BaseHaz = 0))
+    dLam <- vapply(et, function(t) {
+        d <- sum(time == t & eventj)
+        rs <- sum(expEta[time >= t])
+        if (rs <= 0) 0 else d / rs
+    }, numeric(1))
+    bh <- data.table::data.table(Time = c(0, et), CumBaseHaz = cumsum(c(0, dLam)))
+    merged <- merge(data.table::data.table(Time = Hazards[["Time"]]), bh, by = "Time", all.x = TRUE)
+    data.table::setorder(merged, Time)
+    cum <- zoo::na.locf(merged[["CumBaseHaz"]], na.rm = FALSE)
+    cum[is.na(cum)] <- 0
+    merged[, BaseHaz := c(0, diff(cum))]
+    merged[BaseHaz < 0 | !is.finite(BaseHaz), BaseHaz := 0]
+    merged[, list(Time, BaseHaz)]
 }
 
 #' Baseline cumulative-hazard increments on the evaluation grid for a fitted Cox model
@@ -358,10 +390,10 @@ predictCoxHazLearner <- function(Fit, PredData) {
 
 predictCoxnetHazLearner <- function(Fit, PredData) {
     z <- as.matrix(PredData[, .SD, .SDcols = Fit[["CovCols"]]])
-    exp.coef <- stats::predict(Fit[["HazFit"]], newx = z,
-                               s = Fit[["HazFit"]]$lambda.min,
-                               type = "response")
-    sapply(as.numeric(exp.coef), function(expLP) Fit[["BaseHaz"]][["BaseHaz"]] * expLP)
+    eta <- as.numeric(stats::predict(Fit[["HazFit"]], newx = z,
+                                     s = Fit[["HazFit"]]$lambda.min, type = "link"))
+    expLP <- exp(eta - Fit[["Center"]])      # centered to match the Breslow baseline
+    sapply(expLP, function(e) Fit[["BaseHaz"]][["BaseHaz"]] * e)
 }
 
 fitRsfHazLearner <- function(Data, j, TimeCol, TypeCol, TrtCol, IDCol, Hazards) {
