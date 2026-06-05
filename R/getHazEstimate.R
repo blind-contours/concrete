@@ -145,9 +145,14 @@ getHazSurvPred <- function(Data, HazFits, MinNuisance, TargetEvent, TargetTime, 
 
         TotalSurv <- apply(Reduce(`+`, PredHaz[HazInd]), 2, function(haz) exp(-cumsum(haz)))
         TotalSurv[TotalSurv < 1e-12] <- 1e-12
-        if (Censored) {
+        if (Censored && length(CensInd) >= 1L) {
             LaggedCensSurv <- apply(PredHaz[[CensInd]], 2, function(haz) c(1, utils::head(exp(-cumsum(haz)), -1)))
         } else {
+            # no censoring hazard available (e.g. a cross-fitting training fold with
+            # no censored subjects); fall back to no censoring weighting for these rows
+            if (isTRUE(Censored))
+                warning("No censoring hazard was fit for a prediction set; ",
+                        "censoring weights set to 1 for those subjects.")
             LaggedCensSurv <- 1
         }
         PredHaz <- PredHaz[HazInd]

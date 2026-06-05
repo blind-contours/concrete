@@ -91,6 +91,21 @@ getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent,
         }
     }
 
+    ## Guard against an event type absent from a training fold (rare with the
+    ## EventType-stratified outer folds), which would leave NA hazard columns:
+    ## treat the unseen event's hazard as 0 for those subjects rather than NA.
+    naFilled <- FALSE
+    for (a in arms) for (j in names(HazFull[[a]])) {
+        if (anyNA(HazFull[[a]][[j]])) {
+            HazFull[[a]][[j]][is.na(HazFull[[a]][[j]])] <- 0
+            naFilled <- TRUE
+        }
+    }
+    if (naFilled)
+        warning("Some event types were absent from a cross-fitting training fold; ",
+                "their hazards were set to 0 for the affected subjects. Consider ",
+                "fewer folds or pooling rare competing events.")
+
     InitialEstimates <- lapply(arms, function(a) {
         PropScore <- PropFull[[a]]
         attr(PropScore, "g.star.obs") <- GStarFull[[a]]

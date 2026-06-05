@@ -78,12 +78,17 @@ senseCensoring <- function(ConcreteArgs, deltas = seq(0, 1, by = 0.25),
 
   null0 <- if (Estimand == "RR") 1 else 0
   res[, crosses := (`CI Low` <= null0 & `CI Hi` >= null0)]
-  ## reference significance at delta = 0
-  sig0 <- res[abs(delta) < 1e-12 & crosses == FALSE]
+  ## reference significance at delta = 0, per (Event, Time) stratum
+  sig0 <- res[abs(delta) < 1e-12 & crosses == FALSE, list(Event, Time)]
   tip <- if (nrow(sig0)) {
-    flip <- res[crosses == TRUE & delta > 0][order(delta)]
-    if (nrow(flip)) flip[1, list(Event, Time, delta)] else
-      data.table::data.table(note = "significant conclusion is robust over the delta grid")
+    ## smallest delta that overturns the conclusion, only within strata that were
+    ## significant at delta = 0 (do not borrow a flip from a different stratum)
+    flip <- res[crosses == TRUE & delta > 0][sig0, on = c("Event", "Time"), nomatch = 0L]
+    if (nrow(flip)) {
+      flip[order(Event, Time, delta), list(delta = delta[1L]), by = list(Event, Time)]
+    } else {
+      data.table::data.table(note = "significant conclusion(s) robust over the delta grid")
+    }
   } else {
     data.table::data.table(note = "primary analysis is already non-significant at delta = 0")
   }

@@ -61,3 +61,21 @@ test_that("doConcrete runs with CrossFit = TRUE and gives finite inference", {
   expect_true(all(is.finite(tmle$`Pt Est`)))
   expect_true(all(is.finite(tmle$se) & tmle$se > 0))
 })
+
+test_that("print.ConcreteEst does not error on a cross-fitted object", {
+  skip_on_cran()
+  data <- data.table::as.data.table(survival::pbc)
+  data <- data[!is.na(trt), .(id, time, status, trt, age, sex)]
+  data <- data[stats::complete.cases(data)][1:140]
+  data[, arm := as.integer(trt == 2)]
+  data[, event := data.table::fifelse(status == 2L, 1L,
+          data.table::fifelse(status == 1L, 2L, 0L))]
+  data <- data[, .(id, time, event, arm, age, sex)]
+  args <- formatArguments(
+    DataTable = data, EventTime = "time", EventType = "event", Treatment = "arm",
+    ID = "id", Intervention = makeITT(), TargetTime = 2000, TargetEvent = 1,
+    CVArg = list(V = 3), UpdateMethod = "adaptive", EICStopRule = "absolute",
+    MaxUpdateIter = 8, CrossFit = TRUE, Verbose = FALSE)
+  est <- suppressMessages(doConcrete(args))
+  expect_error(capture.output(print(est)), NA)   # must not error
+})

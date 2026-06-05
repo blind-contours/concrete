@@ -56,7 +56,7 @@
 
 getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_along(ConcreteEst),
                       GComp = NULL, Simultaneous = TRUE, Signif = 0.05,
-                      NIMargin = NULL, NIDirection = c("lower", "upper")) {
+                      NIMargin = NULL, NIDirection = c("upper", "lower")) {
   `CI Low` <- `CI Hi` <- `Pt Est` <- `se` <- NULL
   NIDirection <- match.arg(NIDirection)
   if (!inherits(ConcreteEst, "ConcreteEst")) 
@@ -255,9 +255,11 @@ getSimultaneous <- function(ConcreteEst, Output, EstimandType, Intervention, Sig
   if (exists("RDICs")) ICs <- rbind(ICs, RDICs)
   if (exists("RRICs")) ICs <- rbind(ICs, RRICs)
   
-  ICs <- dcast(ICs[, Time := as.character(Time)], 
+  ICs <- dcast(ICs[, Time := as.character(Time)],
                ID ~ Intervention + Time + Event, value.var = "IC")[, !c("ID")]
-  CorrEIC <- cor(subset(ICs, select = sapply(1:ncol(ICs), function(j) !(max(unlist(ICs[[j]])) == 0))))
+  # drop (near-)degenerate components so cor()/mvrnorm get a positive-definite matrix
+  keepCol <- sapply(seq_len(ncol(ICs)), function(j) stats::sd(unlist(ICs[[j]]), na.rm = TRUE) > 1e-12)
+  CorrEIC <- cor(subset(ICs, select = keepCol))
   n <- length(attr(ConcreteEst, "T.tilde"))
   
   q <- apply(abs(MASS::mvrnorm(n = 1e3, mu = rep(0, nrow(CorrEIC)), Sigma = CorrEIC)), 1, max)

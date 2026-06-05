@@ -200,6 +200,10 @@ print.ConcreteEst <- function(x, ...) {
     cat("\n")
 
     cat("Initial Estimators:\n")
+    if (!is.list(attr(x, "InitFits"))) {
+      cat("  ", as.character(attr(x, "InitFits")), "\n", sep = "")
+      return(invisible(x))
+    }
     for (a in setdiff(names(attr(x, "InitFits")), unique(attr(x, "Delta")))) {
         cat("Treatment \"", a, "\" :\n", sep = "")
         if (inherits(attr(x, "InitFits")[[a]], "SuperLearner")) {
