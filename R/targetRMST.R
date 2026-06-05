@@ -35,6 +35,11 @@
 #'   two-sided Wald p-values.
 #' @param NIMargin,NIDirection optional non-inferiority margin and direction,
 #'   passed to the contrast estimands (see [getOutput()]).
+#' @param EICStopRule one of `"hybrid"` (default), `"relative"`, or `"absolute"`:
+#'   the stopping rule for the RMST/LYL estimating equation, evaluated on the
+#'   rescaled fraction-of-horizon scale.
+#' @param EICStopAbsTol numeric absolute tolerance for the `"absolute"` and
+#'   `"hybrid"` rules on the fraction scale. Defaults to `0.02 / sqrt(n)`.
 #' @param Verbose logical: print per-step convergence diagnostics.
 #'
 #' @return a `data.table` of class `"ConcreteOut"` with the directly-targeted

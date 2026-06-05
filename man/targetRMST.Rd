@@ -41,6 +41,13 @@ two-sided Wald p-values.}
 \item{NIMargin, NIDirection}{optional non-inferiority margin and direction,
 passed to the contrast estimands (see \code{\link[=getOutput]{getOutput()}}).}
 
+\item{EICStopRule}{one of \code{"hybrid"} (default), \code{"relative"}, or \code{"absolute"}:
+the stopping rule for the RMST/LYL estimating equation, evaluated on the
+rescaled fraction-of-horizon scale.}
+
+\item{EICStopAbsTol}{numeric absolute tolerance for the \code{"absolute"} and
+\code{"hybrid"} rules on the fraction scale. Defaults to \code{0.02 / sqrt(n)}.}
+
 \item{Verbose}{logical: print per-step convergence diagnostics.}
 }
 \value{
