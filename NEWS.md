@@ -1,5 +1,16 @@
 # concrete 1.1.1.9000
 
+## ICH E9(R1) estimand framework and intercurrent events
+
+* `makeEstimand()` records the analysis target by the five ICH E9(R1) attributes
+  (treatment, population, endpoint, intercurrent-event strategy, summary), and
+  travels with the results for a statistical analysis plan.
+* `applyIntercurrentEvent()` implements the data handling for the
+  intercurrent-event strategy: `"treatment policy"` (intent-to-treat, the
+  default), `"hypothetical"` (recode the intercurrent event as censoring so the
+  existing IPCW targets the no-intercurrent-event risk), and `"composite"`
+  (merge the intercurrent event into the event of interest).
+
 ## Cross-fitting (CV-TMLE)
 
 * `formatArguments(..., CrossFit = TRUE)` estimates the propensity and the

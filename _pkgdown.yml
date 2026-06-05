@@ -50,6 +50,10 @@ reference:
       - getRMST
       - targetRMST
       - getRelativeEfficiency
+  - title: Estimand framework
+    contents:
+      - makeEstimand
+      - applyIntercurrentEvent
   - title: Package overview
     contents:
       - concrete-package
