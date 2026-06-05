@@ -16,16 +16,22 @@
 #' @keywords internal
 #'
 
-getHazFit <- function(Data, Model, CVFolds, Hazards, ReturnModels) {
+getHazFit <- function(Data, Model, CVFolds, Hazards, ReturnModels, Ensemble = FALSE) {
     IDCol <- attr(Data, "ID")
     TimeCol <- attr(Data, "EventTime")
     TypeCol <- attr(Data, "EventType")
     HazModel <- Model[which(names(Model) %in% unique(Data[[TypeCol]]))]
+    nObs <- nrow(Data)
+    FitData <- Data[, .SD, .SDcols = setdiff(colnames(Data), IDCol)]
 
     SupLrnModel <- lapply(HazModel, function(ModelJ) {
-        CandidateRisk <- stats::setNames(rep(0, length(ModelJ)), names(ModelJ))
-        ModelFits <- vector("list", length(ModelJ))
-        names(ModelFits) <- names(ModelJ)
+        M <- length(ModelJ)
+        CandidateRisk <- stats::setNames(rep(0, M), names(ModelJ))
+        ## out-of-fold pieces for the ensemble loss: per subject, each candidate's
+        ## cumulative hazard at the observed time and hazard at the event time.
+        oofCum <- matrix(NA_real_, nObs, M)
+        oofHaz <- matrix(NA_real_, nObs, M)
+        ModelFits <- vector("list", M); names(ModelFits) <- names(ModelJ)
         j <- attr(ModelJ, "j")
 
         for (Fold_v in CVFolds) {
@@ -36,80 +42,115 @@ getHazFit <- function(Data, Model, CVFolds, Hazards, ReturnModels) {
 
             for (i in seq_along(ModelJ)) {
                 Fit <- try(
-                    fitHazLearner(ModelSpec = ModelJ[[i]],
-                                  Data = TrainData,
-                                  j = j,
-                                  TimeCol = TimeCol,
-                                  TypeCol = TypeCol,
-                                  TrtCol = attr(Data, "Treatment"),
-                                  IDCol = IDCol,
-                                  Hazards = Hazards),
-                    silent = TRUE
-                )
-                if (inherits(Fit, "try-error")) {
-                    CandidateRisk[i] <- Inf
-                    next
-                }
-                if (ReturnModels) {
-                    ModelFits[[i]][[length(ModelFits[[i]]) + 1L]] <- Fit
-                }
+                    fitHazLearner(ModelSpec = ModelJ[[i]], Data = TrainData, j = j,
+                                  TimeCol = TimeCol, TypeCol = TypeCol,
+                                  TrtCol = attr(Data, "Treatment"), IDCol = IDCol,
+                                  Hazards = Hazards), silent = TRUE)
+                if (inherits(Fit, "try-error")) { CandidateRisk[i] <- Inf; next }
+                if (ReturnModels) ModelFits[[i]][[length(ModelFits[[i]]) + 1L]] <- Fit
 
                 HazMat <- try(predictHazLearner(Fit, ValidData), silent = TRUE)
-                if (inherits(HazMat, "try-error")) {
-                    CandidateRisk[i] <- Inf
-                    next
+                if (inherits(HazMat, "try-error")) { CandidateRisk[i] <- Inf; next }
+
+                EvalTimes <- Fit[["Hazards"]][["Time"]]
+                HazMat <- sanitizeHazardMatrix(HazMat, floor = 0)
+                CumHaz <- apply(HazMat, 2, cumsum)
+                if (is.null(dim(CumHaz))) CumHaz <- matrix(CumHaz, ncol = 1L)
+                obs_idx <- findInterval(pmin(ValidData[[TimeCol]], max(EvalTimes)), EvalTimes)
+                obs_idx <- pmin(pmax(obs_idx, 1L), length(EvalTimes))
+                cumAtT <- CumHaz[cbind(obs_idx, seq_len(nrow(ValidData)))]
+                oofCum[ValidIndices, i] <- cumAtT
+                FoldRisk <- sum(cumAtT, na.rm = TRUE)
+
+                ev_rows <- which(ValidData[[TypeCol]] == j & ValidData[[TimeCol]] <= max(EvalTimes))
+                if (length(ev_rows)) {
+                    ev_idx <- match(ValidData[[TimeCol]][ev_rows], EvalTimes)
+                    keep <- !is.na(ev_idx)
+                    if (any(keep)) {
+                        ev_haz <- HazMat[cbind(ev_idx[keep], ev_rows[keep])]
+                        oofHaz[ValidIndices[ev_rows[keep]], i] <- ev_haz
+                        FoldRisk <- FoldRisk - sum(log(pmax(ev_haz, 1e-12)))
+                    }
                 }
-                FoldRisk <- hazardValidationLoss(HazMat = HazMat,
-                                                 ValidData = ValidData,
-                                                 j = j,
-                                                 TimeCol = TimeCol,
-                                                 TypeCol = TypeCol,
-                                                 EvalTimes = Fit[["Hazards"]][["Time"]])
-                if (!is.finite(FoldRisk)) {
-                    FoldRisk <- Inf
-                }
+                if (!is.finite(FoldRisk)) FoldRisk <- Inf
                 CandidateRisk[i] <- CandidateRisk[i] + FoldRisk
             }
         }
 
-        if (all(!is.finite(CandidateRisk))) {
+        valid <- which(is.finite(CandidateRisk) & !apply(oofCum, 2, anyNA))
+        if (!length(valid))
             stop("All hazard learner candidates failed for event type ", j, ".")
-        }
-        SLModel <- ModelJ[[which.min(CandidateRisk)]]
-        SLCoef <- as.numeric(seq_along(CandidateRisk) == which.min(CandidateRisk))
-        names(SLCoef) <- names(CandidateRisk)
 
-        if (ReturnModels) {
-            return(list("SupLrnCVRisks" = CandidateRisk,
-                        "SupLrnModel" = SLModel,
-                        "j" = j,
-                        "SLCoef" = SLCoef,
-                        "ModelFits" = ModelFits))
+        if (Ensemble && length(valid) > 1L) {
+            eventMask <- !is.na(oofHaz[, valid[1L]])
+            w <- ensembleHazWeights(oofCum[, valid, drop = FALSE],
+                                    oofHaz[, valid, drop = FALSE], eventMask)
+            SLCoef <- rep(0, M); SLCoef[valid] <- w
         } else {
-            return(list("SupLrnCVRisks" = CandidateRisk,
-                        "SupLrnModel" = SLModel,
-                        "j" = j,
-                        "SLCoef" = SLCoef))
+            win <- valid[which.min(CandidateRisk[valid])]
+            SLCoef <- as.numeric(seq_len(M) == win)
         }
+        names(SLCoef) <- names(ModelJ)
+
+        out <- list("SupLrnCVRisks" = CandidateRisk, "j" = j, "SLCoef" = SLCoef,
+                    "Ensemble" = Ensemble && length(valid) > 1L,
+                    "Members" = which(SLCoef > 0))
+        if (ReturnModels) out[["ModelFits"]] <- ModelFits
+        out
     })
     names(SupLrnModel) <- sapply(SupLrnModel, function(sl) sl[["j"]])
 
-    HazFits <- lapply(SupLrnModel, function(SLMod) {
-        HazFitOut <- fitHazLearner(ModelSpec = SLMod$SupLrnModel,
-                                   Data = Data[, .SD, .SDcols = setdiff(colnames(Data), IDCol)],
-                                   j = SLMod[["j"]],
-                                   TimeCol = TimeCol,
-                                   TypeCol = TypeCol,
-                                   TrtCol = attr(Data, "Treatment"),
-                                   IDCol = IDCol,
-                                   Hazards = Hazards)
+    HazFits <- lapply(names(SupLrnModel), function(jc) {
+        SLMod <- SupLrnModel[[jc]]
+        ModelJ <- HazModel[[which(sapply(HazModel, function(m) attr(m, "j")) == SLMod[["j"]])]]
+        members <- SLMod[["Members"]]
+        fitOne <- function(spec) {
+            f <- fitHazLearner(ModelSpec = spec, Data = FitData, j = SLMod[["j"]],
+                               TimeCol = TimeCol, TypeCol = TypeCol,
+                               TrtCol = attr(Data, "Treatment"), IDCol = IDCol, Hazards = Hazards)
+            attr(f, "j") <- SLMod[["j"]]
+            f
+        }
+        if (isTRUE(SLMod[["Ensemble"]]) && length(members) > 1L) {
+            HazFitOut <- list(fits = lapply(ModelJ[members], fitOne),
+                              weights = as.numeric(SLMod[["SLCoef"]][members]),
+                              j = SLMod[["j"]], Hazards = Hazards)
+            class(HazFitOut) <- union("ConcreteHazEnsemble", "ConcreteHazFit")
+        } else {
+            HazFitOut <- fitOne(ModelJ[[members[1L]]])
+        }
         attr(HazFitOut, "j") <- SLMod[["j"]]
-        SLMod[["SupLrnModel"]] <- NULL
         attr(HazFitOut, "HazSL") <- SLMod
-        return(HazFitOut)
+        HazFitOut
     })
     names(HazFits) <- names(SupLrnModel)
     return(HazFits)
+}
+
+#' Optimal convex weights for an ensemble of cause-specific hazards
+#'
+#' Minimizes the cross-validated counting-process negative log-likelihood of the
+#' weighted-combination hazard over the simplex, via a softmax reparameterization.
+#' @keywords internal
+#' @importFrom stats optim
+ensembleHazWeights <- function(cumMat, hazMat, eventMask) {
+    M <- ncol(cumMat)
+    if (M == 1L) return(1)
+    Scum <- colSums(cumMat, na.rm = TRUE)                 # sum_i Lambda_m(T_i)
+    Hev <- hazMat[eventMask, , drop = FALSE]              # event subjects x candidates
+    Hev[is.na(Hev)] <- 1e-12
+    Hev <- pmax(Hev, 1e-12)
+    nll <- function(theta) {
+        a <- exp(theta - max(theta)); a <- a / sum(a)
+        val <- sum(a * Scum) - sum(log(pmax(as.numeric(Hev %*% a), 1e-300)))
+        if (!is.finite(val)) 1e10 else val
+    }
+    opt <- try(stats::optim(rep(0, M), nll, method = "BFGS",
+                            control = list(maxit = 200)), silent = TRUE)
+    if (inherits(opt, "try-error")) {
+        w <- rep(0, M); w[which.min(Scum)] <- 1; return(w)  # fall back to discrete
+    }
+    a <- exp(opt$par - max(opt$par)); a / sum(a)
 }
 
 getHazSurvPred <- function(Data, HazFits, MinNuisance, TargetEvent, TargetTime, Regime,
@@ -191,6 +232,14 @@ fitHazLearner <- function(ModelSpec, Data, j, TimeCol, TypeCol, TrtCol, IDCol, H
 }
 
 predictHazLearner <- function(Fit, PredData) {
+    if (inherits(Fit, "ConcreteHazEnsemble")) {
+        # weighted convex combination of the candidate hazards
+        preds <- Map(function(f, w) w * predictHazLearner(f, PredData),
+                     Fit[["fits"]], Fit[["weights"]])
+        haz <- sanitizeHazardMatrix(Reduce(`+`, preds), floor = 0)
+        attr(haz, "j") <- Fit[["j"]]
+        return(haz)
+    }
     Learner <- Fit[["Learner"]]
     if (identical(Learner, "cox")) {
         haz <- predictCoxHazLearner(Fit, PredData)
@@ -217,9 +266,11 @@ getHazCovCols <- function(Data, TimeCol, TypeCol, IDCol, TrtCol) {
 fitCoxHazLearner <- function(ModelSpec, Data, j, TimeCol, TypeCol, TrtCol, IDCol, Hazards) {
     FitData <- Data[, .SD, .SDcols = setdiff(colnames(Data), IDCol)]
     ModelFit <- do.call(survival::coxph, list("formula" = ModelSpec, "data" = FitData))
-    BaseHazJ <- fitTreatmentBaseHazard(Data = FitData, j = j, TimeCol = TimeCol,
-                                       TypeCol = TypeCol, TrtCol = TrtCol,
-                                       Hazards = Hazards)
+    # Baseline hazard must come from THIS model so that, with predict(type="risk")
+    # (which centers at the model's own mean covariates), their product
+    # reconstructs the conditional hazard h0(t) exp(X'beta). Using a separate
+    # treatment-only baseline mis-scales every covariate-adjusted Cox hazard.
+    BaseHazJ <- coxBaseHazIncrements(CoxFit = ModelFit, Hazards = Hazards)
     Fit <- list("Learner" = "cox",
                 "HazFit" = ModelFit,
                 "BaseHaz" = BaseHazJ,
@@ -254,6 +305,25 @@ fitCoxnetHazLearner <- function(Data, j, TimeCol, TypeCol, TrtCol, IDCol, Hazard
                 "Hazards" = Hazards)
     attr(Fit, "j") <- j
     return(Fit)
+}
+
+#' Baseline cumulative-hazard increments on the evaluation grid for a fitted Cox model
+#'
+#' Uses the model's own centered baseline hazard so that, combined with
+#' `predict(type = "risk")`, the conditional hazard is reconstructed consistently.
+#' @keywords internal
+coxBaseHazIncrements <- function(CoxFit, Hazards) {
+    Time <- BaseHaz <- NULL
+    BaseHazJ <- rbind(data.table(time = 0, hazard = 0),
+                      suppressWarnings(data.table::setDT(survival::basehaz(CoxFit, centered = TRUE))))
+    colnames(BaseHazJ) <- c("Time", "BaseHaz")
+    BaseHazJ <- merge(Hazards, BaseHazJ, by = "Time", all.x = TRUE)
+    BaseHazJ <- BaseHazJ[order(Time)]
+    CumBaseHaz <- zoo::na.locf(BaseHazJ[["BaseHaz"]], na.rm = FALSE)
+    CumBaseHaz[is.na(CumBaseHaz)] <- 0
+    BaseHazJ[, BaseHaz := c(0, diff(CumBaseHaz))]
+    BaseHazJ[BaseHaz < 0 | is.na(BaseHaz) | !is.finite(BaseHaz), BaseHaz := 0]
+    return(BaseHazJ)
 }
 
 fitTreatmentBaseHazard <- function(Data, j, TimeCol, TypeCol, TrtCol, Hazards) {

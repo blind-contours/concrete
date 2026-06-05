@@ -79,6 +79,12 @@
 #'                      which supports valid influence-function inference when flexible
 #'                      machine-learning learners are used. Adds compute (the nuisance
 #'                      library is refit once per fold).
+#' @param HazEnsemble logical (default: FALSE): if TRUE, combine the candidate
+#'                      hazard learners into a cross-validated convex-combination
+#'                      ensemble (Super Learner) by minimizing the counting-process
+#'                      negative log-likelihood of the weighted hazard, instead of
+#'                      the default discrete (winner-take-all) selection. The
+#'                      treatment propensity already uses an ensemble Super Learner.
 #' @param ... ...
 #'
 #' @return a list of class "ConcreteArgs"
@@ -202,6 +208,7 @@ formatArguments <- function(DataTable,
                             EICStopRule = c("relative", "absolute", "hybrid"),
                             EICStopAbsTol = 0,
                             CrossFit = FALSE,
+                            HazEnsemble = FALSE,
                             ...)
 {
   ## Data Structure - incorporate prodlim::EventHistory.frame?
@@ -218,7 +225,8 @@ formatArguments <- function(DataTable,
                                      UpdateMethod = UpdateMethod,
                                      EICStopRule = EICStopRule,
                                      EICStopAbsTol = EICStopAbsTol,
-                                     CrossFit = CrossFit)
+                                     CrossFit = CrossFit,
+                                     HazEnsemble = HazEnsemble)
   }
 
   with(ConcreteArgs, {
@@ -227,11 +235,13 @@ formatArguments <- function(DataTable,
 
     # Miscellaneous Args ----
     if (is.null(ConcreteArgs[["CrossFit"]])) CrossFit <- FALSE
+    if (is.null(ConcreteArgs[["HazEnsemble"]])) HazEnsemble <- FALSE
     checkBoolean(ArgList = list("Verbose" = Verbose,
                                 "GComp" = GComp,
                                 "ReturnModels" = ReturnModels,
                                 "RenameCovs" = RenameCovs,
-                                "CrossFit" = CrossFit),
+                                "CrossFit" = CrossFit,
+                                "HazEnsemble" = HazEnsemble),
                  Envir = ConcreteArgs)
 
 
@@ -283,7 +293,8 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
                              TargetTime, TargetEvent, CVArg, Model,
                              MaxUpdateIter, OneStepEps, MinNuisance,
                              Verbose, GComp, ReturnModels, ID, RenameCovs, UpdateMethod,
-                             EICStopRule, EICStopAbsTol, CrossFit = FALSE) {
+                             EICStopRule, EICStopAbsTol, CrossFit = FALSE,
+                             HazEnsemble = FALSE) {
   ConcreteArgs <- new.env()
   with(ConcreteArgs, {
     DataTable <- DataTable
@@ -307,6 +318,7 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
     EICStopRule <- EICStopRule
     EICStopAbsTol <- EICStopAbsTol
     CrossFit <- CrossFit
+    HazEnsemble <- HazEnsemble
   })
   class(ConcreteArgs) <- union("ConcreteArgs", class(ConcreteArgs))
   return(ConcreteArgs)

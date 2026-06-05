@@ -29,6 +29,7 @@ formatArguments(
   EICStopRule = c("relative", "absolute", "hybrid"),
   EICStopAbsTol = 0,
   CrossFit = FALSE,
+  HazEnsemble = FALSE,
   ...
 )
 
@@ -131,6 +132,13 @@ nuisances are predicted from models fit on the other folds,
 which supports valid influence-function inference when flexible
 machine-learning learners are used. Adds compute (the nuisance
 library is refit once per fold).}
+
+\item{HazEnsemble}{logical (default: FALSE): if TRUE, combine the candidate
+hazard learners into a cross-validated convex-combination
+ensemble (Super Learner) by minimizing the counting-process
+negative log-likelihood of the weighted hazard, instead of
+the default discrete (winner-take-all) selection. The
+treatment propensity already uses an ensemble Super Learner.}
 
 \item{...}{additional arguments to be passed into print methods}
 

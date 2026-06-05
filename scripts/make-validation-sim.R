@@ -43,7 +43,7 @@ one <- function(s, sc) {
   p <- scen[[sc]]; tr <- TR[[sc]]; d <- simData(p, s)
   tryCatch({
     a <- formatArguments(DataTable = d, EventTime = "time", EventType = "event", Treatment = "arm",
-      ID = "id", Intervention = makeITT(), TargetTime = tau, TargetEvent = c(1, 2),
+      ID = "id", Intervention = makeITT(), TargetTime = c(300,600,900,tau), TargetEvent = c(1, 2),
       CVArg = list(V = 5), UpdateMethod = "adaptive", EICStopRule = "absolute",
       MaxUpdateIter = 20, Verbose = FALSE)
     est <- suppressMessages(doConcrete(a))
