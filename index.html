@@ -152,19 +152,113 @@
 <span></span>
 <span><span class="va">ConcreteOut</span></span>
 <span><span class="fu"><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"components"</span><span class="op">)</span></span></code></pre></div>
-<p>To check that your installation works before using your own data, run the installed smoke test:</p>
+<div class="section level3">
+<h3 id="restricted-mean-survival-time">Restricted mean survival time<a class="anchor" aria-label="anchor" href="#restricted-mean-survival-time"></a>
+</h3>
+<p>For a collapsible, time-scale summary that does not depend on proportional hazards, <code><a href="reference/getRMST.html">getRMST()</a></code> returns the covariate-adjusted restricted mean survival time (event-free time over the horizon), the cause-specific life-years lost, and their between-arm differences — each with influence-function confidence intervals and a Wald p-value. (Target every event type so the event-free RMST is identified, and use a reasonably dense <code>TargetTime</code> grid.)</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
+<span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
+<span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>, TargetEvent <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  TargetTime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">365</span>, <span class="fl">730</span>, <span class="fl">1095</span>, <span class="fl">1460</span><span class="op">)</span>, CVArg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>V <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/getRMST.html">getRMST</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, Horizon <span class="op">=</span> <span class="fl">1460</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Example output (PBC data, 4-year horizon; values change with your data):</p>
+<table class="table">
+<colgroup>
+<col width="22%">
+<col width="9%">
+<col width="25%">
+<col width="10%">
+<col width="10%">
+<col width="9%">
+<col width="10%">
+</colgroup>
+<thead><tr>
+<th>Estimand</th>
+<th align="right">Event</th>
+<th>Intervention</th>
+<th align="right">Pt Est</th>
+<th align="right">CI Low</th>
+<th align="right">CI Hi</th>
+<th align="right">pValue</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>RMST</td>
+<td align="right">–</td>
+<td>A=0</td>
+<td align="right">1270</td>
+<td align="right">1220</td>
+<td align="right">1330</td>
+<td align="right"></td>
+</tr>
+<tr>
+<td>RMST</td>
+<td align="right">–</td>
+<td>A=1</td>
+<td align="right">1270</td>
+<td align="right">1200</td>
+<td align="right">1330</td>
+<td align="right"></td>
+</tr>
+<tr>
+<td>RMST Diff</td>
+<td align="right">–</td>
+<td>[A=1] − [A=0]</td>
+<td align="right">−8.1</td>
+<td align="right">−91</td>
+<td align="right">75</td>
+<td align="right">0.85</td>
+</tr>
+<tr>
+<td>Life Years Lost</td>
+<td align="right">1</td>
+<td>A=0</td>
+<td align="right">169</td>
+<td align="right">115</td>
+<td align="right">222</td>
+<td align="right"></td>
+</tr>
+<tr>
+<td>Life Years Lost</td>
+<td align="right">1</td>
+<td>A=1</td>
+<td align="right">183</td>
+<td align="right">121</td>
+<td align="right">246</td>
+<td align="right"></td>
+</tr>
+<tr>
+<td>LYL Diff</td>
+<td align="right">1</td>
+<td>[A=1] − [A=0]</td>
+<td align="right">14.6</td>
+<td align="right">−68</td>
+<td align="right">97</td>
+<td align="right">0.73</td>
+</tr>
+</tbody>
+</table>
+<p><code>RMST Diff</code> is the difference in mean event-free days over the horizon (here the arms are within ~8 days, CI −91 to 75). For sparse grids, rare events, or long horizons, <code><a href="reference/targetRMST.html">targetRMST()</a></code> targets the RMST estimating equation directly and is better conditioned.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/targetRMST.html">targetRMST</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, Horizon <span class="op">=</span> <span class="fl">1460</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>To check that your installation works before using your own data, run the installed smoke test:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples"</span>, <span class="st">"trialist-smoke-test.R"</span>, package <span class="op">=</span> <span class="st">"concrete"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>To also try optional learners that are installed locally:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>CONCRETE_RUN_OPTIONAL_LEARNERS <span class="op">=</span> <span class="st">"true"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples"</span>, <span class="st">"trialist-smoke-test.R"</span>, package <span class="op">=</span> <span class="st">"concrete"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="advanced-tmle-controls">Advanced TMLE controls<a class="anchor" aria-label="anchor" href="#advanced-tmle-controls"></a>
 </h2>
 <p>The TMLE update can be configured through <code><a href="reference/formatArguments.html">formatArguments()</a></code>. The default stopping rule is the original relative empirical EIC criterion. For rare-event or competing-risk settings the relative threshold can become numerically tiny, so an absolute risk-scale rule is often more stable. A good first sensitivity is <code>EICStopAbsTol = 0.02 / sqrt(n)</code>, which is also applied automatically if you select the <code>"absolute"</code> or <code>"hybrid"</code> rule without setting a tolerance:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
 <span>  DataTable <span class="op">=</span> <span class="va">data</span>,</span>
 <span>  EventTime <span class="op">=</span> <span class="st">"time"</span>,</span>
@@ -178,7 +272,7 @@
 <span>  EICStopAbsTol <span class="op">=</span> <span class="fl">0.02</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Use <code><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics()</a></code> on a fitted object to inspect final component-wise EIC ratios, the update trace, or the norm trajectory:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"components"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"trace"</span><span class="op">)</span></span></code></pre></div>
@@ -187,7 +281,7 @@
 <h2 id="survival-learner-library">Survival learner library<a class="anchor" aria-label="anchor" href="#survival-learner-library"></a>
 </h2>
 <p>Hazard models can mix Cox formulas with optional survival learners. The following aliases are supported in <code>Model[[event_type]]</code>: <code>"coxnet"</code>, <code>"rsf"</code> or <code>"randomForestSRC"</code>, <code>"aareg"</code> or <code>"additive_hazards"</code>, and <code>"hal"</code> or <code>"hal9001"</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SL.glm"</span>, <span class="st">"SL.glmnet"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"0"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Cox <span class="op">=</span> <span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">status</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">~</span> <span class="va">.</span>,</span>
