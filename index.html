@@ -41,6 +41,7 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Trialist guides</h6></li>
     <li><a class="dropdown-item" href="articles/trialist-quickstart.html">Trialist quickstart</a></li>
+    <li><a class="dropdown-item" href="articles/regulatory-toolkit.html">Trial-design and regulatory toolkit</a></li>
     <li><a class="dropdown-item" href="articles/learner-library.html">Learner library guide</a></li>
     <li><a class="dropdown-item" href="articles/convergence-diagnostics.html">Convergence diagnostics</a></li>
     <li><a class="dropdown-item" href="articles/trialist-testing-protocol.html">Testing protocol and current limitations</a></li>
@@ -255,10 +256,50 @@
 </div>
 </div>
 <div class="section level2">
+<h2 id="trial-design-and-regulatory-toolkit">Trial-design and regulatory toolkit<a class="anchor" aria-label="anchor" href="#trial-design-and-regulatory-toolkit"></a>
+</h2>
+<p>Beyond absolute risk, <code>concrete</code> ships a set of estimands and robustness analyses aimed at randomized trials and FDA / ICH E9(R1) reporting. The <a href="https://blind-contours.github.io/concrete/articles/regulatory-toolkit.html">Trial-design and regulatory toolkit</a> article walks through all of these on a worked example; the highlights are:</p>
+<ul>
+<li>
+<strong>Cross-fitting (CV-TMLE).</strong> Pass <code>CrossFit = TRUE</code> to <code><a href="reference/formatArguments.html">formatArguments()</a></code> to fit the propensity and hazard nuisances out-of-fold. This removes the empirical-process (overfitting) term from the remainder, which is what makes influence-function inference valid when the nuisances are flexible machine-learning fits.</li>
+<li>
+<strong>Ensemble hazard Super Learner.</strong> <code>HazEnsemble = TRUE</code> replaces discrete cross-validated <em>selection</em> of a single hazard learner with a convex <em>combination</em> of the library, fit to minimize the cross-validated counting-process loss.</li>
+<li>
+<strong>Win ratio, win odds, and net benefit.</strong> <code><a href="reference/getWinRatio.html">getWinRatio()</a></code> turns the targeted survival curves into a covariate-adjusted, doubly-robust hierarchical comparison with influence-function confidence intervals.</li>
+<li>
+<strong>ICH E9(R1) estimands and intercurrent events.</strong> <code><a href="reference/makeEstimand.html">makeEstimand()</a></code> records the five estimand attributes; <code><a href="reference/makeEstimand.html">applyIntercurrentEvent()</a></code> encodes treatment-policy, hypothetical (via censoring/IPCW), and composite strategies for competing or intercurrent events.</li>
+<li>
+<strong>Censoring sensitivity (tipping point).</strong> <code><a href="reference/senseCensoring.html">senseCensoring()</a></code> runs a delta-shift sensitivity analysis on the independent-censoring (MAR) assumption and reports where conclusions would change.</li>
+<li>
+<strong>Adjustment efficiency.</strong> <code><a href="reference/getRelativeEfficiency.html">getRelativeEfficiency()</a></code> reports the variance ratio of the covariate-adjusted estimator versus the unadjusted one.</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Cross-fitted, ensemble-hazard fit for ML-based nuisance estimation</span></span>
+<span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
+<span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
+<span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>, TargetTime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">365</span>, <span class="fl">730</span><span class="op">)</span>, TargetEvent <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  CVArg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>V <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>, CrossFit <span class="op">=</span> <span class="cn">TRUE</span>, HazEnsemble <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Hierarchical / composite comparison</span></span>
+<span><span class="fu"><a href="reference/getWinRatio.html">getWinRatio</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, Horizon <span class="op">=</span> <span class="fl">730</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># How much did covariate adjustment buy you? Compare adjusted vs unadjusted output</span></span>
+<span><span class="fu"><a href="reference/getRelativeEfficiency.html">getRelativeEfficiency</a></span><span class="op">(</span></span>
+<span>  Adjusted   <span class="op">=</span> <span class="fu"><a href="reference/getOutput.html">getOutput</a></span><span class="op">(</span><span class="va">ConcreteEst</span>,   Estimand <span class="op">=</span> <span class="st">"RD"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  Unadjusted <span class="op">=</span> <span class="fu"><a href="reference/getOutput.html">getOutput</a></span><span class="op">(</span><span class="va">unadjusted_est</span>, Estimand <span class="op">=</span> <span class="st">"RD"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Sensitivity to the independent-censoring assumption: impute an increasing</span></span>
+<span><span class="co"># fraction (delta) of censored subjects as events and see if conclusions hold</span></span>
+<span><span class="fu"><a href="reference/senseCensoring.html">senseCensoring</a></span><span class="op">(</span><span class="va">ConcreteArgs</span>, deltas <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.05</span>, <span class="fl">0.1</span>, <span class="fl">0.15</span>, <span class="fl">0.2</span><span class="op">)</span>, Estimand <span class="op">=</span> <span class="st">"RD"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="advanced-tmle-controls">Advanced TMLE controls<a class="anchor" aria-label="anchor" href="#advanced-tmle-controls"></a>
 </h2>
 <p>The TMLE update can be configured through <code><a href="reference/formatArguments.html">formatArguments()</a></code>. The default stopping rule is the original relative empirical EIC criterion. For rare-event or competing-risk settings the relative threshold can become numerically tiny, so an absolute risk-scale rule is often more stable. A good first sensitivity is <code>EICStopAbsTol = 0.02 / sqrt(n)</code>, which is also applied automatically if you select the <code>"absolute"</code> or <code>"hybrid"</code> rule without setting a tolerance:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
 <span>  DataTable <span class="op">=</span> <span class="va">data</span>,</span>
 <span>  EventTime <span class="op">=</span> <span class="st">"time"</span>,</span>
@@ -272,7 +313,7 @@
 <span>  EICStopAbsTol <span class="op">=</span> <span class="fl">0.02</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Use <code><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics()</a></code> on a fitted object to inspect final component-wise EIC ratios, the update trace, or the norm trajectory:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteEst</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"components"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"trace"</span><span class="op">)</span></span></code></pre></div>
@@ -281,7 +322,7 @@
 <h2 id="survival-learner-library">Survival learner library<a class="anchor" aria-label="anchor" href="#survival-learner-library"></a>
 </h2>
 <p>Hazard models can mix Cox formulas with optional survival learners. The following aliases are supported in <code>Model[[event_type]]</code>: <code>"coxnet"</code>, <code>"rsf"</code> or <code>"randomForestSRC"</code>, <code>"aareg"</code> or <code>"additive_hazards"</code>, and <code>"hal"</code> or <code>"hal9001"</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  trt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SL.glm"</span>, <span class="st">"SL.glmnet"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"0"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Cox <span class="op">=</span> <span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">status</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">~</span> <span class="va">.</span>,</span>

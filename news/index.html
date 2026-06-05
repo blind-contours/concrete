@@ -21,6 +21,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Trialist guides</h6></li>
     <li><a class="dropdown-item" href="../articles/trialist-quickstart.html">Trialist quickstart</a></li>
+    <li><a class="dropdown-item" href="../articles/regulatory-toolkit.html">Trial-design and regulatory toolkit</a></li>
     <li><a class="dropdown-item" href="../articles/learner-library.html">Learner library guide</a></li>
     <li><a class="dropdown-item" href="../articles/convergence-diagnostics.html">Convergence diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/trialist-testing-protocol.html">Testing protocol and current limitations</a></li>
@@ -46,6 +47,10 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
+<div class="section level3">
+<h3 id="documentation-trial-design-and-regulatory-toolkit-1-1-1-9000">Documentation: trial-design and regulatory toolkit<a class="anchor" aria-label="anchor" href="#documentation-trial-design-and-regulatory-toolkit-1-1-1-9000"></a></h3>
+<ul><li>New “Trial-design and regulatory toolkit” vignette and README section that surface the regulatory-facing features in one place: cross-fitting (<code>CrossFit = TRUE</code>), the ensemble hazard Super Learner (<code>HazEnsemble = TRUE</code>), the win ratio / win odds / net benefit (<code><a href="../reference/getWinRatio.html">getWinRatio()</a></code>), the ICH E9(R1) estimand framework and intercurrent-event strategies (<code><a href="../reference/makeEstimand.html">makeEstimand()</a></code>, <code><a href="../reference/makeEstimand.html">applyIntercurrentEvent()</a></code>), censoring sensitivity (<code><a href="../reference/senseCensoring.html">senseCensoring()</a></code>), and adjustment efficiency (<code><a href="../reference/getRelativeEfficiency.html">getRelativeEfficiency()</a></code>). These were documented at the function level but were not discoverable from the README or the article index.</li>
+</ul></div>
 <div class="section level3">
 <h3 id="coxnet-baseline-hazard-fix-1-1-1-9000">Coxnet baseline-hazard fix<a class="anchor" aria-label="anchor" href="#coxnet-baseline-hazard-fix-1-1-1-9000"></a></h3>
 <ul><li>The Coxnet (penalized Cox) hazard learner had the same baseline-hazard mismatch as the Cox learner: it took the baseline from a separate treatment-only model while using the glmnet linear predictor, mis-scaling the covariate-adjusted Coxnet hazard. The baseline is now the Breslow estimator computed from the glmnet linear predictor itself (centered), so the conditional hazard is reconstructed consistently. With the fix, a lightly-penalized Coxnet reproduces the Cox estimate. (The random-survival-forest, additive-hazards, and HAL learners estimate the conditional hazard directly and were unaffected.)</li>

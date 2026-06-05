@@ -4,6 +4,8 @@
 
 - [Trialist
   quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.md):
+- [Trial-design and regulatory
+  toolkit](https://blind-contours.github.io/concrete/articles/regulatory-toolkit.md):
 - [Learner library
   guide](https://blind-contours.github.io/concrete/articles/learner-library.md):
 - [Convergence

@@ -5,11 +5,12 @@ articles:
   convergence-diagnostics: convergence-diagnostics.html
   how-concrete-works: how-concrete-works.html
   learner-library: learner-library.html
+  regulatory-toolkit: regulatory-toolkit.html
   simulation-evidence: simulation-evidence.html
   trialist-quickstart: trialist-quickstart.html
   trialist-testing-protocol: trialist-testing-protocol.html
   Using-concrete: Using-concrete.html
-last_built: 2026-06-05T18:26Z
+last_built: 2026-06-05T19:46Z
 urls:
   reference: https://blind-contours.github.io/concrete/reference
   article: https://blind-contours.github.io/concrete/articles

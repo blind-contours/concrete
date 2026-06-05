@@ -197,6 +197,69 @@ Sys.setenv(CONCRETE_RUN_OPTIONAL_LEARNERS = "true")
 source(system.file("examples", "trialist-smoke-test.R", package = "concrete"))
 ```
 
+## Trial-design and regulatory toolkit
+
+Beyond absolute risk, `concrete` ships a set of estimands and robustness
+analyses aimed at randomized trials and FDA / ICH E9(R1) reporting. The
+[Trial-design and regulatory
+toolkit](https://blind-contours.github.io/concrete/articles/regulatory-toolkit.html)
+article walks through all of these on a worked example; the highlights
+are:
+
+- **Cross-fitting (CV-TMLE).** Pass `CrossFit = TRUE` to
+  [`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)
+  to fit the propensity and hazard nuisances out-of-fold. This removes
+  the empirical-process (overfitting) term from the remainder, which is
+  what makes influence-function inference valid when the nuisances are
+  flexible machine-learning fits.
+- **Ensemble hazard Super Learner.** `HazEnsemble = TRUE` replaces
+  discrete cross-validated *selection* of a single hazard learner with a
+  convex *combination* of the library, fit to minimize the
+  cross-validated counting-process loss.
+- **Win ratio, win odds, and net benefit.**
+  [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
+  turns the targeted survival curves into a covariate-adjusted,
+  doubly-robust hierarchical comparison with influence-function
+  confidence intervals.
+- **ICH E9(R1) estimands and intercurrent events.**
+  [`makeEstimand()`](https://blind-contours.github.io/concrete/reference/makeEstimand.md)
+  records the five estimand attributes;
+  [`applyIntercurrentEvent()`](https://blind-contours.github.io/concrete/reference/makeEstimand.md)
+  encodes treatment-policy, hypothetical (via censoring/IPCW), and
+  composite strategies for competing or intercurrent events.
+- **Censoring sensitivity (tipping point).**
+  [`senseCensoring()`](https://blind-contours.github.io/concrete/reference/senseCensoring.md)
+  runs a delta-shift sensitivity analysis on the independent-censoring
+  (MAR) assumption and reports where conclusions would change.
+- **Adjustment efficiency.**
+  [`getRelativeEfficiency()`](https://blind-contours.github.io/concrete/reference/getRelativeEfficiency.md)
+  reports the variance ratio of the covariate-adjusted estimator versus
+  the unadjusted one.
+
+``` r
+
+# Cross-fitted, ensemble-hazard fit for ML-based nuisance estimation
+ConcreteArgs <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetTime = c(365, 730), TargetEvent = 1,
+  CVArg = list(V = 5), CrossFit = TRUE, HazEnsemble = TRUE
+)
+ConcreteEst <- doConcrete(ConcreteArgs)
+
+# Hierarchical / composite comparison
+getWinRatio(ConcreteEst, Horizon = 730, Intervention = c(1, 2))
+
+# How much did covariate adjustment buy you? Compare adjusted vs unadjusted output
+getRelativeEfficiency(
+  Adjusted   = getOutput(ConcreteEst,   Estimand = "RD", Intervention = c(1, 2)),
+  Unadjusted = getOutput(unadjusted_est, Estimand = "RD", Intervention = c(1, 2))
+)
+
+# Sensitivity to the independent-censoring assumption: impute an increasing
+# fraction (delta) of censored subjects as events and see if conclusions hold
+senseCensoring(ConcreteArgs, deltas = c(0, 0.05, 0.1, 0.15, 0.2), Estimand = "RD")
+```
+
 ## Advanced TMLE controls
 
 The TMLE update can be configured through
@@ -321,6 +384,8 @@ If you encounter any bugs or have any specific feature requests, please
 
 - [Trialist
   quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.md):
+- [Trial-design and regulatory
+  toolkit](https://blind-contours.github.io/concrete/articles/regulatory-toolkit.md):
 - [Learner library
   guide](https://blind-contours.github.io/concrete/articles/learner-library.md):
 - [Convergence
