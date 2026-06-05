@@ -77,6 +77,7 @@ makeITT() returns an Intervention list for a single, binary, point-treatment var
 <span>  EICStopRule <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"relative"</span>, <span class="st">"absolute"</span>, <span class="st">"hybrid"</span><span class="op">)</span>,</span>
 <span>  EICStopAbsTol <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  CrossFit <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  HazEnsemble <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -222,6 +223,15 @@ nuisances are predicted from models fit on the other folds,
 which supports valid influence-function inference when flexible
 machine-learning learners are used. Adds compute (the nuisance
 library is refit once per fold).</p></dd>
+
+
+<dt id="arg-hazensemble">HazEnsemble<a class="anchor" aria-label="anchor" href="#arg-hazensemble"></a></dt>
+<dd><p>logical (default: FALSE): if TRUE, combine the candidate
+hazard learners into a cross-validated convex-combination
+ensemble (Super Learner) by minimizing the counting-process
+negative log-likelihood of the weighted hazard, instead of
+the default discrete (winner-take-all) selection. The
+treatment propensity already uses an ensemble Super Learner.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

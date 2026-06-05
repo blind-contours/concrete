@@ -177,136 +177,137 @@ estimands carry a two-sided Wald <code>pValue</code>.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Estimating Hazards:</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Loglik converged before variable  1 ; coefficient may be infinite. </span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Loglik converged before variable  1 ; coefficient may be infinite. </span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Loglik converged before variable  1,3 ; coefficient may be infinite. </span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Loglik converged before variable  1 ; coefficient may be infinite. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event       PnEIC RelativeCriteria   AbsPnEIC AbsoluteCriteria</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;       &lt;num&gt;            &lt;num&gt;      &lt;num&gt;            &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     2  0.07285502      0.008583377 0.07285502                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2  0.06321258      0.009707607 0.06321258                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     1 -0.00664069      0.005088358 0.00664069                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    StopCriteria RelativeRatio AbsoluteRatio ratio StopRule StopAbsTol</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;      &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  0.008583377      8.487921           Inf  8.49 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  0.009707607      6.511654           Inf  6.51 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  0.005088358      1.305075           Inf  1.31 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.09669324</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;         &lt;num&gt;            &lt;num&gt;        &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  0.0024001043      0.001867462 0.0024001043</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2 -0.0063702933      0.009615051 0.0063702933</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=1  2500     2 -0.0003148435      0.008512401 0.0003148435</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;num&gt;        &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001867462    1.28522234           Inf  1.29 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.009615051    0.66253349           Inf  0.66 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.008512401    0.03698645           Inf  0.04 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    StopAbsTol</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.006815149</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Starting TMLE Update:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Problem dimension: k = 4 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Using standard universal LFM approach (iterative small steps)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 1 with update epsilon = 0.1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event       PnEIC RelativeCriteria    AbsPnEIC AbsoluteCriteria</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;       &lt;num&gt;            &lt;num&gt;       &lt;num&gt;            &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     2 0.044751213      0.008542012 0.044751213                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2 0.030840136      0.009656267 0.030840136                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=1  2500     1 0.001681276      0.001830119 0.001681276                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    StopCriteria RelativeRatio AbsoluteRatio ratio StopRule StopAbsTol</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;      &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  0.008542012     5.2389547           Inf  5.24 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  0.009656267     3.1937948           Inf  3.19 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  0.001830119     0.9186699           Inf  0.92 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.05442394</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 2 with update epsilon = 0.1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event       PnEIC RelativeCriteria    AbsPnEIC AbsoluteCriteria</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;       &lt;num&gt;            &lt;num&gt;       &lt;num&gt;            &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     2 0.012932223      0.008519048 0.012932223                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=1  2500     1 0.002046468      0.001830152 0.002046468                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     1 0.001222929      0.005086634 0.001222929                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    StopCriteria RelativeRatio AbsoluteRatio ratio StopRule StopAbsTol</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;      &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  0.008519048     1.5180362           Inf  1.52 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  0.001830152     1.1181961           Inf  1.12 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  0.005086634     0.2404201           Inf  0.24 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.01325291</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 3 with update epsilon = 0.1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Update increased the active convergence objective, halving OneStepEps</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 3 with update epsilon = 0.05 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;         &lt;num&gt;            &lt;num&gt;        &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  0.0021908408      0.001830138 0.0021908408</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=1  2500     2 -0.0062783594      0.008517584 0.0062783594</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     1  0.0008823547      0.005086230 0.0008823547</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 1 with update epsilon = 0.05 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Update increased the active convergence objective, halving OneStepEps</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 1 with update epsilon = 0.025 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event        PnEIC RelativeCriteria    AbsPnEIC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;        &lt;num&gt;            &lt;num&gt;       &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  0.002273792      0.001867383 0.002273792</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2  0.005521087      0.009612210 0.005521087</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     1 -0.001209543      0.005107295 0.001209543</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;num&gt;        &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001830138     1.1970904           Inf  1.20 relative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.008517584     0.7371056           Inf  0.74 relative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.005086230     0.1734791           Inf  0.17 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001867383     1.2176357           Inf  1.22 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.009612210     0.5743827           Inf  0.57 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.005107295     0.2368266           Inf  0.24 relative</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    StopAbsTol</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         &lt;num&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1:          0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2:          0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3:          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.006836095</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 4 with update epsilon = 0.05 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.00609487</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 2 with update epsilon = 0.025 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Update increased the active convergence objective, halving OneStepEps</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 4 with update epsilon = 0.025 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event       PnEIC RelativeCriteria    AbsPnEIC AbsoluteCriteria</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;       &lt;num&gt;            &lt;num&gt;       &lt;num&gt;            &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1 0.001961046      0.001830055 0.001961046                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=1  2500     2 0.002745689      0.008517089 0.002745689                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     2 0.001330314      0.009636597 0.001330314                0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    StopCriteria RelativeRatio AbsoluteRatio ratio StopRule StopAbsTol</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;      &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:  0.001830055     1.0715776           Inf  1.07 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:  0.008517089     0.3223741           Inf  0.32 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:  0.009636597     0.1380481           Inf  0.14 relative          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.003630426</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 5 with update epsilon = 0.025 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Update increased the active convergence objective, halving OneStepEps</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 5 with update epsilon = 0.0125 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 2 with update epsilon = 0.0125 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;         &lt;num&gt;            &lt;num&gt;        &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  0.0019160747      0.001830012 0.0019160747</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=1  2500     2 -0.0009310162      0.008517041 0.0009310162</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     2 -0.0010016471      0.009636162 0.0010016471</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  0.0022111210      0.001867343 0.0022111210</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     1 -0.0002390974      0.005107428 0.0002390974</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     2 -0.0003917493      0.009613071 0.0003917493</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;num&gt;        &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001830012     1.0470285           Inf  1.05 relative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.008517041     0.1093122           Inf  0.11 relative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.009636162     0.1039467           Inf  0.10 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001867343    1.18410037           Inf  1.18 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.005107428    0.04681366           Inf  0.05 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.009613071    0.04075173           Inf  0.04 relative</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    StopAbsTol</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         &lt;num&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1:          0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2:          0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3:          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.002375917</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 6 with update epsilon = 0.0125 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.002259054</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 3 with update epsilon = 0.0125 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;         &lt;num&gt;            &lt;num&gt;        &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  0.0020409249      0.001867236 0.0020409249</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2  0.0006443768      0.009612840 0.0006443768</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     1 -0.0001587924      0.005107558 0.0001587924</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;num&gt;        &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001867236    1.09301931           Inf  1.09 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.009612840    0.06703293           Inf  0.07 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.005107558    0.03108968           Inf  0.03 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    StopAbsTol</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.002146123</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 4 with update epsilon = 0.0125 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Update increased the active convergence objective, halving OneStepEps</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 4 with update epsilon = 0.00625 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;         &lt;num&gt;            &lt;num&gt;        &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  1.955942e-03      0.001867184 1.955942e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2 -3.386572e-04      0.009613055 3.386572e-04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=1  2500     2  3.232335e-05      0.008512313 3.232335e-05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;num&gt;        &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001867184   1.047535643           Inf  1.05 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.009613055   0.035228883           Inf  0.04 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.008512313   0.003797247           Inf  0.00 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    StopAbsTol</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.001985325</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 5 with update epsilon = 0.00625 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;         &lt;num&gt;            &lt;num&gt;        &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  1.867586e-03      0.001867131 1.867586e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2  2.071158e-04      0.009612931 2.071158e-04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     1 -5.176869e-05      0.005107594 5.176869e-05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;num&gt;        &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001867131    1.00024373           Inf  1.00 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.009612931    0.02154554           Inf  0.02 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.005107594    0.01013563           Inf  0.01 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    StopAbsTol</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:          0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.001879926</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 6 with update epsilon = 0.00625 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event        PnEIC RelativeCriteria     AbsPnEIC</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;        &lt;num&gt;            &lt;num&gt;        &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1 1.831708e-03      0.001829972 1.831708e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2 3.998299e-04      0.009636406 3.998299e-04</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=1  2500     2 5.638105e-05      0.008517023 5.638105e-05</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;num&gt;        &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001829972   1.000948461           Inf  1.00 relative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.009636406   0.041491603           Inf  0.04 relative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.008517023   0.006619808           Inf  0.01 relative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    StopAbsTol</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.001876609</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Starting step 7 with update epsilon = 0.00625 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;num&gt; &lt;num&gt;         &lt;num&gt;            &lt;num&gt;        &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  0.0017454556      0.001829927 0.0017454556</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2 -0.0002758099      0.009636282 0.0002758099</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=0  2500     1  0.0001007112      0.005085864 0.0001007112</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:    A=1  2500     1  1.777413e-03      0.001867078 1.777413e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:    A=0  2500     2 -1.536649e-04      0.009613012 1.536649e-04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:    A=1  2500     2  2.615163e-05      0.008512319 2.615163e-05</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;num&gt;        &lt;num&gt;         &lt;num&gt;         &lt;num&gt; &lt;num&gt;   &lt;char&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001829927    0.95383909           Inf  0.95 relative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.009636282    0.02862202           Inf  0.03 relative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.005085864    0.01980218           Inf  0.02 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:                0  0.001867078   0.951975869           Inf  0.95 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:                0  0.009613012   0.015985094           Inf  0.02 relative</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:                0  0.008512319   0.003072211           Inf  0.00 relative</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    StopAbsTol</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         &lt;num&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1:          0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2:          0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3:          0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.001770047</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Norm PnEIC = 0.001784263</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># getOutput returns risk difference, relative risk, and treatment-specific risks</span></span></span>
 <span class="r-in"><span><span class="co">#  GComp=TRUE returns g-formula plug-in estimates</span></span></span>
@@ -314,41 +315,41 @@ estimands carry a two-sided Wald <code>pValue</code>.</p>
 <span class="r-in"><span><span class="va">concrete.out</span> <span class="op">&lt;-</span> <span class="fu">getOutput</span><span class="op">(</span><span class="va">concrete.est</span>, Estimand <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"RR"</span>, <span class="st">"RD"</span>, <span class="st">"Risk"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                          GComp <span class="op">=</span> <span class="cn">TRUE</span>, Simultaneous <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">concrete.out</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Time Event  Estimand  Intervention Estimator   Pt Est     se  CI Low</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;num&gt; &lt;num&gt;    &lt;char&gt;        &lt;char&gt;    &lt;char&gt;    &lt;num&gt;  &lt;num&gt;   &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  2500     1  Abs Risk           A=0      tmle  0.06800 0.0269  0.0152</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  2500     1  Abs Risk           A=0     gcomp  0.07090     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  2500     1  Abs Risk           A=1      tmle  0.00825 0.0097 -0.0108</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  2500     1  Abs Risk           A=1     gcomp  0.00849     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  2500     1  Rel Risk [A=1] / [A=0]      tmle  0.12100 0.1500 -0.1730</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  2500     1  Rel Risk [A=1] / [A=0]     gcomp  0.12000     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  2500     1 Risk Diff [A=1] - [A=0]      tmle -0.05970 0.0286 -0.1160</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  2500     1 Risk Diff [A=1] - [A=0]     gcomp -0.06240     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  2500     2  Abs Risk           A=0      tmle  0.33900 0.0511  0.2390</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  2500     2  Abs Risk           A=0     gcomp  0.31200     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  2500     2  Abs Risk           A=1      tmle  0.38400 0.0451  0.2960</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:  2500     2  Abs Risk           A=1     gcomp  0.34200     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:  2500     2  Rel Risk [A=1] / [A=0]      tmle  1.13000 0.2140  0.7140</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:  2500     2  Rel Risk [A=1] / [A=0]     gcomp  1.10000     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  2500     2 Risk Diff [A=1] - [A=0]      tmle  0.04560 0.0674 -0.0865</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16:  2500     2 Risk Diff [A=1] - [A=0]     gcomp  0.03040     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Time Event  Estimand  Intervention Estimator   Pt Est      se  CI Low</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;num&gt; &lt;num&gt;    &lt;char&gt;        &lt;char&gt;    &lt;char&gt;    &lt;num&gt;   &lt;num&gt;   &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  2500     1  Abs Risk           A=0      tmle  0.06430 0.02710  0.0113</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  2500     1  Abs Risk           A=0     gcomp  0.06430      NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  2500     1  Abs Risk           A=1      tmle  0.00798 0.00989 -0.0114</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  2500     1  Abs Risk           A=1     gcomp  0.00762      NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  2500     1  Rel Risk [A=1] / [A=0]      tmle  0.12400 0.16200 -0.1940</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  2500     1  Rel Risk [A=1] / [A=0]     gcomp  0.11800      NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  2500     1 Risk Diff [A=1] - [A=0]      tmle -0.05630 0.02880 -0.1130</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  2500     1 Risk Diff [A=1] - [A=0]     gcomp -0.05670      NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  2500     2  Abs Risk           A=0      tmle  0.37900 0.05090  0.2790</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  2500     2  Abs Risk           A=0     gcomp  0.38200      NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  2500     2  Abs Risk           A=1      tmle  0.41600 0.04510  0.3280</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12:  2500     2  Abs Risk           A=1     gcomp  0.41600      NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13:  2500     2  Rel Risk [A=1] / [A=0]      tmle  1.10000 0.18700  0.7310</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14:  2500     2  Rel Risk [A=1] / [A=0]     gcomp  1.09000      NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  2500     2 Risk Diff [A=1] - [A=0]      tmle  0.03700 0.06720 -0.0947</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16:  2500     2 Risk Diff [A=1] - [A=0]     gcomp  0.03460      NA      NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        CI Hi SimCI Low SimCI Hi  pValue</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        &lt;num&gt;     &lt;num&gt;    &lt;num&gt;   &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  0.12100  -0.00052   0.1360      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1: 1.17e-01  -0.00459   0.1330      NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  2:       NA        NA       NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  0.02730  -0.01640   0.0329      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3: 2.74e-02  -0.01720   0.0332      NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  4:       NA        NA       NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  0.41600  -0.26100   0.5040 5.1e-09</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5: 4.42e-01  -0.28900   0.5370 6.7e-08</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  6:       NA        NA       NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7: -0.00366  -0.13200   0.0130 3.7e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  7: 6.33e-05  -0.13000   0.0169 5.0e-02</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  8:       NA        NA       NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  0.43900   0.20900   0.4690      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  9: 4.79e-01   0.24900   0.5090      NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 10:       NA        NA       NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  0.47300   0.27000   0.4990      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11: 5.04e-01   0.30100   0.5310      NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 12:       NA        NA       NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:  1.55000   0.58900   1.6800 5.3e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13: 1.46e+00   0.62100   1.5700 6.0e-01</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 14:       NA        NA       NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  0.17800  -0.12600   0.2170 5.0e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15: 1.69e-01  -0.13400   0.2080 5.8e-01</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 16:       NA        NA       NA      NA</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">concrete.out</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="getOutput-1.png" alt="" width="700" height="433"></span>

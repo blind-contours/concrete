@@ -70,25 +70,23 @@ concrete.est <- doConcrete(concrete.args)
 #> 
 #> Estimating Hazards:
 #> Warning: Loglik converged before variable  1 ; coefficient may be infinite. 
-#> Warning: Loglik converged before variable  1 ; coefficient may be infinite. 
 #> Warning: Loglik converged before variable  1,3 ; coefficient may be infinite. 
-#> Warning: Loglik converged before variable  1 ; coefficient may be infinite. 
 #> 
 #> Starting TMLE Update:
 #> Warning: TMLE has not converged by step 2 - Estimates may not have the desired asymptotic properties
 getTmleDiagnostics(concrete.est, type = "components")
 #>    Intervention  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>          <char> <num> <num>         <num>            <num>        <num>
-#> 1:          A=1  2500     1 -0.0009685427      0.003404555 0.0009685427
-#> 2:          A=1  2500     2  0.0138214071      0.008307993 0.0138214071
-#> 3:          A=0  2500     1  0.0042990963      0.003185392 0.0042990963
-#> 4:          A=0  2500     2  0.0126429279      0.009243972 0.0126429279
+#> 1:          A=1  2500     1 -0.0007305945      0.003403878 0.0007305945
+#> 2:          A=1  2500     2 -0.0012659479      0.008296913 0.0012659479
+#> 3:          A=0  2500     1  0.0032918781      0.003184190 0.0032918781
+#> 4:          A=0  2500     2  0.0063725185      0.009231490 0.0063725185
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio     ratio  check
 #>               <num>        <num>         <num>         <num>     <num> <lgcl>
-#> 1:                0  0.003404555     0.2844844           Inf 0.2844844   TRUE
-#> 2:                0  0.008307993     1.6636277           Inf 1.6636277  FALSE
-#> 3:                0  0.003185392     1.3496284           Inf 1.3496284  FALSE
-#> 4:                0  0.009243972     1.3676942           Inf 1.3676942  FALSE
+#> 1:                0  0.003403878     0.2146359           Inf 0.2146359   TRUE
+#> 2:                0  0.008296913     0.1525806           Inf 0.1525806   TRUE
+#> 3:                0  0.003184190     1.0338198           Inf 1.0338198  FALSE
+#> 4:                0  0.009231490     0.6903023           Inf 0.6903023   TRUE
 #>    StopRule StopAbsTol Converged ConvergenceStep
 #>      <char>      <num>    <lgcl>           <num>
 #> 1: relative          0     FALSE               3

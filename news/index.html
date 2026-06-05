@@ -47,6 +47,13 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
 <div class="section level3">
+<h3 id="hazard-learner-ensemble-super-learner-and-a-baseline-hazard-fix-1-1-1-9000">Hazard learner: ensemble Super Learner and a baseline-hazard fix<a class="anchor" aria-label="anchor" href="#hazard-learner-ensemble-super-learner-and-a-baseline-hazard-fix-1-1-1-9000"></a></h3>
+<ul><li>
+<strong>Bug fix (Cox hazards):</strong> the Cox hazard learner took its baseline hazard from a separate treatment-only model while using the full model’s linear predictor, which mis-scaled every covariate-adjusted Cox hazard (the misspecified treatment-only candidate could even win cross-validation). The baseline is now taken from the fitted model itself, so the conditional hazard is reconstructed consistently. This removes a finite-sample bias in covariate-adjusted estimates and lets the correct hazard model be selected.</li>
+<li>
+<code>formatArguments(..., HazEnsemble = TRUE)</code> combines the candidate hazard learners into a cross-validated convex-combination ensemble (Super Learner), minimizing the counting-process negative log-likelihood of the weighted hazard over the simplex, instead of discrete winner-take-all selection – matching how the treatment propensity is already estimated.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="censoring-sensitivity-analysis-1-1-1-9000">Censoring sensitivity analysis<a class="anchor" aria-label="anchor" href="#censoring-sensitivity-analysis-1-1-1-9000"></a></h3>
 <ul><li>
 <code><a href="../reference/senseCensoring.html">senseCensoring()</a></code> adds a tipping-point sensitivity analysis for the independent-censoring (conditional MAR) assumption: a fraction <code>delta</code> of the subjects censored before the target time are imputed as having experienced the event of interest and the analysis is re-fit, tracing the estimate and CI from the optimistic (<code>delta = 0</code>) to the pessimistic (<code>delta = 1</code>) bound and reporting the tipping point. (Scaling the censoring weight leaves a doubly-robust target unchanged, so imputation – which changes the estimand – is used instead.)</li>

@@ -109,20 +109,20 @@ concrete.est <- doConcrete(concrete.args)
 #> Warning: Loglik converged before variable  3 ; coefficient may be infinite. 
 #>       Trt  Time Event        PnEIC RelativeCriteria    AbsPnEIC
 #>    <char> <num> <num>        <num>            <num>       <num>
-#> 1:    A=0  2500     2  0.065164882      0.009123345 0.065164882
-#> 2:    A=1  2500     2  0.050489833      0.008559467 0.050489833
-#> 3:    A=1  2500     1 -0.008810427      0.001669846 0.008810427
+#> 1:    A=1  2500     1 -0.007503576      0.001668183 0.007503576
+#> 2:    A=0  2500     1  0.012855822      0.004800477 0.012855822
+#> 3:    A=1  2500     2 -0.003757434      0.008589528 0.003757434
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.009123345      7.142652           Inf  7.14 relative
-#> 2:                0  0.008559467      5.898712           Inf  5.90 relative
-#> 3:                0  0.001669846      5.276192           Inf  5.28 relative
+#> 1:                0  0.001668183     4.4980545           Inf  4.50 relative
+#> 2:                0  0.004800477     2.6780301           Inf  2.68 relative
+#> 3:                0  0.008589528     0.4374436           Inf  0.44 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.08326815
+#> Norm PnEIC = 0.01557269
 #> 
 #> Starting TMLE Update:
 #> Problem dimension: k = 4 
@@ -130,264 +130,264 @@ concrete.est <- doConcrete(concrete.args)
 #> Starting step 1 with update epsilon = 0.1 
 #>       Trt  Time Event        PnEIC RelativeCriteria    AbsPnEIC
 #>    <char> <num> <num>        <num>            <num>       <num>
-#> 1:    A=1  2500     1 -0.007857597      0.001668246 0.007857597
-#> 2:    A=0  2500     2  0.031032672      0.009080694 0.031032672
-#> 3:    A=1  2500     2  0.027514698      0.008536386 0.027514698
+#> 1:    A=1  2500     1 -0.006298007      0.001666380 0.006298007
+#> 2:    A=0  2500     2  0.008705936      0.009176792 0.008705936
+#> 3:    A=0  2500     1  0.003574282      0.004787829 0.003574282
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001668246      4.710094           Inf  4.71 relative
-#> 2:                0  0.009080694      3.417434           Inf  3.42 relative
-#> 3:                0  0.008536386      3.223225           Inf  3.22 relative
+#> 1:                0  0.001666380     3.7794531           Inf  3.78 relative
+#> 2:                0  0.009176792     0.9486906           Inf  0.95 relative
+#> 3:                0  0.004787829     0.7465350           Inf  0.75 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.04331261
+#> Norm PnEIC = 0.01267847
 #> Starting step 2 with update epsilon = 0.1 
+#> Update increased the active convergence objective, halving OneStepEps
+#> Starting step 2 with update epsilon = 0.05 
 #>       Trt  Time Event        PnEIC RelativeCriteria    AbsPnEIC
 #>    <char> <num> <num>        <num>            <num>       <num>
-#> 1:    A=1  2500     1 -0.006659947      0.001666426 0.006659947
-#> 2:    A=0  2500     1  0.010278816      0.004770394 0.010278816
-#> 3:    A=1  2500     2  0.002478026      0.008528344 0.002478026
+#> 1:    A=1  2500     1 -0.005369281      0.001665150 0.005369281
+#> 2:    A=0  2500     2 -0.007152786      0.009186461 0.007152786
+#> 3:    A=0  2500     1  0.003644437      0.004788008 0.003644437
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001666426     3.9965460           Inf  4.00 relative
-#> 2:                0  0.004770394     2.1547101           Inf  2.15 relative
-#> 3:                0  0.008528344     0.2905636           Inf  0.29 relative
+#> 1:                0  0.001665150     3.2245029           Inf  3.22 relative
+#> 2:                0  0.009186461     0.7786226           Inf  0.78 relative
+#> 3:                0  0.004788008     0.7611593           Inf  0.76 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.01251422
-#> Starting step 3 with update epsilon = 0.1 
+#> Norm PnEIC = 0.01043122
+#> Starting step 3 with update epsilon = 0.05 
+#> Update increased the active convergence objective, halving OneStepEps
+#> Starting step 3 with update epsilon = 0.025 
 #>       Trt  Time Event        PnEIC RelativeCriteria    AbsPnEIC
 #>    <char> <num> <num>        <num>            <num>       <num>
-#> 1:    A=1  2500     1 -0.004977405      0.001664270 0.004977405
-#> 2:    A=1  2500     2 -0.005910836      0.008529625 0.005910836
-#> 3:    A=0  2500     2  0.005110688      0.009070745 0.005110688
+#> 1:    A=1  2500     1 -0.005110785      0.001664829 0.005110785
+#> 2:    A=0  2500     1  0.001794214      0.004785959 0.001794214
+#> 3:    A=0  2500     2  0.001459226      0.009180357 0.001459226
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001664270     2.9907441           Inf  2.99 relative
-#> 2:                0  0.008529625     0.6929772           Inf  0.69 relative
-#> 3:                0  0.009070745     0.5634254           Inf  0.56 relative
+#> 1:                0  0.001664829     3.0698555           Inf  3.07 relative
+#> 2:                0  0.004785959     0.3748912           Inf  0.37 relative
+#> 3:                0  0.009180357     0.1589509           Inf  0.16 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.009330346
-#> Starting step 4 with update epsilon = 0.1 
-#> Update increased the active convergence objective, halving OneStepEps
-#> Starting step 4 with update epsilon = 0.05 
-#> Update increased the active convergence objective, halving OneStepEps
+#> Norm PnEIC = 0.005611189
 #> Starting step 4 with update epsilon = 0.025 
-#>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
-#>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -0.0047684797      0.001664046 0.0047684797
-#> 2:    A=0  2500     1  0.0014107092      0.004755201 0.0014107092
-#> 3:    A=0  2500     2 -0.0009671491      0.009071217 0.0009671491
+#>       Trt  Time Event        PnEIC RelativeCriteria    AbsPnEIC
+#>    <char> <num> <num>        <num>            <num>       <num>
+#> 1:    A=1  2500     1 -0.004516020      0.001664131 0.004516020
+#> 2:    A=0  2500     1  0.001183582      0.004785364 0.001183582
+#> 3:    A=0  2500     2 -0.001255921      0.009182059 0.001255921
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001664046     2.8655944           Inf  2.87 relative
-#> 2:                0  0.004755201     0.2966666           Inf  0.30 relative
-#> 3:                0  0.009071217     0.1066173           Inf  0.11 relative
+#> 1:                0  0.001664131     2.7137400           Inf  2.71 relative
+#> 2:                0  0.004785364     0.2473337           Inf  0.25 relative
+#> 3:                0  0.009182059     0.1367799           Inf  0.14 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.005070701
+#> Norm PnEIC = 0.004835683
 #> Starting step 5 with update epsilon = 0.025 
-#>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
-#>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -0.0041599532      0.001663394 0.0041599532
-#> 2:    A=0  2500     2  0.0015251116      0.009070901 0.0015251116
-#> 3:    A=0  2500     1  0.0003560477      0.004753881 0.0003560477
+#>       Trt  Time Event        PnEIC RelativeCriteria    AbsPnEIC
+#>    <char> <num> <num>        <num>            <num>       <num>
+#> 1:    A=1  2500     1 -0.003932219      0.001663499 0.003932219
+#> 2:    A=0  2500     2  0.002154573      0.009179947 0.002154573
+#> 3:    A=0  2500     1  0.000125501      0.004784312 0.000125501
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001663394    2.50088268           Inf  2.50 relative
-#> 2:                0  0.009070901    0.16813231           Inf  0.17 relative
-#> 3:                0  0.004753881    0.07489621           Inf  0.07 relative
+#> 1:                0  0.001663499    2.36382404           Inf  2.36 relative
+#> 2:                0  0.009179947    0.23470435           Inf  0.23 relative
+#> 3:                0  0.004784312    0.02623178           Inf  0.03 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.004464216
+#> Norm PnEIC = 0.004486477
 #> Starting step 6 with update epsilon = 0.025 
+#> Update increased the active convergence objective, halving OneStepEps
+#> Starting step 6 with update epsilon = 0.0125 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -0.0036111580      0.001662857 0.0036111580
-#> 2:    A=0  2500     2 -0.0022592566      0.009071464 0.0022592566
-#> 3:    A=0  2500     1  0.0005336252      0.004753824 0.0005336252
+#> 1:    A=1  2500     1 -0.0036671302      0.001663229 0.0036671302
+#> 2:    A=0  2500     1  0.0003914089      0.004784588 0.0003914089
+#> 3:    A=0  2500     2 -0.0007021947      0.009181692 0.0007021947
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001662857     2.1716591           Inf  2.17 relative
-#> 2:                0  0.009071464     0.2490509           Inf  0.25 relative
-#> 3:                0  0.004753824     0.1122518           Inf  0.11 relative
+#> 1:                0  0.001663229    2.20482604           Inf  2.20 relative
+#> 2:                0  0.004784588    0.08180618           Inf  0.08 relative
+#> 3:                0  0.009181692    0.07647771           Inf  0.08 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.004303761
-#> Starting step 7 with update epsilon = 0.025 
-#> Update increased the active convergence objective, halving OneStepEps
+#> Norm PnEIC = 0.003755086
 #> Starting step 7 with update epsilon = 0.0125 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -0.0033565271      0.001662621 0.0033565271
-#> 2:    A=0  2500     2  0.0007891780      0.009070979 0.0007891780
-#> 3:    A=1  2500     2 -0.0001286102      0.008528439 0.0001286102
+#> 1:    A=1  2500     1 -0.0033781711      0.001662947 0.0033781711
+#> 2:    A=0  2500     2  0.0004825112      0.009180940 0.0004825112
+#> 3:    A=0  2500     1  0.0001154230      0.004784317 0.0001154230
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001662621    2.01881634           Inf  2.02 relative
-#> 2:                0  0.009070979    0.08700032           Inf  0.09 relative
-#> 3:                0  0.008528439    0.01508016           Inf  0.02 relative
+#> 1:                0  0.001662947    2.03143684           Inf  2.03 relative
+#> 2:                0  0.009180940    0.05255575           Inf  0.05 relative
+#> 3:                0  0.004784317    0.02412527           Inf  0.02 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.003450563
+#> Norm PnEIC = 0.003415184
 #> Starting step 8 with update epsilon = 0.0125 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -0.0030793463      0.001662377 0.0030793463
-#> 2:    A=0  2500     2 -0.0005031201      0.009071152 0.0005031201
-#> 3:    A=0  2500     1  0.0001554357      0.004753432 0.0001554357
+#> 1:    A=1  2500     1 -0.0030922760      0.001662680 0.0030922760
+#> 2:    A=0  2500     2 -0.0003410745      0.009181458 0.0003410745
+#> 3:    A=0  2500     1  0.0001555877      0.004784362 0.0001555877
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001662377    1.85237506           Inf  1.85 relative
-#> 2:                0  0.009071152    0.05546375           Inf  0.06 relative
-#> 3:                0  0.004753432    0.03269967           Inf  0.03 relative
+#> 1:                0  0.001662680    1.85981418           Inf  1.86 relative
+#> 2:                0  0.009181458    0.03714819           Inf  0.04 relative
+#> 3:                0  0.004784362    0.03252006           Inf  0.03 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.003124308
+#> Norm PnEIC = 0.003115591
 #> Starting step 9 with update epsilon = 0.0125 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -2.802624e-03      0.001662145 2.802624e-03
-#> 2:    A=0  2500     2  4.397499e-04      0.009071021 4.397499e-04
-#> 3:    A=1  2500     2 -7.122961e-05      0.008528416 7.122961e-05
+#> 1:    A=1  2500     1 -2.812110e-03      0.001662431 2.812110e-03
+#> 2:    A=0  2500     2  3.455930e-04      0.009181024 3.455930e-04
+#> 3:    A=1  2500     2 -5.741848e-05      0.008589298 5.741848e-05
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001662145   1.686149042           Inf  1.69 relative
-#> 2:                0  0.009071021   0.048478549           Inf  0.05 relative
-#> 3:                0  0.008528416   0.008352033           Inf  0.01 relative
+#> 1:                0  0.001662431   1.691565067           Inf  1.69 relative
+#> 2:                0  0.009181024   0.037642100           Inf  0.04 relative
+#> 3:                0  0.008589298   0.006684886           Inf  0.01 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.002837864
+#> Norm PnEIC = 0.002833866
 #> Starting step 10 with update epsilon = 0.0125 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -2.532937e-03      0.001661930 2.532937e-03
-#> 2:    A=0  2500     2 -4.428983e-04      0.009071143 4.428983e-04
-#> 3:    A=0  2500     1  8.646205e-05      0.004753340 8.646205e-05
+#> 1:    A=1  2500     1 -2.538560e-03      0.001662199 2.538560e-03
+#> 2:    A=0  2500     2 -3.817379e-04      0.009181484 3.817379e-04
+#> 3:    A=0  2500     1  8.334083e-05      0.004784295 8.334083e-05
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001661930    1.52409338           Inf  1.52 relative
-#> 2:                0  0.009071143    0.04882497           Inf  0.05 relative
-#> 3:                0  0.004753340    0.01818975           Inf  0.02 relative
+#> 1:                0  0.001662199    1.52722948           Inf  1.53 relative
+#> 2:                0  0.009181484    0.04157693           Inf  0.04 relative
+#> 3:                0  0.004784295    0.01741967           Inf  0.02 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.002573131
+#> Norm PnEIC = 0.002568949
 #> Starting step 11 with update epsilon = 0.0125 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -2.269526e-03      0.001661731 2.269526e-03
-#> 2:    A=0  2500     2  5.528891e-04      0.009071007 5.528891e-04
-#> 3:    A=1  2500     2 -5.339599e-05      0.008528397 5.339599e-05
+#> 1:    A=1  2500     1 -2.272520e-03      0.001661985 2.272520e-03
+#> 2:    A=0  2500     2  5.274996e-04      0.009180912 5.274996e-04
+#> 3:    A=1  2500     2 -4.399059e-05      0.008589296 4.399059e-05
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001661731   1.365760479           Inf  1.37 relative
-#> 2:                0  0.009071007   0.060951238           Inf  0.06 relative
-#> 3:                0  0.008528397   0.006260964           Inf  0.01 relative
+#> 1:                0  0.001661985   1.367352909           Inf  1.37 relative
+#> 2:                0  0.009180912   0.057456127           Inf  0.06 relative
+#> 3:                0  0.008589296   0.005121559           Inf  0.01 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.002337542
+#> Norm PnEIC = 0.002334154
 #> Starting step 12 with update epsilon = 0.0125 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -0.0020163864      0.001661549 0.0020163864
-#> 2:    A=0  2500     2 -0.0008071269      0.009071199 0.0008071269
-#> 3:    A=0  2500     1  0.0001200647      0.004753358 0.0001200647
+#> 1:    A=1  2500     1 -0.0020164794      0.001661789 0.0020164794
+#> 2:    A=0  2500     2 -0.0008420416      0.009181782 0.0008420416
+#> 3:    A=0  2500     1  0.0001238755      0.004784337 0.0001238755
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001661549    1.21355837           Inf  1.21 relative
-#> 2:                0  0.009071199    0.08897687           Inf  0.09 relative
-#> 3:                0  0.004753358    0.02525892           Inf  0.03 relative
+#> 1:                0  0.001661789    1.21343872           Inf  1.21 relative
+#> 2:                0  0.009181782    0.09170786           Inf  0.09 relative
+#> 3:                0  0.004784337    0.02589189           Inf  0.03 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.002175417
+#> Norm PnEIC = 0.002189066
 #> Starting step 13 with update epsilon = 0.0125 
 #> Update increased the active convergence objective, halving OneStepEps
 #> Starting step 13 with update epsilon = 0.00625 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -1.897209e-03      0.001661467 1.897209e-03
-#> 2:    A=0  2500     2  2.610421e-04      0.009071044 2.610421e-04
-#> 3:    A=0  2500     1 -3.495704e-05      0.004753228 3.495704e-05
+#> 1:    A=1  2500     1 -1.897407e-03      0.001661702 1.897407e-03
+#> 2:    A=0  2500     2  3.260843e-04      0.009181036 3.260843e-04
+#> 3:    A=0  2500     1 -4.252794e-05      0.004784171 4.252794e-05
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001661467   1.141888446           Inf  1.14 relative
-#> 2:                0  0.009071044   0.028777512           Inf  0.03 relative
-#> 3:                0  0.004753228   0.007354378           Inf  0.01 relative
+#> 1:                0  0.001661702   1.141845895           Inf  1.14 relative
+#> 2:                0  0.009181036   0.035517158           Inf  0.04 relative
+#> 3:                0  0.004784171   0.008889302           Inf  0.01 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.001915757
+#> Norm PnEIC = 0.001926018
 #> Starting step 14 with update epsilon = 0.00625 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -1.771575e-03      0.001661382 1.771575e-03
-#> 2:    A=0  2500     2 -1.308206e-04      0.009071097 1.308206e-04
-#> 3:    A=1  2500     2 -3.219348e-05      0.008528379 3.219348e-05
+#> 1:    A=1  2500     1 -1.771510e-03      0.001661611 1.771510e-03
+#> 2:    A=0  2500     2 -1.874402e-04      0.009181359 1.874402e-04
+#> 3:    A=0  2500     1  2.862341e-05      0.004784242 2.862341e-05
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001661382   1.066326106           Inf  1.07 relative
-#> 2:                0  0.009071097   0.014421700           Inf  0.01 relative
-#> 3:                0  0.008528379   0.003774865           Inf  0.00 relative
+#> 1:                0  0.001661611   1.066139970           Inf  1.07 relative
+#> 2:                0  0.009181359   0.020415300           Inf  0.02 relative
+#> 3:                0  0.004784242   0.005982852           Inf  0.01 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.001776809
+#> Norm PnEIC = 0.001781927
 #> Starting step 15 with update epsilon = 0.00625 
 #>       Trt  Time Event         PnEIC RelativeCriteria     AbsPnEIC
 #>    <char> <num> <num>         <num>            <num>        <num>
-#> 1:    A=1  2500     1 -1.646529e-03      0.001661301 1.646529e-03
-#> 2:    A=0  2500     2  8.137837e-05      0.009071068 8.137837e-05
-#> 3:    A=1  2500     2 -3.005180e-05      0.008528375 3.005180e-05
+#> 1:    A=1  2500     1 -1.645956e-03      0.001661524 1.645956e-03
+#> 2:    A=0  2500     2  1.322667e-04      0.009181157 1.322667e-04
+#> 3:    A=1  2500     2 -2.989555e-05      0.008589294 2.989555e-05
 #>    AbsoluteCriteria StopCriteria RelativeRatio AbsoluteRatio ratio StopRule
 #>               <num>        <num>         <num>         <num> <num>   <char>
-#> 1:                0  0.001661301   0.991108248           Inf  0.99 relative
-#> 2:                0  0.009071068   0.008971200           Inf  0.01 relative
-#> 3:                0  0.008528375   0.003523743           Inf  0.00 relative
+#> 1:                0  0.001661524    0.99063073           Inf  0.99 relative
+#> 2:                0  0.009181157    0.01440632           Inf  0.01 relative
+#> 3:                0  0.008589294    0.00348056           Inf  0.00 relative
 #>    StopAbsTol
 #>         <num>
 #> 1:          0
 #> 2:          0
 #> 3:          0
-#> Norm PnEIC = 0.001648847
+#> Norm PnEIC = 0.001651624
 ```
