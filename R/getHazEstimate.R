@@ -314,8 +314,16 @@ fitCoxnetHazLearner <- function(Data, j, TimeCol, TypeCol, TrtCol, IDCol, Hazard
 #' @keywords internal
 coxBaseHazIncrements <- function(CoxFit, Hazards) {
     Time <- BaseHaz <- NULL
-    BaseHazJ <- rbind(data.table(time = 0, hazard = 0),
-                      suppressWarnings(data.table::setDT(survival::basehaz(CoxFit, centered = TRUE))))
+    bh <- try(suppressWarnings(data.table::setDT(survival::basehaz(CoxFit, centered = TRUE))),
+              silent = TRUE)
+    # A degenerate Cox fit (e.g. separation on a rare event in a small fold) can make
+    # basehaz() error or return non-finite values; fall back to a zero baseline so the
+    # candidate degrades to a poor loss rather than failing the whole event type.
+    if (inherits(bh, "try-error") || !nrow(bh) || !is.numeric(bh[[2L]]) ||
+        all(!is.finite(bh[[2L]]))) {
+        return(data.table::data.table(Time = Hazards[["Time"]], BaseHaz = 0))
+    }
+    BaseHazJ <- rbind(data.table(time = 0, hazard = 0), bh)
     colnames(BaseHazJ) <- c("Time", "BaseHaz")
     BaseHazJ <- merge(Hazards, BaseHazJ, by = "Time", all.x = TRUE)
     BaseHazJ <- BaseHazJ[order(Time)]
