@@ -21,6 +21,8 @@
 
 - [`getRMST()`](https://blind-contours.github.io/concrete/reference/getRMST.md)
   : Restricted mean survival time and cause-specific life-years lost
+- [`targetRMST()`](https://blind-contours.github.io/concrete/reference/targetRMST.md)
+  : Directly target the restricted mean survival time
 - [`getRelativeEfficiency()`](https://blind-contours.github.io/concrete/reference/getRelativeEfficiency.md)
   : Relative efficiency of a covariate-adjusted vs unadjusted analysis
 

@@ -226,6 +226,19 @@ The `RMST Diff` row is the difference in mean event-free time up to the
 horizon (e.g. “extra days alive and event-free under the active arm”);
 `LYL Diff` rows are the cause-specific differences in time lost.
 
+[`getRMST()`](https://blind-contours.github.io/concrete/reference/getRMST.md)
+integrates the pointwise-targeted risks, so it needs a reasonably dense
+`TargetTime` grid. If you only fit a few target times, or you have rare
+events or a long horizon,
+[`targetRMST()`](https://blind-contours.github.io/concrete/reference/targetRMST.md)
+targets the RMST estimating equation **directly** (fluctuating the
+hazards for the integrated clever covariate) and is better conditioned:
+
+``` r
+
+targetRMST(ConcreteEst, Horizon = 1095, Intervention = c(1, 2))
+```
+
 ## How much did covariate adjustment buy you?
 
 Covariate adjustment does not change the estimand in a randomized trial,

@@ -80,5 +80,9 @@ influence-function standard errors, confidence intervals, and p-values.
 
 ## See also
 
+[`targetRMST()`](https://blind-contours.github.io/concrete/reference/targetRMST.md)
+for the directly-targeted version that fluctuates the hazards for the
+RMST estimating equation instead of integrating pointwise-targeted
+risks;
 [`getOutput()`](https://blind-contours.github.io/concrete/reference/getOutput.md)
 for absolute risks, risk differences, and risk ratios.

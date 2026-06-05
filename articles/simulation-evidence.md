@@ -69,6 +69,36 @@ four settings:
 
 ![coverage four scenarios](figures/sim-coverage-4scenario.png)
 
+## Direct vs pointwise RMST targeting
+
+`concrete` offers two ways to estimate the restricted mean survival
+time:
+[`getRMST()`](https://blind-contours.github.io/concrete/reference/getRMST.md)
+integrates the pointwise-targeted absolute risks, while
+[`targetRMST()`](https://blind-contours.github.io/concrete/reference/targetRMST.md)
+fluctuates the hazards to solve the RMST estimating equation directly
+(see the [How concrete
+works](https://blind-contours.github.io/concrete/articles/how-concrete-works.md)
+article). The simulation below uses exponential cause-specific hazards
+(so the true RMST and life-years-lost have closed forms) and a
+deliberately **sparse two-time target grid**, which is where the
+difference shows up.
+
+The direct method substantially reduces bias, because it integrates over
+the full event-time grid and targets the RMST functional itself rather
+than relying on a crude trapezoid of a few targeted risks:
+
+![RMST bias: direct vs pointwise](figures/rmst-comparison-bias.png)
+
+That lower bias translates into confidence-interval coverage closer to
+nominal:
+
+![RMST coverage: direct vs
+pointwise](figures/rmst-comparison-coverage.png)
+
+With a dense target grid the two approaches converge; the direct method
+is the one to prefer for sparse grids, rare events, and long horizons.
+
 ## Takeaways for a trial analysis
 
 - The targeting step is doing real work: it consistently reduces the
@@ -89,4 +119,7 @@ source("scripts/make-sim-evidence-figures.R")
 
 # Re-run the simulations themselves (heavy; uses a fixed seed grid):
 # see scripts/sim-data/referee-sims/run_pilot.R
+
+# The direct-vs-pointwise RMST comparison (closed-form truth) is self-contained:
+# Rscript scripts/make-rmst-comparison.R 150 400
 ```
