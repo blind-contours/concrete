@@ -50,6 +50,7 @@ reference:
       - getRMST
       - targetRMST
       - getRelativeEfficiency
+      - getWinRatio
   - title: Estimand framework
     contents:
       - makeEstimand
