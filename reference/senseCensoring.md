@@ -1,0 +1,65 @@
+# Tipping-point sensitivity analysis for informative censoring
+
+`concrete`'s primary analysis assumes censoring is independent of the
+event given the measured covariates. `senseCensoring()` probes
+robustness to departures from that assumption with a transparent
+tipping-point (bounds) analysis: a fraction `delta` of the subjects who
+are censored before the target time are assumed to have actually
+experienced the event of interest, and the analysis is re-fit for each
+`delta`. `delta = 0` is the optimistic bound (censored subjects never
+have the event), `delta = 1` the pessimistic bound (all do), and the
+primary inverse-probability-of-censoring analysis sits between them. The
+**tipping point** is the smallest `delta` at which the conclusion
+changes – a sensitivity artifact recommended by ICH E9(R1).
+
+Unlike scaling the censoring weight (which leaves a doubly-robust
+estimator's target unchanged), imputing the event status of the censored
+changes the estimand and so produces a genuine, interpretable
+sensitivity curve. Because it re-fits the estimator for every `delta`,
+it is computationally heavier than the primary analysis.
+
+## Usage
+
+``` r
+senseCensoring(
+  ConcreteArgs,
+  deltas = seq(0, 1, by = 0.25),
+  Estimand = c("RD", "RR", "Risk"),
+  Intervention = c(1, 2),
+  Signif = 0.05,
+  Verbose = FALSE
+)
+```
+
+## Arguments
+
+- ConcreteArgs:
+
+  a `"ConcreteArgs"` object from
+  [`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md).
+
+- deltas:
+
+  numeric in `[0, 1]`: fractions of pre-target-time censored subjects
+  imputed as having the event of interest. Should include 0.
+
+- Estimand:
+
+  one of `"RD"` (default), `"RR"`, `"Risk"`.
+
+- Intervention:
+
+  length-2 numeric: treatment and control indices.
+
+- Signif:
+
+  numeric (default 0.05): two-sided alpha.
+
+- Verbose:
+
+  logical.
+
+## Value
+
+a `data.table` of estimate / CI / p-value by `delta` x event x time,
+with the tipping point in `attr(., "tippingPoint")`.

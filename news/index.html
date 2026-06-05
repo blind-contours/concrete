@@ -47,6 +47,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
 <div class="section level3">
+<h3 id="censoring-sensitivity-analysis-1-1-1-9000">Censoring sensitivity analysis<a class="anchor" aria-label="anchor" href="#censoring-sensitivity-analysis-1-1-1-9000"></a></h3>
+<ul><li>
+<code><a href="../reference/senseCensoring.html">senseCensoring()</a></code> adds a tipping-point sensitivity analysis for the independent-censoring (conditional MAR) assumption: a fraction <code>delta</code> of the subjects censored before the target time are imputed as having experienced the event of interest and the analysis is re-fit, tracing the estimate and CI from the optimistic (<code>delta = 0</code>) to the pessimistic (<code>delta = 1</code>) bound and reporting the tipping point. (Scaling the censoring weight leaves a doubly-robust target unchanged, so imputation – which changes the estimand – is used instead.)</li>
+</ul></div>
+<div class="section level3">
 <h3 id="ich-e9r1-estimand-framework-and-intercurrent-events-1-1-1-9000">ICH E9(R1) estimand framework and intercurrent events<a class="anchor" aria-label="anchor" href="#ich-e9r1-estimand-framework-and-intercurrent-events-1-1-1-9000"></a></h3>
 <ul><li>
 <code><a href="../reference/makeEstimand.html">makeEstimand()</a></code> records the analysis target by the five ICH E9(R1) attributes (treatment, population, endpoint, intercurrent-event strategy, summary), and travels with the results for a statistical analysis plan.</li>

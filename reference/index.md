@@ -33,6 +33,8 @@
   [`applyIntercurrentEvent()`](https://blind-contours.github.io/concrete/reference/makeEstimand.md)
   : Specify an ICH E9(R1) estimand and apply an intercurrent-event
   strategy
+- [`senseCensoring()`](https://blind-contours.github.io/concrete/reference/senseCensoring.md)
+  : Tipping-point sensitivity analysis for informative censoring
 
 ## Package overview
 
