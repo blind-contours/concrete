@@ -1,5 +1,16 @@
 # concrete 1.1.1.9000
 
+## Censoring sensitivity analysis
+
+* `senseCensoring()` adds a tipping-point sensitivity analysis for the
+  independent-censoring (conditional MAR) assumption: a fraction `delta` of the
+  subjects censored before the target time are imputed as having experienced the
+  event of interest and the analysis is re-fit, tracing the estimate and CI from
+  the optimistic (`delta = 0`) to the pessimistic (`delta = 1`) bound and
+  reporting the tipping point. (Scaling the censoring weight leaves a
+  doubly-robust target unchanged, so imputation -- which changes the estimand --
+  is used instead.)
+
 ## ICH E9(R1) estimand framework and intercurrent events
 
 * `makeEstimand()` records the analysis target by the five ICH E9(R1) attributes

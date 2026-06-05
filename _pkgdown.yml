@@ -54,6 +54,7 @@ reference:
     contents:
       - makeEstimand
       - applyIntercurrentEvent
+      - senseCensoring
   - title: Package overview
     contents:
       - concrete-package
