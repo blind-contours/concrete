@@ -24,6 +24,7 @@ articles:
     navbar: Trialist guides
     contents:
       - trialist-quickstart
+      - regulatory-toolkit
       - learner-library
       - convergence-diagnostics
       - trialist-testing-protocol
