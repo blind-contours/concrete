@@ -25,6 +25,8 @@
   : Directly target the restricted mean survival time
 - [`getRelativeEfficiency()`](https://blind-contours.github.io/concrete/reference/getRelativeEfficiency.md)
   : Relative efficiency of a covariate-adjusted vs unadjusted analysis
+- [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
+  : Covariate-adjusted restricted win ratio, win odds, and net benefit
 
 ## Estimand framework
 
