@@ -132,6 +132,45 @@ ConcreteOut
 getTmleDiagnostics(ConcreteEst, type = "components")
 ```
 
+### Restricted mean survival time
+
+For a collapsible, time-scale summary that does not depend on proportional
+hazards, `getRMST()` returns the covariate-adjusted restricted mean survival
+time (event-free time over the horizon), the cause-specific life-years lost, and
+their between-arm differences — each with influence-function confidence
+intervals and a Wald p-value. (Target every event type so the event-free RMST is
+identified, and use a reasonably dense `TargetTime` grid.)
+
+```{r rmst, eval = FALSE}
+ConcreteArgs <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetEvent = c(1, 2),
+  TargetTime = c(365, 730, 1095, 1460), CVArg = list(V = 5)
+)
+ConcreteEst <- doConcrete(ConcreteArgs)
+
+getRMST(ConcreteEst, Horizon = 1460, Intervention = c(1, 2))
+```
+
+Example output (PBC data, 4-year horizon; values change with your data):
+
+| Estimand | Event | Intervention | Pt Est | CI Low | CI Hi | pValue |
+|---|---:|---|---:|---:|---:|---:|
+| RMST | – | A=0 | 1270 | 1220 | 1330 | |
+| RMST | – | A=1 | 1270 | 1200 | 1330 | |
+| RMST Diff | – | [A=1] − [A=0] | −8.1 | −91 | 75 | 0.85 |
+| Life Years Lost | 1 | A=0 | 169 | 115 | 222 | |
+| Life Years Lost | 1 | A=1 | 183 | 121 | 246 | |
+| LYL Diff | 1 | [A=1] − [A=0] | 14.6 | −68 | 97 | 0.73 |
+
+`RMST Diff` is the difference in mean event-free days over the horizon (here the
+arms are within ~8 days, CI −91 to 75). For sparse grids, rare events, or long
+horizons, `targetRMST()` targets the RMST estimating equation directly and is
+better conditioned.
+```{r target-rmst, eval = FALSE}
+targetRMST(ConcreteEst, Horizon = 1460, Intervention = c(1, 2))
+```
+
 To check that your installation works before using your own data, run the
 installed smoke test:
 
