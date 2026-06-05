@@ -57,7 +57,9 @@
 <span>  Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">ConcreteEst</span><span class="op">)</span>,</span>
 <span>  GComp <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  Simultaneous <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  Signif <span class="op">=</span> <span class="fl">0.05</span></span>
+<span>  Signif <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  NIMargin <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  NIDirection <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lower"</span>, <span class="st">"upper"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'ConcreteOut'</span></span>
@@ -95,6 +97,18 @@ Intervention should be a numeric vector with length 2, the first term designatin
 <dd><p>numeric (default = 0.05): alpha for 2-tailed hypothesis testing</p></dd>
 
 
+<dt id="arg-nimargin">NIMargin<a class="anchor" aria-label="anchor" href="#arg-nimargin"></a></dt>
+<dd><p>numeric (optional): a non-inferiority margin for the
+comparative (RD/RR) estimands. When supplied, a one-sided
+non-inferiority assessment is added (<code>NIpValue</code>, <code>NonInferior</code>).</p></dd>
+
+
+<dt id="arg-nidirection">NIDirection<a class="anchor" aria-label="anchor" href="#arg-nidirection"></a></dt>
+<dd><p>one of <code>"lower"</code> or <code>"upper"</code>: which side of the margin is
+"non-inferior". Use <code>"upper"</code> when a smaller estimate is better (the
+usual risk-difference case) and <code>"lower"</code> when larger is better.</p></dd>
+
+
 <dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>a ConcreteOut object</p></dd>
 
@@ -113,7 +127,8 @@ Intervention should be a numeric vector with length 2, the first term designatin
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>data.table of point estimates and standard deviations</p>
+    <p>data.table of point estimates and standard deviations. Comparative
+estimands carry a two-sided Wald <code>pValue</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="functions">Functions<a class="anchor" aria-label="anchor" href="#functions"></a></h2>
@@ -299,42 +314,42 @@ Intervention should be a numeric vector with length 2, the first term designatin
 <span class="r-in"><span><span class="va">concrete.out</span> <span class="op">&lt;-</span> <span class="fu">getOutput</span><span class="op">(</span><span class="va">concrete.est</span>, Estimand <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"RR"</span>, <span class="st">"RD"</span>, <span class="st">"Risk"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                          GComp <span class="op">=</span> <span class="cn">TRUE</span>, Simultaneous <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">concrete.out</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      Time Event  Estimand  Intervention Estimator  Pt Est     se CI Low   CI Hi</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;num&gt; &lt;num&gt;    &lt;char&gt;        &lt;char&gt;    &lt;char&gt;   &lt;num&gt;  &lt;num&gt;  &lt;num&gt;   &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  2500     1  Abs Risk           A=0      tmle  0.0680 0.0270  0.015  0.1200</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  2500     1  Abs Risk           A=0     gcomp  0.0710     NA     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  2500     1  Abs Risk           A=1      tmle  0.0083 0.0097 -0.011  0.0270</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  2500     1  Abs Risk           A=1     gcomp  0.0085     NA     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  2500     1  Rel Risk [A=1] / [A=0]      tmle  0.1200 0.1500 -0.170  0.4200</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  2500     1  Rel Risk [A=1] / [A=0]     gcomp  0.1200     NA     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  2500     1 Risk Diff [A=1] - [A=0]      tmle -0.0600 0.0290 -0.120 -0.0037</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  2500     1 Risk Diff [A=1] - [A=0]     gcomp -0.0620     NA     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  2500     2  Abs Risk           A=0      tmle  0.3400 0.0510  0.240  0.4400</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  2500     2  Abs Risk           A=0     gcomp  0.3100     NA     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  2500     2  Abs Risk           A=1      tmle  0.3800 0.0450  0.300  0.4700</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:  2500     2  Abs Risk           A=1     gcomp  0.3400     NA     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:  2500     2  Rel Risk [A=1] / [A=0]      tmle  1.1000 0.2100  0.710  1.6000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:  2500     2  Rel Risk [A=1] / [A=0]     gcomp  1.1000     NA     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  2500     2 Risk Diff [A=1] - [A=0]      tmle  0.0460 0.0670 -0.087  0.1800</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16:  2500     2 Risk Diff [A=1] - [A=0]     gcomp  0.0300     NA     NA      NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SimCI Low SimCI Hi</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         &lt;num&gt;    &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1:   -0.0034    0.140</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  2:        NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  3:   -0.0170    0.034</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  4:        NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  5:   -0.2800    0.520</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  6:        NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  7:   -0.1400    0.016</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  8:        NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  9:    0.2000    0.470</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10:        NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11:    0.2600    0.500</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12:        NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13:    0.5700    1.700</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14:        NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15:   -0.1300    0.220</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16:        NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Time Event  Estimand  Intervention Estimator   Pt Est     se  CI Low</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;num&gt; &lt;num&gt;    &lt;char&gt;        &lt;char&gt;    &lt;char&gt;    &lt;num&gt;  &lt;num&gt;   &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  2500     1  Abs Risk           A=0      tmle  0.06800 0.0269  0.0152</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2:  2500     1  Abs Risk           A=0     gcomp  0.07090     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  2500     1  Abs Risk           A=1      tmle  0.00825 0.0097 -0.0108</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  4:  2500     1  Abs Risk           A=1     gcomp  0.00849     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  2500     1  Rel Risk [A=1] / [A=0]      tmle  0.12100 0.1500 -0.1730</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  6:  2500     1  Rel Risk [A=1] / [A=0]     gcomp  0.12000     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  7:  2500     1 Risk Diff [A=1] - [A=0]      tmle -0.05970 0.0286 -0.1160</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  8:  2500     1 Risk Diff [A=1] - [A=0]     gcomp -0.06240     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  2500     2  Abs Risk           A=0      tmle  0.33900 0.0511  0.2390</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10:  2500     2  Abs Risk           A=0     gcomp  0.31200     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  2500     2  Abs Risk           A=1      tmle  0.38400 0.0451  0.2960</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12:  2500     2  Abs Risk           A=1     gcomp  0.34200     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13:  2500     2  Rel Risk [A=1] / [A=0]      tmle  1.13000 0.2140  0.7140</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14:  2500     2  Rel Risk [A=1] / [A=0]     gcomp  1.10000     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  2500     2 Risk Diff [A=1] - [A=0]      tmle  0.04560 0.0674 -0.0865</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16:  2500     2 Risk Diff [A=1] - [A=0]     gcomp  0.03040     NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        CI Hi SimCI Low SimCI Hi  pValue</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        &lt;num&gt;     &lt;num&gt;    &lt;num&gt;   &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1:  0.12100  -0.00343   0.1390      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  2:       NA        NA       NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  3:  0.02730  -0.01740   0.0339      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  4:       NA        NA       NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  5:  0.41600  -0.27700   0.5200 5.1e-09</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  6:       NA        NA       NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  7: -0.00366  -0.13600   0.0161 3.7e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  8:       NA        NA       NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  9:  0.43900   0.20400   0.4740      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10:       NA        NA       NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11:  0.47300   0.26500   0.5040      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12:       NA        NA       NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13:  1.55000   0.56600   1.7000 5.3e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14:       NA        NA       NA      NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15:  0.17800  -0.13300   0.2240 5.0e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16:       NA        NA       NA      NA</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">concrete.out</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="getOutput-1.png" alt="" width="700" height="433"></span>
 <span class="r-plt img"><img src="getOutput-2.png" alt="" width="700" height="433"></span>

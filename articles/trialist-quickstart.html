@@ -434,6 +434,58 @@ compared</li>
 listed in <code>Intervention = c(1, 2)</code> has higher risk than the
 second. With <code><a href="../reference/formatArguments.html">makeITT()</a></code>, that is <code>A=1</code> minus
 <code>A=0</code>.</p>
+<p><code><a href="../reference/getOutput.html">getOutput()</a></code> also reports a two-sided Wald
+<code>pValue</code> for the risk difference and risk ratio, and can run
+a one-sided non-inferiority assessment against a margin:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/getOutput.html">getOutput</a></span><span class="op">(</span></span>
+<span>  <span class="va">ConcreteEst</span>, Estimand <span class="op">=</span> <span class="st">"RD"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  NIMargin <span class="op">=</span> <span class="fl">0.05</span>, NIDirection <span class="op">=</span> <span class="st">"upper"</span>   <span class="co"># active is non-inferior if its excess risk stays below 0.05</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="restricted-mean-survival-time-and-life-years-lost">Restricted mean survival time and life-years lost<a class="anchor" aria-label="anchor" href="#restricted-mean-survival-time-and-life-years-lost"></a>
+</h2>
+<p>Because the hazard ratio is non-collapsible and depends on
+proportional hazards, many trials report a restricted mean survival time
+(RMST) instead. <code><a href="../reference/getRMST.html">getRMST()</a></code> integrates the targeted
+cumulative incidence over the follow-up horizon, so request a reasonably
+dense <code>TargetTime</code> grid when you plan to use it.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># RMST (event-free time) and cause-specific life-years lost, with the</span></span>
+<span><span class="co"># between-arm difference in restricted mean times:</span></span>
+<span><span class="fu"><a href="../reference/getRMST.html">getRMST</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, Horizon <span class="op">=</span> <span class="fl">1095</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The <code>RMST Diff</code> row is the difference in mean event-free
+time up to the horizon (e.g. “extra days alive and event-free under the
+active arm”); <code>LYL Diff</code> rows are the cause-specific
+differences in time lost.</p>
+</div>
+<div class="section level2">
+<h2 id="how-much-did-covariate-adjustment-buy-you">How much did covariate adjustment buy you?<a class="anchor" aria-label="anchor" href="#how-much-did-covariate-adjustment-buy-you"></a>
+</h2>
+<p>Covariate adjustment does not change the estimand in a randomized
+trial, but it can tighten the confidence intervals. Fit an unadjusted
+(treatment-only) version and compare with
+<code><a href="../reference/getRelativeEfficiency.html">getRelativeEfficiency()</a></code>:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">unadj_args</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
+<span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
+<span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="../reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>, TargetTime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">365</span>, <span class="fl">730</span>, <span class="fl">1095</span><span class="op">)</span>,</span>
+<span>  TargetEvent <span class="op">=</span> <span class="fl">1</span>, CVArg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>V <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
+<span>  Model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>arm <span class="op">=</span> <span class="st">"SL.mean"</span>,</span>
+<span>               <span class="st">"0"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Cox <span class="op">=</span> <span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">~</span> <span class="va">arm</span><span class="op">)</span>,</span>
+<span>               <span class="st">"1"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Cox <span class="op">=</span> <span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">~</span> <span class="va">arm</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">unadj_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">unadj_args</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/getRelativeEfficiency.html">getRelativeEfficiency</a></span><span class="op">(</span></span>
+<span>  Adjusted   <span class="op">=</span> <span class="fu"><a href="../reference/getOutput.html">getOutput</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, Estimand <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Risk"</span>, <span class="st">"RD"</span><span class="op">)</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  Unadjusted <span class="op">=</span> <span class="fu"><a href="../reference/getOutput.html">getOutput</a></span><span class="op">(</span><span class="va">unadj_est</span>,   Estimand <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Risk"</span>, <span class="st">"RD"</span><span class="op">)</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code>RelEfficiency</code> above 1 and a positive
+<code>VarReductionPct</code> mean adjustment was worth it: a value of
+1.25 says the adjusted analysis on these <code>n</code> participants has
+the precision of an unadjusted analysis on 25% more.</p>
 </div>
 <div class="section level2">
 <h2 id="compare-with-familiar-analyses">Compare with familiar analyses<a class="anchor" aria-label="anchor" href="#compare-with-familiar-analyses"></a>
@@ -441,7 +493,7 @@ second. With <code><a href="../reference/formatArguments.html">makeITT()</a></co
 <p>Use standard analyses as context, not as exact substitutes. A Cox
 hazard ratio is not the same estimand as a marginal risk difference or
 cumulative incidence risk ratio.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Event counts by arm are always the first check.</span></span>
 <span><span class="va">trial</span><span class="op">[</span>, <span class="va">.N</span>, by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">arm</span>, <span class="va">event</span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
@@ -476,7 +528,7 @@ close?</li>
 <div class="section level2">
 <h2 id="check-convergence">Check convergence<a class="anchor" aria-label="anchor" href="#check-convergence"></a>
 </h2>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">components</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getTmleDiagnostics.html">getTmleDiagnostics</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, type <span class="op">=</span> <span class="st">"components"</span><span class="op">)</span></span>
 <span><span class="va">components</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">ratio</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span></span>
 <span></span>
@@ -514,7 +566,7 @@ like:</p>
 </table>
 <p>If the fit does not converge, try the settings in the convergence
 diagnostics article before changing the estimand.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">UpdateMethod</span> <span class="op">&lt;-</span> <span class="st">"adaptive"</span></span>
 <span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopRule</span> <span class="op">&lt;-</span> <span class="st">"absolute"</span></span>
 <span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">EICStopAbsTol</span> <span class="op">&lt;-</span> <span class="fl">0.02</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ConcreteArgs</span><span class="op">$</span><span class="va">Data</span><span class="op">)</span><span class="op">)</span></span>

@@ -11,7 +11,9 @@ getOutput(
   Intervention = seq_along(ConcreteEst),
   GComp = NULL,
   Simultaneous = TRUE,
-  Signif = 0.05
+  Signif = 0.05,
+  NIMargin = NULL,
+  NIDirection = c("lower", "upper")
 )
 
 # S3 method for class 'ConcreteOut'
@@ -50,6 +52,18 @@ plot(x, NullLine = TRUE, ask = TRUE, ...)
 
   numeric (default = 0.05): alpha for 2-tailed hypothesis testing
 
+- NIMargin:
+
+  numeric (optional): a non-inferiority margin for the comparative
+  (RD/RR) estimands. When supplied, a one-sided non-inferiority
+  assessment is added (`NIpValue`, `NonInferior`).
+
+- NIDirection:
+
+  one of `"lower"` or `"upper"`: which side of the margin is
+  "non-inferior". Use `"upper"` when a smaller estimate is better (the
+  usual risk-difference case) and `"lower"` when larger is better.
+
 - x:
 
   a ConcreteOut object
@@ -69,7 +83,8 @@ plot(x, NullLine = TRUE, ask = TRUE, ...)
 
 ## Value
 
-data.table of point estimates and standard deviations
+data.table of point estimates and standard deviations. Comparative
+estimands carry a two-sided Wald `pValue`.
 
 ## Functions
 
@@ -255,42 +270,42 @@ concrete.est <- doConcrete(concrete.args)
 concrete.out <- getOutput(concrete.est, Estimand = c("RR", "RD", "Risk"),
                           GComp = TRUE, Simultaneous = TRUE)
 print(concrete.out)
-#>      Time Event  Estimand  Intervention Estimator  Pt Est     se CI Low   CI Hi
-#>     <num> <num>    <char>        <char>    <char>   <num>  <num>  <num>   <num>
-#>  1:  2500     1  Abs Risk           A=0      tmle  0.0680 0.0270  0.015  0.1200
-#>  2:  2500     1  Abs Risk           A=0     gcomp  0.0710     NA     NA      NA
-#>  3:  2500     1  Abs Risk           A=1      tmle  0.0083 0.0097 -0.011  0.0270
-#>  4:  2500     1  Abs Risk           A=1     gcomp  0.0085     NA     NA      NA
-#>  5:  2500     1  Rel Risk [A=1] / [A=0]      tmle  0.1200 0.1500 -0.170  0.4200
-#>  6:  2500     1  Rel Risk [A=1] / [A=0]     gcomp  0.1200     NA     NA      NA
-#>  7:  2500     1 Risk Diff [A=1] - [A=0]      tmle -0.0600 0.0290 -0.120 -0.0037
-#>  8:  2500     1 Risk Diff [A=1] - [A=0]     gcomp -0.0620     NA     NA      NA
-#>  9:  2500     2  Abs Risk           A=0      tmle  0.3400 0.0510  0.240  0.4400
-#> 10:  2500     2  Abs Risk           A=0     gcomp  0.3100     NA     NA      NA
-#> 11:  2500     2  Abs Risk           A=1      tmle  0.3800 0.0450  0.300  0.4700
-#> 12:  2500     2  Abs Risk           A=1     gcomp  0.3400     NA     NA      NA
-#> 13:  2500     2  Rel Risk [A=1] / [A=0]      tmle  1.1000 0.2100  0.710  1.6000
-#> 14:  2500     2  Rel Risk [A=1] / [A=0]     gcomp  1.1000     NA     NA      NA
-#> 15:  2500     2 Risk Diff [A=1] - [A=0]      tmle  0.0460 0.0670 -0.087  0.1800
-#> 16:  2500     2 Risk Diff [A=1] - [A=0]     gcomp  0.0300     NA     NA      NA
-#>     SimCI Low SimCI Hi
-#>         <num>    <num>
-#>  1:   -0.0034    0.140
-#>  2:        NA       NA
-#>  3:   -0.0170    0.034
-#>  4:        NA       NA
-#>  5:   -0.2800    0.520
-#>  6:        NA       NA
-#>  7:   -0.1400    0.016
-#>  8:        NA       NA
-#>  9:    0.2000    0.470
-#> 10:        NA       NA
-#> 11:    0.2600    0.500
-#> 12:        NA       NA
-#> 13:    0.5700    1.700
-#> 14:        NA       NA
-#> 15:   -0.1300    0.220
-#> 16:        NA       NA
+#>      Time Event  Estimand  Intervention Estimator   Pt Est     se  CI Low
+#>     <num> <num>    <char>        <char>    <char>    <num>  <num>   <num>
+#>  1:  2500     1  Abs Risk           A=0      tmle  0.06800 0.0269  0.0152
+#>  2:  2500     1  Abs Risk           A=0     gcomp  0.07090     NA      NA
+#>  3:  2500     1  Abs Risk           A=1      tmle  0.00825 0.0097 -0.0108
+#>  4:  2500     1  Abs Risk           A=1     gcomp  0.00849     NA      NA
+#>  5:  2500     1  Rel Risk [A=1] / [A=0]      tmle  0.12100 0.1500 -0.1730
+#>  6:  2500     1  Rel Risk [A=1] / [A=0]     gcomp  0.12000     NA      NA
+#>  7:  2500     1 Risk Diff [A=1] - [A=0]      tmle -0.05970 0.0286 -0.1160
+#>  8:  2500     1 Risk Diff [A=1] - [A=0]     gcomp -0.06240     NA      NA
+#>  9:  2500     2  Abs Risk           A=0      tmle  0.33900 0.0511  0.2390
+#> 10:  2500     2  Abs Risk           A=0     gcomp  0.31200     NA      NA
+#> 11:  2500     2  Abs Risk           A=1      tmle  0.38400 0.0451  0.2960
+#> 12:  2500     2  Abs Risk           A=1     gcomp  0.34200     NA      NA
+#> 13:  2500     2  Rel Risk [A=1] / [A=0]      tmle  1.13000 0.2140  0.7140
+#> 14:  2500     2  Rel Risk [A=1] / [A=0]     gcomp  1.10000     NA      NA
+#> 15:  2500     2 Risk Diff [A=1] - [A=0]      tmle  0.04560 0.0674 -0.0865
+#> 16:  2500     2 Risk Diff [A=1] - [A=0]     gcomp  0.03040     NA      NA
+#>        CI Hi SimCI Low SimCI Hi  pValue
+#>        <num>     <num>    <num>   <num>
+#>  1:  0.12100  -0.00343   0.1390      NA
+#>  2:       NA        NA       NA      NA
+#>  3:  0.02730  -0.01740   0.0339      NA
+#>  4:       NA        NA       NA      NA
+#>  5:  0.41600  -0.27700   0.5200 5.1e-09
+#>  6:       NA        NA       NA      NA
+#>  7: -0.00366  -0.13600   0.0161 3.7e-02
+#>  8:       NA        NA       NA      NA
+#>  9:  0.43900   0.20400   0.4740      NA
+#> 10:       NA        NA       NA      NA
+#> 11:  0.47300   0.26500   0.5040      NA
+#> 12:       NA        NA       NA      NA
+#> 13:  1.55000   0.56600   1.7000 5.3e-01
+#> 14:       NA        NA       NA      NA
+#> 15:  0.17800  -0.13300   0.2240 5.0e-01
+#> 16:       NA        NA       NA      NA
 plot(concrete.out, ask = FALSE)
 
 

@@ -47,6 +47,13 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
 <div class="section level3">
+<h3 id="new-rct-estimands-and-reporting-1-1-1-9000">New RCT estimands and reporting<a class="anchor" aria-label="anchor" href="#new-rct-estimands-and-reporting-1-1-1-9000"></a></h3>
+<ul><li>Added <code><a href="../reference/getRMST.html">getRMST()</a></code> for restricted mean survival time (event-free) and cause-specific life-years lost. These are collapsible, clinically interpretable estimands obtained by integrating the targeted cumulative incidence over the fitted target-time grid; their influence functions are the time-integrals of the absolute-risk influence functions, so standard errors, differences, and ratios reuse the existing machinery.</li>
+<li>
+<code><a href="../reference/getOutput.html">getOutput()</a></code> now reports a two-sided Wald <code>pValue</code> for the comparative (risk-difference and risk-ratio) estimands, and gains optional <code>NIMargin</code> / <code>NIDirection</code> arguments for one-sided non-inferiority assessment.</li>
+<li>Added <code><a href="../reference/getRelativeEfficiency.html">getRelativeEfficiency()</a></code> to quantify the precision gain from covariate adjustment versus an unadjusted analysis (relative efficiency, percentage variance reduction, and effective sample-size multiplier), as in the FDA 2023 covariate-adjustment guidance.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="trialist-beta-updates-1-1-1-9000">Trialist beta updates<a class="anchor" aria-label="anchor" href="#trialist-beta-updates-1-1-1-9000"></a></h3>
 <ul><li>Updated convergence guidance for rare-event analyses. The default stopping rule remains the original relative empirical EIC rule, but the recommended rare-event sensitivity is now <code>EICStopRule = "absolute"</code> with <code>EICStopAbsTol = 0.02 / sqrt(nrow(data))</code>.</li>
 <li>Updated README, vignettes, help files, and the installed trialist smoke test to use the sample-size-scaled absolute stopping sensitivity.</li>

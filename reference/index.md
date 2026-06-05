@@ -17,6 +17,13 @@
 - [`getTmleDiagnostics()`](https://blind-contours.github.io/concrete/reference/getTmleDiagnostics.md)
   : Extract TMLE convergence diagnostics
 
+## RCT estimands
+
+- [`getRMST()`](https://blind-contours.github.io/concrete/reference/getRMST.md)
+  : Restricted mean survival time and cause-specific life-years lost
+- [`getRelativeEfficiency()`](https://blind-contours.github.io/concrete/reference/getRelativeEfficiency.md)
+  : Relative efficiency of a covariate-adjusted vs unadjusted analysis
+
 ## Package overview
 
 - [`concrete-package`](https://blind-contours.github.io/concrete/reference/concrete-package.md)
