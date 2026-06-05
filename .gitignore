@@ -84,3 +84,6 @@ paper/referee_review/checkpoint_artifacts/
 .coveralls_github_token
 
 inst/doc
+
+# Simulation summary outputs (regenerated)
+scripts/*-summary.csv
