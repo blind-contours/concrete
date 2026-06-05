@@ -47,6 +47,13 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
 <div class="section level3">
+<h3 id="ich-e9r1-estimand-framework-and-intercurrent-events-1-1-1-9000">ICH E9(R1) estimand framework and intercurrent events<a class="anchor" aria-label="anchor" href="#ich-e9r1-estimand-framework-and-intercurrent-events-1-1-1-9000"></a></h3>
+<ul><li>
+<code><a href="../reference/makeEstimand.html">makeEstimand()</a></code> records the analysis target by the five ICH E9(R1) attributes (treatment, population, endpoint, intercurrent-event strategy, summary), and travels with the results for a statistical analysis plan.</li>
+<li>
+<code><a href="../reference/makeEstimand.html">applyIntercurrentEvent()</a></code> implements the data handling for the intercurrent-event strategy: <code>"treatment policy"</code> (intent-to-treat, the default), <code>"hypothetical"</code> (recode the intercurrent event as censoring so the existing IPCW targets the no-intercurrent-event risk), and <code>"composite"</code> (merge the intercurrent event into the event of interest).</li>
+</ul></div>
+<div class="section level3">
 <h3 id="cross-fitting-cv-tmle-1-1-1-9000">Cross-fitting (CV-TMLE)<a class="anchor" aria-label="anchor" href="#cross-fitting-cv-tmle-1-1-1-9000"></a></h3>
 <ul><li>
 <code>formatArguments(..., CrossFit = TRUE)</code> estimates the propensity and the cause-specific / censoring hazards by cross-fitting: each subject’s nuisances are predicted from models fit on the other folds (with an inner cross-validation for hazard-learner selection). This supports valid influence-function inference when flexible machine-learning learners are used – the regime where the in-sample fit can otherwise undercover – and is the principled answer to regulatory caution around ML-based covariate adjustment. The targeting and inference are unchanged; only how the nuisances are produced differs. The out-of-fold construction is verified in the test suite.</li>

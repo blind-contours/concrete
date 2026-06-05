@@ -26,6 +26,14 @@
 - [`getRelativeEfficiency()`](https://blind-contours.github.io/concrete/reference/getRelativeEfficiency.md)
   : Relative efficiency of a covariate-adjusted vs unadjusted analysis
 
+## Estimand framework
+
+- [`makeEstimand()`](https://blind-contours.github.io/concrete/reference/makeEstimand.md)
+  [`print(`*`<ConcreteEstimand>`*`)`](https://blind-contours.github.io/concrete/reference/makeEstimand.md)
+  [`applyIntercurrentEvent()`](https://blind-contours.github.io/concrete/reference/makeEstimand.md)
+  : Specify an ICH E9(R1) estimand and apply an intercurrent-event
+  strategy
+
 ## Package overview
 
 - [`concrete-package`](https://blind-contours.github.io/concrete/reference/concrete-package.md)
