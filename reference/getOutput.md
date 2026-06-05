@@ -13,7 +13,7 @@ getOutput(
   Simultaneous = TRUE,
   Signif = 0.05,
   NIMargin = NULL,
-  NIDirection = c("lower", "upper")
+  NIDirection = c("upper", "lower")
 )
 
 # S3 method for class 'ConcreteOut'
@@ -290,21 +290,21 @@ print(concrete.out)
 #> 16:  2500     2 Risk Diff [A=1] - [A=0]     gcomp  0.03040     NA      NA
 #>        CI Hi SimCI Low SimCI Hi  pValue
 #>        <num>     <num>    <num>   <num>
-#>  1:  0.12100  -0.00343   0.1390      NA
+#>  1:  0.12100  -0.00052   0.1360      NA
 #>  2:       NA        NA       NA      NA
-#>  3:  0.02730  -0.01740   0.0339      NA
+#>  3:  0.02730  -0.01640   0.0329      NA
 #>  4:       NA        NA       NA      NA
-#>  5:  0.41600  -0.27700   0.5200 5.1e-09
+#>  5:  0.41600  -0.26100   0.5040 5.1e-09
 #>  6:       NA        NA       NA      NA
-#>  7: -0.00366  -0.13600   0.0161 3.7e-02
+#>  7: -0.00366  -0.13200   0.0130 3.7e-02
 #>  8:       NA        NA       NA      NA
-#>  9:  0.43900   0.20400   0.4740      NA
+#>  9:  0.43900   0.20900   0.4690      NA
 #> 10:       NA        NA       NA      NA
-#> 11:  0.47300   0.26500   0.5040      NA
+#> 11:  0.47300   0.27000   0.4990      NA
 #> 12:       NA        NA       NA      NA
-#> 13:  1.55000   0.56600   1.7000 5.3e-01
+#> 13:  1.55000   0.58900   1.6800 5.3e-01
 #> 14:       NA        NA       NA      NA
-#> 15:  0.17800  -0.13300   0.2240 5.0e-01
+#> 15:  0.17800  -0.12600   0.2170 5.0e-01
 #> 16:       NA        NA       NA      NA
 plot(concrete.out, ask = FALSE)
 
