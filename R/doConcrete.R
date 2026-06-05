@@ -65,17 +65,18 @@ doConcrete <- function(ConcreteArgs) {
 doConCRTmle <- function(DataTable, TargetTime, TargetEvent, Regime, CVFolds, Model, MaxUpdateIter,
                         OneStepEps, MinNuisance, Verbose, GComp, ReturnModels,
                         UpdateMethod = "standard",
-                        EICStopRule = "relative", EICStopAbsTol = 0, ...)
+                        EICStopRule = "relative", EICStopAbsTol = 0, CrossFit = FALSE, ...)
 {
     ratio <- Time <- Event <- PnEIC <- `seEIC/(sqrt(n)log(n))` <- NULL # for data.table compatibility w/ global var binding check
     EICStopRule <- getEICStopRule(EICStopRule)
     EICStopAbsTol <- getEICStopAbsTol(EICStopAbsTol)
 
     # initial estimation ------------------------------------------------------------------------
-    Estimates <- getInitialEstimate(Data = DataTable, Model = Model, CVFolds = CVFolds,
-                                    MinNuisance = MinNuisance, TargetEvent = TargetEvent,
-                                    TargetTime = TargetTime, Regime = Regime,
-                                    ReturnModels = ReturnModels)
+    InitFn <- if (isTRUE(CrossFit)) getCVInitialEstimate else getInitialEstimate
+    Estimates <- InitFn(Data = DataTable, Model = Model, CVFolds = CVFolds,
+                        MinNuisance = MinNuisance, TargetEvent = TargetEvent,
+                        TargetTime = TargetTime, Regime = Regime,
+                        ReturnModels = ReturnModels)
 
     # get initial EIC (possibly with GComp plug-in estimate) ---------------------------------------------
     Estimates <- getEIC(Estimates = Estimates, Data = DataTable, Regime = Regime,

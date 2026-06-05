@@ -73,6 +73,12 @@
 #'                      `0.02 / sqrt(nrow(DataTable))` gives a small sample-size-scaled
 #'                      absolute-risk tolerance while the default `0` leaves the original
 #'                      relative rule unchanged.
+#' @param CrossFit logical (default: FALSE): if TRUE, estimate the propensity and
+#'                      hazard nuisances by cross-fitting (CV-TMLE) -- each subject's
+#'                      nuisances are predicted from models fit on the other folds,
+#'                      which supports valid influence-function inference when flexible
+#'                      machine-learning learners are used. Adds compute (the nuisance
+#'                      library is refit once per fold).
 #' @param ... ...
 #'
 #' @return a list of class "ConcreteArgs"
@@ -195,6 +201,7 @@ formatArguments <- function(DataTable,
                             UpdateMethod = c("standard", "adaptive"),
                             EICStopRule = c("relative", "absolute", "hybrid"),
                             EICStopAbsTol = 0,
+                            CrossFit = FALSE,
                             ...)
 {
   ## Data Structure - incorporate prodlim::EventHistory.frame?
@@ -210,7 +217,8 @@ formatArguments <- function(DataTable,
                                      Verbose, GComp, ReturnModels, ID, RenameCovs,
                                      UpdateMethod = UpdateMethod,
                                      EICStopRule = EICStopRule,
-                                     EICStopAbsTol = EICStopAbsTol)
+                                     EICStopAbsTol = EICStopAbsTol,
+                                     CrossFit = CrossFit)
   }
 
   with(ConcreteArgs, {
@@ -218,10 +226,12 @@ formatArguments <- function(DataTable,
     if (is.null(ConcreteArgs[["EICStopAbsTol"]])) EICStopAbsTol <- 0
 
     # Miscellaneous Args ----
+    if (is.null(ConcreteArgs[["CrossFit"]])) CrossFit <- FALSE
     checkBoolean(ArgList = list("Verbose" = Verbose,
                                 "GComp" = GComp,
                                 "ReturnModels" = ReturnModels,
-                                "RenameCovs" = RenameCovs),
+                                "RenameCovs" = RenameCovs,
+                                "CrossFit" = CrossFit),
                  Envir = ConcreteArgs)
 
 
@@ -273,7 +283,7 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
                              TargetTime, TargetEvent, CVArg, Model,
                              MaxUpdateIter, OneStepEps, MinNuisance,
                              Verbose, GComp, ReturnModels, ID, RenameCovs, UpdateMethod,
-                             EICStopRule, EICStopAbsTol) {
+                             EICStopRule, EICStopAbsTol, CrossFit = FALSE) {
   ConcreteArgs <- new.env()
   with(ConcreteArgs, {
     DataTable <- DataTable
@@ -296,6 +306,7 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
     UpdateMethod  <- UpdateMethod
     EICStopRule <- EICStopRule
     EICStopAbsTol <- EICStopAbsTol
+    CrossFit <- CrossFit
   })
   class(ConcreteArgs) <- union("ConcreteArgs", class(ConcreteArgs))
   return(ConcreteArgs)
