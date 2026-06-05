@@ -82,6 +82,33 @@ settings:
 knitr::include_graphics("figures/sim-coverage-4scenario.png")
 ```
 
+## Direct vs pointwise RMST targeting
+
+`concrete` offers two ways to estimate the restricted mean survival time:
+`getRMST()` integrates the pointwise-targeted absolute risks, while
+`targetRMST()` fluctuates the hazards to solve the RMST estimating equation
+directly (see the [How concrete works](how-concrete-works.html) article). The
+simulation below uses exponential cause-specific hazards (so the true RMST and
+life-years-lost have closed forms) and a deliberately **sparse two-time target
+grid**, which is where the difference shows up.
+
+The direct method substantially reduces bias, because it integrates over the
+full event-time grid and targets the RMST functional itself rather than relying
+on a crude trapezoid of a few targeted risks:
+
+```{r, echo = FALSE, eval = TRUE, out.width = "90%", fig.alt = "RMST bias: direct vs pointwise"}
+knitr::include_graphics("figures/rmst-comparison-bias.png")
+```
+
+That lower bias translates into confidence-interval coverage closer to nominal:
+
+```{r, echo = FALSE, eval = TRUE, out.width = "90%", fig.alt = "RMST coverage: direct vs pointwise"}
+knitr::include_graphics("figures/rmst-comparison-coverage.png")
+```
+
+With a dense target grid the two approaches converge; the direct method is the
+one to prefer for sparse grids, rare events, and long horizons.
+
 ## Takeaways for a trial analysis
 
 - The targeting step is doing real work: it consistently reduces the plug-in
@@ -100,4 +127,7 @@ source("scripts/make-sim-evidence-figures.R")
 
 # Re-run the simulations themselves (heavy; uses a fixed seed grid):
 # see scripts/sim-data/referee-sims/run_pilot.R
+
+# The direct-vs-pointwise RMST comparison (closed-form truth) is self-contained:
+# Rscript scripts/make-rmst-comparison.R 150 400
 ```

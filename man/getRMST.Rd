@@ -60,5 +60,8 @@ time lost to cause \eqn{j} by \eqn{\tau}.
 }
 }
 \seealso{
-\code{\link[=getOutput]{getOutput()}} for absolute risks, risk differences, and risk ratios.
+\code{\link[=targetRMST]{targetRMST()}} for the directly-targeted version that fluctuates the
+hazards for the RMST estimating equation instead of integrating
+pointwise-targeted risks; \code{\link[=getOutput]{getOutput()}} for absolute risks, risk
+differences, and risk ratios.
 }

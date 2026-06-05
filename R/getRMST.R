@@ -36,7 +36,10 @@
 #' @return a `data.table` of class `"ConcreteOut"` with point estimates,
 #'   influence-function standard errors, confidence intervals, and p-values.
 #'
-#' @seealso [getOutput()] for absolute risks, risk differences, and risk ratios.
+#' @seealso [targetRMST()] for the directly-targeted version that fluctuates the
+#'   hazards for the RMST estimating equation instead of integrating
+#'   pointwise-targeted risks; [getOutput()] for absolute risks, risk
+#'   differences, and risk ratios.
 #' @export getRMST
 #' @importFrom stats qnorm pnorm
 getRMST <- function(ConcreteEst, Horizon = NULL, Intervention = seq_along(ConcreteEst),

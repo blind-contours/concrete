@@ -8,6 +8,12 @@
   incidence over the fitted target-time grid; their influence functions are the
   time-integrals of the absolute-risk influence functions, so standard errors,
   differences, and ratios reuse the existing machinery.
+* Added `targetRMST()`, which targets the RMST / life-years-lost estimand
+  *directly* with the integrated clever covariate rather than integrating
+  pointwise-targeted risks. It fluctuates the fitted hazards on a rescaled time
+  axis until the RMST estimating equation is solved, which is better conditioned
+  and tends to converge and cover better than the pointwise approach for sparse
+  grids, rare events, and long horizons.
 * `getOutput()` now reports a two-sided Wald `pValue` for the comparative
   (risk-difference and risk-ratio) estimands, and gains optional `NIMargin` /
   `NIDirection` arguments for one-sided non-inferiority assessment.

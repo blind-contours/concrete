@@ -48,6 +48,7 @@ reference:
   - title: RCT estimands
     contents:
       - getRMST
+      - targetRMST
       - getRelativeEfficiency
   - title: Package overview
     contents:
