@@ -93,6 +93,9 @@ applyIntercurrentEvent <- function(Data, EventTime, EventType, Intercurrent,
                                    TargetEvent = 1, intercurrent = "intercurrent event",
                                    Verbose = TRUE) {
   strategy <- match.arg(strategy)
+  if (identical(strategy, "composite") && length(TargetEvent) != 1L)
+    stop("For the composite strategy, TargetEvent must be a single event code ",
+         "into which the intercurrent event is merged.")
   DT <- data.table::copy(data.table::as.data.table(Data))
   if (!EventType %in% names(DT)) stop("EventType column '", EventType, "' not found.")
   ev <- DT[[EventType]]

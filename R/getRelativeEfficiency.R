@@ -54,6 +54,10 @@ getRelativeEfficiency <- function(Adjusted, Unadjusted) {
   if (!nrow(out))
     stop("No matching estimand rows (Intervention/Estimand/Event/Time) with ",
          "usable standard errors were found between the two tables.")
+  if (nrow(out) < min(nrow(adj), nrow(unadj)))
+    warning("Some estimand rows did not match between the adjusted and unadjusted ",
+            "tables and were dropped; check that both used the same estimands, ",
+            "interventions, events, and times.")
 
   out[, RelEfficiency := (seUnadjusted^2) / (seAdjusted^2)]
   out[, "VarReductionPct" := 100 * (1 - 1 / RelEfficiency)]

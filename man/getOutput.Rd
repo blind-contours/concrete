@@ -13,7 +13,7 @@ getOutput(
   Simultaneous = TRUE,
   Signif = 0.05,
   NIMargin = NULL,
-  NIDirection = c("lower", "upper")
+  NIDirection = c("upper", "lower")
 )
 
 \method{plot}{ConcreteOut}(x, NullLine = TRUE, ask = TRUE, ...)
