@@ -2,6 +2,18 @@
 
 ## concrete 1.1.1.9000
 
+### Coxnet baseline-hazard fix
+
+- The Coxnet (penalized Cox) hazard learner had the same baseline-hazard
+  mismatch as the Cox learner: it took the baseline from a separate
+  treatment-only model while using the glmnet linear predictor,
+  mis-scaling the covariate-adjusted Coxnet hazard. The baseline is now
+  the Breslow estimator computed from the glmnet linear predictor itself
+  (centered), so the conditional hazard is reconstructed consistently.
+  With the fix, a lightly-penalized Coxnet reproduces the Cox estimate.
+  (The random-survival-forest, additive-hazards, and HAL learners
+  estimate the conditional hazard directly and were unaffected.)
+
 ### Win ratio
 
 - [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)

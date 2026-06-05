@@ -47,6 +47,10 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
 <div class="section level3">
+<h3 id="coxnet-baseline-hazard-fix-1-1-1-9000">Coxnet baseline-hazard fix<a class="anchor" aria-label="anchor" href="#coxnet-baseline-hazard-fix-1-1-1-9000"></a></h3>
+<ul><li>The Coxnet (penalized Cox) hazard learner had the same baseline-hazard mismatch as the Cox learner: it took the baseline from a separate treatment-only model while using the glmnet linear predictor, mis-scaling the covariate-adjusted Coxnet hazard. The baseline is now the Breslow estimator computed from the glmnet linear predictor itself (centered), so the conditional hazard is reconstructed consistently. With the fix, a lightly-penalized Coxnet reproduces the Cox estimate. (The random-survival-forest, additive-hazards, and HAL learners estimate the conditional hazard directly and were unaffected.)</li>
+</ul></div>
+<div class="section level3">
 <h3 id="win-ratio-1-1-1-9000">Win ratio<a class="anchor" aria-label="anchor" href="#win-ratio-1-1-1-9000"></a></h3>
 <ul><li>
 <code><a href="../reference/getWinRatio.html">getWinRatio()</a></code> estimates the covariate-adjusted <strong>restricted win ratio</strong>, <strong>win odds</strong>, and <strong>net benefit</strong> for a single terminal time-to-event outcome, as functionals of the targeted counterfactual survival curves. Because the win/loss probabilities are smooth functionals of those curves, inference uses the influence functions already produced by the estimator (delta method), giving doubly-robust, covariate-adjusted, censoring-corrected win statistics – unlike the standard unadjusted, censoring-sensitive win ratio. A hierarchical / competing-risk win ratio is planned.</li>
