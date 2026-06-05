@@ -112,8 +112,11 @@ getHazFit <- function(Data, Model, CVFolds, Hazards, ReturnModels) {
     return(HazFits)
 }
 
-getHazSurvPred <- function(Data, HazFits, MinNuisance, TargetEvent, TargetTime, Regime) {
-    Censored <- any(Data[[attr(Data, "EventType")]] <= 0)
+getHazSurvPred <- function(Data, HazFits, MinNuisance, TargetEvent, TargetTime, Regime,
+                           Censored = NULL) {
+    # Censored can be forced (e.g. during cross-fitting a validation fold may
+    # contain no censored subjects even though the censoring hazard was fit).
+    if (is.null(Censored)) Censored <- any(Data[[attr(Data, "EventType")]] <= 0)
     IDCol <- attr(Data, "ID")
     TrtCol <- attr(Data, "Treatment")
     TimeCol <- attr(Data, "EventTime")

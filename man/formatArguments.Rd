@@ -28,6 +28,7 @@ formatArguments(
   UpdateMethod = c("standard", "adaptive"),
   EICStopRule = c("relative", "absolute", "hybrid"),
   EICStopAbsTol = 0,
+  CrossFit = FALSE,
   ...
 )
 
@@ -123,6 +124,13 @@ make the relative criterion numerically too strict.}
 \code{0.02 / sqrt(nrow(DataTable))} gives a small sample-size-scaled
 absolute-risk tolerance while the default \code{0} leaves the original
 relative rule unchanged.}
+
+\item{CrossFit}{logical (default: FALSE): if TRUE, estimate the propensity and
+hazard nuisances by cross-fitting (CV-TMLE) -- each subject's
+nuisances are predicted from models fit on the other folds,
+which supports valid influence-function inference when flexible
+machine-learning learners are used. Adds compute (the nuisance
+library is refit once per fold).}
 
 \item{...}{additional arguments to be passed into print methods}
 
