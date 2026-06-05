@@ -10,8 +10,8 @@
 #' @param ReturnModels boolean
 #' @keywords internal
 
-getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, TargetTime, 
-                               Regime, ReturnModels) {
+getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, TargetTime,
+                               Regime, ReturnModels, HazEnsemble = FALSE) {
     Time <- NULL
     TimeVal <- Data[[attr(Data, "EventTime")]]
     Censored <- any(Data[[attr(Data, "EventType")]] <= 0)
@@ -32,8 +32,8 @@ getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, T
     Hazards <- data.table("Time" = c(0, HazTimes))
     
     message("\nEstimating Hazards:\n")
-    HazFits <- getHazFit(Data = Data, Model = Model, CVFolds = CVFolds, Hazards = Hazards, 
-                         ReturnModels = ReturnModels)
+    HazFits <- getHazFit(Data = Data, Model = Model, CVFolds = CVFolds, Hazards = Hazards,
+                         ReturnModels = ReturnModels, Ensemble = HazEnsemble)
     InitFits <- c(InitFits, lapply(HazFits, function(HF) return(attr(HF, "HazSL"))))
     HazSurvPreds <- getHazSurvPred(Data = Data, HazFits = HazFits, MinNuisance = MinNuisance,
                                    TargetEvent = TargetEvent, TargetTime = TargetTime,

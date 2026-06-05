@@ -20,7 +20,7 @@
 #' @keywords internal
 #' @importFrom origami make_folds
 getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, TargetTime,
-                                 Regime, ReturnModels) {
+                                 Regime, ReturnModels, HazEnsemble = FALSE) {
     Time <- NULL
     n <- nrow(Data)
     Censored <- any(Data[[attr(Data, "EventType")]] <= 0)
@@ -70,7 +70,7 @@ getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent,
 
         ## hazards: fit (with inner CV selection) on train, predict validation rows
         HazFits <- getHazFit(Data = trainData, Model = Model, CVFolds = innerFolds,
-                             Hazards = Hazards, ReturnModels = FALSE)
+                             Hazards = Hazards, ReturnModels = FALSE, Ensemble = HazEnsemble)
         HSP <- getHazSurvPred(Data = validData, HazFits = HazFits, MinNuisance = MinNuisance,
                               TargetEvent = TargetEvent, TargetTime = TargetTime,
                               Regime = subRegime(va), Censored = Censored)
