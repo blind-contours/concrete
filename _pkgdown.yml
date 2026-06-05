@@ -45,6 +45,10 @@ reference:
       - doConcrete
       - getOutput
       - getTmleDiagnostics
+  - title: RCT estimands
+    contents:
+      - getRMST
+      - getRelativeEfficiency
   - title: Package overview
     contents:
       - concrete-package
