@@ -1,5 +1,16 @@
 # concrete 1.1.1.9000
 
+## Documentation: trial-design and regulatory toolkit
+
+* New "Trial-design and regulatory toolkit" vignette and README section that
+  surface the regulatory-facing features in one place: cross-fitting
+  (`CrossFit = TRUE`), the ensemble hazard Super Learner (`HazEnsemble = TRUE`),
+  the win ratio / win odds / net benefit (`getWinRatio()`), the ICH E9(R1)
+  estimand framework and intercurrent-event strategies (`makeEstimand()`,
+  `applyIntercurrentEvent()`), censoring sensitivity (`senseCensoring()`), and
+  adjustment efficiency (`getRelativeEfficiency()`). These were documented at the
+  function level but were not discoverable from the README or the article index.
+
 ## Coxnet baseline-hazard fix
 
 * The Coxnet (penalized Cox) hazard learner had the same baseline-hazard

@@ -1,0 +1,236 @@
+---
+title: "Trial-design and regulatory toolkit"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Trial-design and regulatory toolkit}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = TRUE,
+  eval = FALSE
+)
+```
+
+This article collects the features of `concrete` that go beyond a single
+covariate-adjusted absolute risk and that map onto how randomized trials are
+designed, analyzed, and reviewed. The framing follows two regulatory documents:
+
+- **FDA (2023), _Adjusting for Covariates in Randomized Clinical Trials for
+  Drugs and Biological Products_.** Covariate adjustment is encouraged because it
+  can improve precision without changing the estimand in a randomized trial. The
+  guidance favors collapsible marginal summaries (risk difference, risk ratio,
+  restricted mean) over the hazard ratio, which is non-collapsible and hard to
+  interpret under non-proportional hazards.
+- **ICH E9(R1), the estimand and sensitivity-analysis addendum.** A trial
+  analysis should name its estimand through five attributes and pre-specify how
+  intercurrent events are handled, accompanied by sensitivity analyses for the
+  assumptions that cannot be checked from the data.
+
+Each section below shows the corresponding `concrete` function. The code is
+illustrative; substitute your own trial `data.table`. Throughout, `trial` is a
+one-row-per-subject table with an observed `time`, an event-type `event`
+(`0` = censored, positive integers for events), a binary `arm`, an `id`, and
+baseline covariates.
+
+```{r setup}
+library(concrete)
+library(data.table)
+
+trial <- as.data.table(your_trial_data)
+```
+
+## 1. Name the estimand (ICH E9(R1))
+
+`makeEstimand()` records the analysis target using the five E9(R1) attributes.
+It does not change the estimation — it documents the target so it can travel
+with the results into a statistical analysis plan and the final report.
+
+```{r make-estimand}
+est_def <- makeEstimand(
+  treatment  = "as randomized (intent-to-treat)",
+  population  = "all randomized participants",
+  endpoint    = "cause-specific absolute risk of relapse at 730 days",
+  summary     = "risk difference",
+  strategy    = "treatment policy"
+)
+est_def
+```
+
+## 2. Handle intercurrent events
+
+An intercurrent event (ICE) — treatment discontinuation, rescue medication, a
+competing terminal event — is coded as one of the event-type values in the data.
+`applyIntercurrentEvent()` recodes the outcome to match the chosen E9(R1)
+strategy and returns a copy of the data carrying the estimand as an attribute:
+
+- **Treatment policy** (default ITT): the ICE is ignored, follow-up continues,
+  data returned unchanged.
+- **Hypothetical**: the ICE is recoded as censoring (`0`). `concrete`'s
+  inverse-probability-of-censoring weighting then targets the risk that would be
+  seen had the ICE not occurred, **under the strong, untestable assumption that
+  the ICE acts as conditionally independent censoring** — pair it with the
+  censoring sensitivity analysis in Section 6.
+- **Composite**: the ICE is merged into the event of interest, defining a
+  composite endpoint.
+
+```{r apply-ice}
+# Suppose event type 3 codes treatment discontinuation (the intercurrent event).
+# Hypothetical strategy: estimate the risk had discontinuation not occurred.
+trial_hyp <- applyIntercurrentEvent(
+  trial, EventTime = "time", EventType = "event",
+  Intercurrent = 3, strategy = "hypothetical", intercurrent = "discontinuation"
+)
+
+# Composite strategy: count discontinuation as an occurrence of event 1.
+trial_comp <- applyIntercurrentEvent(
+  trial, EventTime = "time", EventType = "event",
+  Intercurrent = 3, strategy = "composite", TargetEvent = 1
+)
+```
+
+The `"while on treatment"` and `"principal stratum"` strategies are intentionally
+not supported: the former is a different (descriptive) estimand that an IPCW
+estimator does not target, and the latter needs latent stratification beyond the
+current scope.
+
+## 3. Cross-fitting (CV-TMLE) for machine-learning nuisances
+
+When the propensity and hazard nuisances are flexible machine-learning fits, the
+plug-in carries an empirical-process (overfitting) term that can invalidate
+influence-function inference. Cross-fitting removes it by predicting each
+subject's nuisances from folds that did not include them. Turn it on with a
+single argument:
+
+```{r cross-fit}
+args_cf <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetTime = c(365, 730), TargetEvent = 1,
+  CVArg = list(V = 5),
+  CrossFit = TRUE
+)
+est_cf <- doConcrete(args_cf)
+```
+
+Cross-fitting is the continuous-time survival analogue of CV-TMLE / double
+machine learning, and is what licenses the use of the random-forest, HAL, and
+ensemble hazard learners with honest standard errors.
+
+## 4. Ensemble hazard Super Learner
+
+By default `concrete` performs discrete Super Learner: cross-validation *selects*
+the single best hazard learner. `HazEnsemble = TRUE` instead fits a convex
+*combination* of the library, with weights chosen to minimize the
+cross-validated counting-process loss. This is more robust when no single learner
+dominates across the time axis.
+
+```{r ensemble}
+args_ens <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetTime = c(365, 730), TargetEvent = 1,
+  CVArg = list(V = 5),
+  CrossFit = TRUE, HazEnsemble = TRUE,
+  Model = list(
+    arm = c("SL.glm", "SL.glmnet"),
+    "0" = list(Cox = survival::Surv(time, event == 0) ~ ., RSF = "rsf"),
+    "1" = list(Cox = survival::Surv(time, event == 1) ~ ., HAL = "hal")
+  )
+)
+est_ens <- doConcrete(args_ens)
+```
+
+## 5. Win ratio, win odds, and net benefit
+
+For hierarchical or composite comparisons, `getWinRatio()` turns the targeted
+survival curves into a covariate-adjusted, doubly-robust win ratio, win odds, and
+net benefit, each with an influence-function confidence interval. Because it is
+built from the targeted curves rather than from raw pairwise comparisons, it
+inherits `concrete`'s covariate adjustment and censoring handling. Use a
+reasonably dense `TargetTime` grid up to the horizon.
+
+```{r win-ratio}
+args_wr <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(),
+  TargetTime = c(180, 365, 545, 730), TargetEvent = 1, CVArg = list(V = 5)
+)
+est_wr <- doConcrete(args_wr)
+
+getWinRatio(est_wr, Horizon = 730, Intervention = c(1, 2))
+#> reports P(win), P(loss), P(tie), Win Ratio, Win Odds, and Net Benefit
+```
+
+A win ratio above 1 (and a net benefit above 0) favors the active arm; the
+confidence interval for the win ratio crossing 1 is the corresponding test of no
+difference.
+
+## 6. Censoring sensitivity (tipping point)
+
+The hypothetical strategy and the core estimator both assume censoring is
+independent given the measured covariates (MAR). `senseCensoring()` stress-tests
+that assumption: it imputes an increasing fraction `delta` of censored subjects
+as having had the event of interest, re-fits the estimator at each `delta`, and
+reports the **tipping point** — the smallest fraction at which a significant
+conclusion would be overturned.
+
+```{r sense-censoring}
+sc <- senseCensoring(
+  args_wr,
+  deltas = c(0, 0.05, 0.10, 0.15, 0.20),
+  Estimand = "RD", Intervention = c(1, 2)
+)
+sc                          # estimate / CI / p-value at each delta
+attr(sc, "tippingPoint")    # smallest delta that overturns the conclusion
+```
+
+A conclusion that survives a large `delta` is robust to departures from
+independent censoring; one that tips at a small `delta` should be reported with
+caution.
+
+## 7. How much did covariate adjustment buy you?
+
+Covariate adjustment does not change the estimand in a randomized trial, but it
+can tighten the confidence intervals. Fit an unadjusted (treatment-only) version
+and compare with `getRelativeEfficiency()`, which reports the variance ratio.
+
+```{r relative-efficiency}
+unadj_args <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetTime = c(365, 730), TargetEvent = 1,
+  CVArg = list(V = 5),
+  Model = list(arm = "SL.mean",
+               "0" = list(Cox = survival::Surv(time, event == 0) ~ arm),
+               "1" = list(Cox = survival::Surv(time, event == 1) ~ arm))
+)
+unadj_est <- doConcrete(unadj_args)
+
+getRelativeEfficiency(
+  Adjusted   = getOutput(est_cf,    Estimand = "RD", Intervention = c(1, 2)),
+  Unadjusted = getOutput(unadj_est, Estimand = "RD", Intervention = c(1, 2))
+)
+```
+
+A `RelEfficiency` above 1 means adjustment was worth it: a value of 1.25 says the
+adjusted analysis has the precision of an unadjusted analysis on 25% more
+participants.
+
+## Putting it together: an analysis-plan checklist
+
+A reproducible, E9(R1)-aware analysis with `concrete` typically records:
+
+1. The estimand, via `makeEstimand()`, including the intercurrent-event strategy.
+2. The data handling for that strategy, via `applyIntercurrentEvent()`.
+3. A cross-fitted (`CrossFit = TRUE`), optionally ensemble (`HazEnsemble = TRUE`)
+   fit, so machine-learning nuisances keep honest inference.
+4. The primary summary — risk difference / ratio (`getOutput()`), restricted mean
+   survival time (`getRMST()` / `targetRMST()`), or win ratio (`getWinRatio()`).
+5. Pre-specified sensitivity analyses — `senseCensoring()` for the
+   independent-censoring assumption.
+6. The precision gain from adjustment, via `getRelativeEfficiency()`.
+
+See the [Trialist quickstart](trialist-quickstart.html) for the core workflow and
+[How concrete works](how-concrete-works.html) for the estimator itself.
