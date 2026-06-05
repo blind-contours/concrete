@@ -2,6 +2,19 @@
 
 ## concrete 1.1.1.9000
 
+### Cross-fitting (CV-TMLE)
+
+- `formatArguments(..., CrossFit = TRUE)` estimates the propensity and
+  the cause-specific / censoring hazards by cross-fitting: each
+  subject’s nuisances are predicted from models fit on the other folds
+  (with an inner cross-validation for hazard-learner selection). This
+  supports valid influence-function inference when flexible
+  machine-learning learners are used – the regime where the in-sample
+  fit can otherwise undercover – and is the principled answer to
+  regulatory caution around ML-based covariate adjustment. The targeting
+  and inference are unchanged; only how the nuisances are produced
+  differs. The out-of-fold construction is verified in the test suite.
+
 ### New RCT estimands and reporting
 
 - Added

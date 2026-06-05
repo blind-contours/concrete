@@ -47,6 +47,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
 <div class="section level3">
+<h3 id="cross-fitting-cv-tmle-1-1-1-9000">Cross-fitting (CV-TMLE)<a class="anchor" aria-label="anchor" href="#cross-fitting-cv-tmle-1-1-1-9000"></a></h3>
+<ul><li>
+<code>formatArguments(..., CrossFit = TRUE)</code> estimates the propensity and the cause-specific / censoring hazards by cross-fitting: each subject’s nuisances are predicted from models fit on the other folds (with an inner cross-validation for hazard-learner selection). This supports valid influence-function inference when flexible machine-learning learners are used – the regime where the in-sample fit can otherwise undercover – and is the principled answer to regulatory caution around ML-based covariate adjustment. The targeting and inference are unchanged; only how the nuisances are produced differs. The out-of-fold construction is verified in the test suite.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="new-rct-estimands-and-reporting-1-1-1-9000">New RCT estimands and reporting<a class="anchor" aria-label="anchor" href="#new-rct-estimands-and-reporting-1-1-1-9000"></a></h3>
 <ul><li>Added <code><a href="../reference/getRMST.html">getRMST()</a></code> for restricted mean survival time (event-free) and cause-specific life-years lost. These are collapsible, clinically interpretable estimands obtained by integrating the targeted cumulative incidence over the fitted target-time grid; their influence functions are the time-integrals of the absolute-risk influence functions, so standard errors, differences, and ratios reuse the existing machinery.</li>
 <li>Added <code><a href="../reference/targetRMST.html">targetRMST()</a></code>, which targets the RMST / life-years-lost estimand <em>directly</em> with the integrated clever covariate rather than integrating pointwise-targeted risks. It fluctuates the fitted hazards on a rescaled time axis until the RMST estimating equation is solved, which is better conditioned and tends to converge and cover better than the pointwise approach for sparse grids, rare events, and long horizons.</li>
