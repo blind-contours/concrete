@@ -21,9 +21,12 @@ hazf <- function(p, A, W1, W2) {
 }
 truth <- function(p, Wn = 4e5) {
   W1 <- stats::rnorm(Wn); W2 <- stats::rnorm(Wn)
-  f1 <- function(a) { h <- hazf(p, a, W1, W2); mean((h$l1 / h$lt) * (1 - exp(-h$lt * tau))) }
+  h1 <- hazf(p, 1, W1, W2); h0 <- hazf(p, 0, W1, W2)
+  # true marginal cause-1 absolute risk at an arbitrary time t, by arm
+  F1 <- function(h, t) mean((h$l1 / h$lt) * (1 - exp(-h$lt * t)))
+  rdAt <- function(t) F1(h1, t) - F1(h0, t)              # RD evaluated AT time t
   rmst <- function(a) { h <- hazf(p, a, W1, W2); mean((1 - exp(-h$lt * tau)) / h$lt) }
-  list(RD = f1(1) - f1(0), RMST1 = rmst(1), RMST0 = rmst(0))
+  list(rdAt = rdAt, RD = rdAt(tau), RMST1 = rmst(1), RMST0 = rmst(0))
 }
 set.seed(20260605)
 TR <- lapply(scen, truth)
@@ -49,22 +52,30 @@ one <- function(s, sc) {
     est <- suppressMessages(doConcrete(a))
     o <- as.data.table(getOutput(est, Estimand = "RD", Intervention = c(1, 2), Simultaneous = FALSE))
     rd <- o[Estimator == "tmle" & Estimand == "Risk Diff" & Event == 1]
+    rd_truth <- vapply(rd$Time, tr$rdAt, numeric(1))   # truth matched to each target time
     rm <- as.data.table(getRMST(est, Horizon = tau, Intervention = c(1, 2)))
     rmst1 <- rm[Estimand == "RMST" & Intervention == "A=1"]
-    data.table(scenario = sc,
-               rd_cov = cover(rd$`CI Low`, rd$`CI Hi`, tr$RD),
-               rd_bias = rd$`Pt Est` - tr$RD,
+    data.table(scenario = sc, Time = rd$Time,
+               rd_cov = cover(rd$`CI Low`, rd$`CI Hi`, rd_truth),
+               rd_bias = rd$`Pt Est` - rd_truth,
                rd_reject = rd$pValue < 0.05,
                rmst_cov = cover(rmst1$`CI Low`, rmst1$`CI Hi`, tr$RMST1))
   }, error = function(e) NULL)
 }
 seeds <- 20260605L + seq_len(B)
-useCores <- if (.Platform$OS.type == "unix") min(6L, max(1L, parallel::detectCores() - 1L)) else 1L
+envCores <- suppressWarnings(as.integer(Sys.getenv("VAL_CORES", unset = NA)))
+useCores <- if (!is.na(envCores) && envCores >= 1L) envCores else
+  if (.Platform$OS.type == "unix") min(6L, max(1L, parallel::detectCores() - 1L)) else 1L
 runs <- data.table::rbindlist(c(
   Filter(Negate(is.null), parallel::mclapply(seeds, one, sc = "null", mc.cores = useCores)),
   Filter(Negate(is.null), parallel::mclapply(seeds, one, sc = "alt", mc.cores = useCores))))
 summ <- runs[, .(Reps = .N, RD_coverage = mean(rd_cov), RD_bias = mean(rd_bias),
                  `RD_reject@.05` = mean(rd_reject), RMST_coverage = mean(rmst_cov)), by = scenario]
-print(summ)
+byTime <- runs[, .(Reps = .N, RD_coverage = mean(rd_cov), RD_bias = mean(rd_bias),
+                   `RD_reject@.05` = mean(rd_reject)), by = .(scenario, Time)][order(scenario, Time)]
+cat("\n== Pooled over target times ==\n"); print(summ)
+cat("\n== By target time (RD truth matched per time) ==\n"); print(byTime)
 data.table::fwrite(summ, "scripts/validation-sim-summary.csv")
-cat("\nInterpretation: null RD_reject ~ 0.05 (type-I error); coverages ~ 0.95; alt RD_reject = power.\n")
+data.table::fwrite(byTime, "scripts/validation-sim-bytime.csv")
+cat("\nInterpretation: null RD_reject ~ 0.05 (type-I error); coverages ~ 0.95;",
+    "alt RD_reject = power (grows with target time as the effect accrues).\n")

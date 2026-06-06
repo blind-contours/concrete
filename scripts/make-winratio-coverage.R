@@ -42,7 +42,9 @@ one <- function(s) {
   }, error = function(e) NULL)
 }
 seeds <- 20260605L + seq_len(B)
-uc <- if (.Platform$OS.type == "unix") min(6L, max(1L, parallel::detectCores() - 1L)) else 1L
+envCores <- suppressWarnings(as.integer(Sys.getenv("VAL_CORES", unset = NA)))
+uc <- if (!is.na(envCores) && envCores >= 1L) envCores else
+  if (.Platform$OS.type == "unix") min(6L, max(1L, parallel::detectCores() - 1L)) else 1L
 res <- data.table::rbindlist(Filter(Negate(is.null), parallel::mclapply(seeds, one, mc.cores = uc)))
 summ <- res[, .(Reps = .N, Bias = mean(bias), Coverage = mean(cover)), by = Estimand]
 print(summ)
