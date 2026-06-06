@@ -50,7 +50,9 @@ one <- function(seed, cf) {
 seeds <- 20260605L + seq_len(B)
 # Cap cores: cross-fitting refits the nuisance library V times per replicate, so
 # too many parallel workers exhaust memory and get silently killed by mclapply.
-useCores <- if (.Platform$OS.type == "unix") min(3L, max(1L, parallel::detectCores() - 1L)) else 1L
+envCores <- suppressWarnings(as.integer(Sys.getenv("VAL_CORES", unset = NA)))
+useCores <- if (!is.na(envCores) && envCores >= 1L) envCores else
+  if (.Platform$OS.type == "unix") min(3L, max(1L, parallel::detectCores() - 1L)) else 1L
 runM <- function(cf) data.table::rbindlist(Filter(Negate(is.null),
   parallel::mclapply(seeds, one, cf = cf, mc.cores = useCores)))
 res <- rbind(runM(FALSE), runM(TRUE))
