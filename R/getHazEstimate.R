@@ -460,7 +460,11 @@ predictAaregHazLearner <- function(Fit, PredData) {
     colnames(x)[colnames(x) == "(Intercept)"] <- "Intercept"
     Coefs <- Fit[["HazFit"]][["coefficient"]]
     x <- x[, colnames(Coefs), drop = FALSE]
-    CumHazFit <- Coefs %*% t(x)
+    # aareg returns the per-event-time coefficient INCREMENTS dB(t), not the
+    # cumulative B(t); cumulate them before forming the cumulative hazard
+    CumCoefs <- apply(Coefs, 2, cumsum)
+    if (is.null(dim(CumCoefs))) CumCoefs <- matrix(CumCoefs, nrow = nrow(Coefs))
+    CumHazFit <- CumCoefs %*% t(x)
     EvalTimes <- Fit[["Hazards"]][["Time"]]
     CumHaz <- apply(CumHazFit, 2, function(chf_i) {
         approxStepCumulative(x = Fit[["HazFit"]][["times"]],

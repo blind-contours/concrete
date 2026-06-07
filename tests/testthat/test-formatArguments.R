@@ -18,6 +18,21 @@ test_that("formatArguments works ", {
     expect_error(formatArguments(ConcreteArgs = data))
 })
 
+test_that("formatArguments does not mutate the caller's data.table by reference", {
+    caller <- data.table::as.data.table(survival::pbc)[, c("time", "status", "trt", "id", "age", "sex")]
+    caller[, trt := sample(0:1, length(trt), replace = TRUE)]
+    before_cols <- copy(colnames(caller))
+    before_addr <- data.table::address(caller)
+    before_snap <- data.table::copy(caller)
+    invisible(formatArguments(Data = caller, EventTime = "time", EventType = "status",
+                              Treatment = "trt", ID = "id", Intervention = 0:1,
+                              TargetTime = stats::median(caller[["time"]]),
+                              TargetEvent = setdiff(unique(caller[["status"]]), 0)))
+    # column order, names, and contents of the caller object are unchanged
+    expect_identical(colnames(caller), before_cols)
+    expect_identical(caller, before_snap)
+})
+
 test_that("Data with missingness or incorrect type throw errors", {
     require(data.table)
     DataWithMissing <- as.data.table(survival::pbc)[, c("time", "status", "trt", "id", "age", "sex")]
@@ -145,7 +160,12 @@ test_that("RenameCovs = FALSE gets processed correctly", {
                                      TargetTime = mean(data[["time"]]),
                                      TargetEvent = setdiff(unique(data[["status"]]), 0),
                                      RenameCovs = FALSE)
-    expect_equal(colnames(concrete.args$DataTable), colnames(data))
+    # RenameCovs = FALSE keeps the original covariate names (no renaming). The
+    # processed table places the special columns (id/time/event/trt) first, so
+    # compare as sets rather than by order. (formatArguments no longer mutates the
+    # caller's `data` by reference, so its column order is left untouched.)
+    expect_setequal(colnames(concrete.args$DataTable), colnames(data))
+    expect_identical(colnames(data), c("time", "status", "trt", "id", "age", "sex"))
 })
 
 test_that("TargetEvent preserves requested non-censoring subset", {
