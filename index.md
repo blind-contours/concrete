@@ -181,6 +181,54 @@ targets the RMST estimating equation directly and is better conditioned.
 targetRMST(ConcreteEst, Horizon = 1460, Intervention = c(1, 2))
 ```
 
+### Win ratio, win odds, and net benefit
+
+For a head-to-head, hierarchy-friendly summary,
+[`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
+compares a random treated patient with a random control over
+`[0, Horizon]` and reports the covariate-adjusted, censoring-corrected
+**win ratio**, **win odds**, and **net benefit**, each with
+influence-function confidence intervals, alongside the underlying
+win/loss/tie probabilities. Pass a single `TargetEvent` for one
+endpoint, or an ordered vector (highest priority first) for a
+prioritized hierarchy of competing events, e.g. `c(1, 2)` for death \>
+hospitalization.
+
+``` r
+
+ConcreteArgs <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetEvent = c(1, 2),
+  TargetTime = c(365, 730, 1095, 1460), CVArg = list(V = 5)
+)
+ConcreteEst <- doConcrete(ConcreteArgs)
+
+# single endpoint (event 1)
+getWinRatio(ConcreteEst, Horizon = 1460, Intervention = c(1, 2), TargetEvent = 1)
+
+# prioritized hierarchy: event 1 (e.g. death) outranks event 2 (e.g. hospitalization)
+getWinRatio(ConcreteEst, Horizon = 1460, Intervention = c(1, 2), TargetEvent = c(1, 2))
+```
+
+Example output (single endpoint, PBC data, 4-year horizon; values change
+with your data):
+
+| Estimand    | Pt Est | CI Low | CI Hi | pValue |
+|-------------|-------:|-------:|------:|-------:|
+| Win Ratio   |   1.10 |   0.85 |  1.42 |   0.46 |
+| Win Odds    |   1.08 |   0.89 |  1.31 |   0.44 |
+| Net Benefit |  0.039 | −0.058 | 0.136 |   0.43 |
+| P(win)      |  0.421 |  0.362 | 0.480 |        |
+| P(loss)     |  0.382 |  0.326 | 0.438 |        |
+| P(tie)      |  0.197 |  0.151 | 0.243 |        |
+
+A **win ratio** above 1 (and a **net benefit** above 0) favors the
+active arm; the win ratio’s CI crossing 1 is the test of no difference
+(here ~null, in line with the RMST result). `P(win)`, `P(loss)`, and
+`P(tie)` sum to 1. For a hierarchy, ties are resolved by the
+lower-priority events, so `P(tie)` shrinks and the comparison uses more
+of the data.
+
 To check that your installation works before using your own data, run
 the installed smoke test:
 
