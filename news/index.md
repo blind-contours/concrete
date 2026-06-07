@@ -2,6 +2,23 @@
 
 ## concrete 1.1.1.9000
 
+### Hierarchical (prioritized) win ratio
+
+- [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
+  now accepts `TargetEvent` as an ordered vector of event codes (highest
+  priority first) and computes the **prioritized win ratio, win odds,
+  and net benefit** over a hierarchy of competing events (e.g.
+  `TargetEvent = c(1, 2)` for death \> hospitalization). The win/loss
+  probabilities remain smooth functionals of the per-arm cause-specific
+  cumulative incidence curves, so inference is still covariate-adjusted,
+  doubly-robust, and censoring-corrected via the influence-function
+  delta method. The single-event call (one `TargetEvent`) is unchanged
+  and is the exact K=1 special case. The prioritized rule compares each
+  patient’s *first* event (treating the listed events as competing
+  risks); events after a patient’s first event are not used (the fully
+  semi-competing version is future work). Validated against a
+  brute-force pairwise simulation of the same rule.
+
 ### Documentation: trial-design and regulatory toolkit
 
 - New “Trial-design and regulatory toolkit” vignette and README section

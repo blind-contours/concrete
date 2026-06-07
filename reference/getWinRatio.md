@@ -1,38 +1,50 @@
 # Covariate-adjusted restricted win ratio, win odds, and net benefit
 
-For a single terminal time-to-event outcome, `getWinRatio()` estimates
-the **restricted win ratio** and its relatives (win odds, net benefit)
-from the covariate-adjusted, censoring-corrected counterfactual survival
-curves that `concrete` targets. Comparing a random treated patient to a
-random control patient over `[0, Horizon]`:
+`getWinRatio()` estimates the **restricted win ratio** and its relatives
+(win odds, net benefit) from the covariate-adjusted, censoring-corrected
+counterfactual cumulative-incidence curves that `concrete` targets. It
+supports a single time-to-event outcome or a **prioritized hierarchy**
+of competing events (e.g.\\ death \\\>\\ hospitalization \\\>\\ stroke).
 
-- a treated patient **wins** if the control patient has the event first
-  (before the treated patient and before the horizon),
+**Single event.** Comparing a random treated patient to a random control
+patient over \\\[0,\tau\]\\: the treated patient *wins* if the control
+has the event first (and within the horizon), *loses* if the treated has
+it first, and *ties* if both are event-free at \\\tau\\. By independence
+of the two patients these are functionals of the marginal survival
+\\\bar S_a\\ and cumulative incidence \\\bar F_a = 1 - \bar S_a\\:
+\$\$P(\text{win}) = \int_0^\tau \bar S_1(t)\\ d\bar F_0(t), \qquad
+P(\text{loss}) = \int_0^\tau \bar S_0(t)\\ d\bar F_1(t).\$\$
 
-- **loses** if the treated patient has the event first,
+**Hierarchy.** When `TargetEvent` lists several event codes in priority
+order (highest priority first), the comparison is the prioritized
+(Pocock / Finkelstein–Schoenfeld) rule applied to the patients' *first*
+events: a patient who is event-free beats one who had any event; between
+two patients with events of *different* priority, the one whose event is
+*lower* priority (less severe) wins; between two with the *same* event,
+the one whose event is *later* wins. Writing the per-arm cause-specific
+cumulative incidences \\F_a^{(k)}\\ for priority \\k\\ (\\k=1\\
+highest), the win probability is again a smooth functional of those
+marginal curves, \$\$P(\text{win}) = S_1(\tau)\bigl(1 -
+S_0(\tau)\bigr) + \sum\_{a\>b} F_1^{(a)}(\tau)F_0^{(b)}(\tau) + \sum_k
+\int_0^\tau \bigl\[F_1^{(k)}(\tau) - F_1^{(k)}(t)\bigr\]\\
+dF_0^{(k)}(t),\$\$ with \\S_a(\tau) = 1 - \sum_k F_a^{(k)}(\tau)\\, and
+\\P(\text{loss})\\ the mirror image. This reduces exactly to the
+single-event formula when one event is given.
 
-- **ties** otherwise (both event-free at the horizon).
+In all cases the win/loss probabilities are smooth functionals of the
+targeted curves, so their influence functions are weighted combinations
+of the per-subject curve influence functions and the win ratio, win
+odds, and net benefit follow by the delta method — giving doubly-robust,
+covariate-adjusted, censoring-corrected inference, unlike the standard
+unadjusted, censoring- sensitive win ratio. The integral is taken over
+the fitted target times, so use a reasonably dense `TargetTime` grid.
 
-These probabilities are functionals of the marginal counterfactual
-survival \\\bar S_a\\ and cumulative incidence \\\bar F_a = 1 - \bar
-S_a\\: \$\$P(\text{win}) = \sum\_{t_k \le \tau} \bar S_1(t_k)\\ d\bar
-F_0(t_k), \qquad P(\text{loss}) = \sum\_{t_k \le \tau} \bar S_0(t_k)\\
-d\bar F_1(t_k),\$\$ and the win statistics are \$\$\text{win ratio} =
-\frac{P(\text{win})}{P(\text{loss})}, \quad \text{win odds} =
-\frac{P(\text{win}) + P(\text{tie})/2}{P(\text{loss}) +
-P(\text{tie})/2}, \quad \text{net benefit} = P(\text{win}) -
-P(\text{loss}).\$\$ Because the win/loss probabilities are smooth
-functionals of the targeted curves, their influence functions are
-weighted combinations of the per-subject curve influence functions; the
-win ratio, win odds, and net benefit then follow by the delta method,
-giving doubly-robust, covariate-adjusted inference. Unlike the standard
-(unadjusted, censoring-sensitive) win ratio, this is restricted to the
-horizon and corrects for censoring through the same inverse-probability
-machinery as the rest of the package.
-
-This is the single-terminal-event version; a hierarchical /
-competing-risk win ratio is planned. The integral is taken over the
-fitted target times, so use a reasonably dense `TargetTime` grid.
+**Assumption (hierarchy).** The prioritized comparison uses each
+patient's *first* observed event, treating the listed events as
+competing risks — the structure `concrete` models. Events occurring
+after a patient's first event (e.g.\\ death following a non-fatal
+hospitalization) are not used; the fully semi-competing version requires
+the within-patient joint law and is future work.
 
 ## Usage
 
@@ -64,8 +76,9 @@ getWinRatio(
 
 - TargetEvent:
 
-  numeric: the single terminal event code (default: the first targeted
-  event).
+  numeric: the event code, or an ordered vector of event codes giving
+  the priority hierarchy from highest to lowest (default: the first
+  targeted event).
 
 - Signif:
 
