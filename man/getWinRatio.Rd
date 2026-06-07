@@ -20,7 +20,8 @@ largest target time).}
 
 \item{Intervention}{length-2 numeric: treatment and control indices.}
 
-\item{TargetEvent}{numeric: the single terminal event code (default: the first
+\item{TargetEvent}{numeric: the event code, or an ordered vector of event codes
+giving the priority hierarchy from highest to lowest (default: the first
 targeted event).}
 
 \item{Signif}{numeric (default 0.05): alpha for confidence intervals and
@@ -32,37 +33,51 @@ net benefit, and the win/loss/tie probabilities, each with a CI and (for the
 comparative statistics) a p-value against the null of no difference.
 }
 \description{
-For a single terminal time-to-event outcome, \code{getWinRatio()} estimates the
-\strong{restricted win ratio} and its relatives (win odds, net benefit) from the
-covariate-adjusted, censoring-corrected counterfactual survival curves that
-\code{concrete} targets. Comparing a random treated patient to a random control
-patient over \verb{[0, Horizon]}:
-\itemize{
-\item a treated patient \strong{wins} if the control patient has the event first
-(before the treated patient and before the horizon),
-\item \strong{loses} if the treated patient has the event first,
-\item \strong{ties} otherwise (both event-free at the horizon).
-}
+\code{getWinRatio()} estimates the \strong{restricted win ratio} and its relatives (win
+odds, net benefit) from the covariate-adjusted, censoring-corrected
+counterfactual cumulative-incidence curves that \code{concrete} targets. It supports
+a single time-to-event outcome or a \strong{prioritized hierarchy} of competing
+events (e.g.\ death \eqn{>} hospitalization \eqn{>} stroke).
 
-These probabilities are functionals of the marginal counterfactual survival
+\strong{Single event.} Comparing a random treated patient to a random control
+patient over \eqn{[0,\tau]}: the treated patient \emph{wins} if the control has
+the event first (and within the horizon), \emph{loses} if the treated has it
+first, and \emph{ties} if both are event-free at \eqn{\tau}. By independence of
+the two patients these are functionals of the marginal survival
 \eqn{\bar S_a} and cumulative incidence \eqn{\bar F_a = 1 - \bar S_a}:
-\deqn{P(\text{win}) = \sum_{t_k \le \tau} \bar S_1(t_k)\, d\bar F_0(t_k), \qquad
-      P(\text{loss}) = \sum_{t_k \le \tau} \bar S_0(t_k)\, d\bar F_1(t_k),}
-and the win statistics are
-\deqn{\text{win ratio} = \frac{P(\text{win})}{P(\text{loss})}, \quad
-      \text{win odds} = \frac{P(\text{win}) + P(\text{tie})/2}{P(\text{loss}) + P(\text{tie})/2}, \quad
-      \text{net benefit} = P(\text{win}) - P(\text{loss}).}
-Because the win/loss probabilities are smooth functionals of the targeted
-curves, their influence functions are weighted combinations of the per-subject
-curve influence functions; the win ratio, win odds, and net benefit then
-follow by the delta method, giving doubly-robust, covariate-adjusted inference.
-Unlike the standard (unadjusted, censoring-sensitive) win ratio, this is
-restricted to the horizon and corrects for censoring through the same
-inverse-probability machinery as the rest of the package.
+\deqn{P(\text{win}) = \int_0^\tau \bar S_1(t)\, d\bar F_0(t), \qquad
+      P(\text{loss}) = \int_0^\tau \bar S_0(t)\, d\bar F_1(t).}
 
-This is the single-terminal-event version; a hierarchical / competing-risk
-win ratio is planned. The integral is taken over the fitted target times, so
-use a reasonably dense \code{TargetTime} grid.
+\strong{Hierarchy.} When \code{TargetEvent} lists several event codes in priority
+order (highest priority first), the comparison is the prioritized
+(Pocock / Finkelstein--Schoenfeld) rule applied to the patients' \emph{first}
+events: a patient who is event-free beats one who had any event; between two
+patients with events of \emph{different} priority, the one whose event is
+\emph{lower} priority (less severe) wins; between two with the \emph{same}
+event, the one whose event is \emph{later} wins. Writing the per-arm
+cause-specific cumulative incidences \eqn{F_a^{(k)}} for priority \eqn{k}
+(\eqn{k=1} highest), the win probability is again a smooth functional of those
+marginal curves,
+\deqn{P(\text{win}) = S_1(\tau)\bigl(1 - S_0(\tau)\bigr)
+  + \sum_{a>b} F_1^{(a)}(\tau)F_0^{(b)}(\tau)
+  + \sum_k \int_0^\tau \bigl[F_1^{(k)}(\tau) - F_1^{(k)}(t)\bigr]\, dF_0^{(k)}(t),}
+with \eqn{S_a(\tau) = 1 - \sum_k F_a^{(k)}(\tau)}, and \eqn{P(\text{loss})} the
+mirror image. This reduces exactly to the single-event formula when one event
+is given.
+
+In all cases the win/loss probabilities are smooth functionals of the targeted
+curves, so their influence functions are weighted combinations of the
+per-subject curve influence functions and the win ratio, win odds, and net
+benefit follow by the delta method --- giving doubly-robust, covariate-adjusted,
+censoring-corrected inference, unlike the standard unadjusted, censoring-
+sensitive win ratio. The integral is taken over the fitted target times, so use
+a reasonably dense \code{TargetTime} grid.
+
+\strong{Assumption (hierarchy).} The prioritized comparison uses each patient's
+\emph{first} observed event, treating the listed events as competing risks ---
+the structure \code{concrete} models. Events occurring after a patient's first event
+(e.g.\ death following a non-fatal hospitalization) are not used; the fully
+semi-competing version requires the within-patient joint law and is future work.
 }
 \seealso{
 \code{\link[=getRMST]{getRMST()}}, \code{\link[=getOutput]{getOutput()}}

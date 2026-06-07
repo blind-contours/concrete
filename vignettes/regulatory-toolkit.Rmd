@@ -168,6 +168,24 @@ A win ratio above 1 (and a net benefit above 0) favors the active arm; the
 confidence interval for the win ratio crossing 1 is the corresponding test of no
 difference.
 
+For a **prioritized hierarchy** of competing events, pass `TargetEvent` as an
+ordered vector (highest priority first). For example, with cause 1 = death and
+cause 2 = hospitalization, `TargetEvent = c(1, 2)` decides each pairwise
+comparison on death first and breaks ties on hospitalization (the
+Pocock / Finkelstein--Schoenfeld rule). The events must have been targeted in
+`doConcrete()`, and the comparison uses each patient's first event (the competing-
+risks structure `concrete` models).
+
+```{r win-ratio-hier}
+args_h <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(),
+  TargetTime = c(180, 365, 545, 730), TargetEvent = c(1, 2), CVArg = list(V = 5)
+)
+getWinRatio(doConcrete(args_h), Horizon = 730, Intervention = c(1, 2),
+            TargetEvent = c(1, 2))   # death > hospitalization
+```
+
 ## 6. Censoring sensitivity (tipping point)
 
 The hypothetical strategy and the core estimator both assume censoring is
