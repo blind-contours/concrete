@@ -1,42 +1,58 @@
 #' Covariate-adjusted restricted win ratio, win odds, and net benefit
 #'
 #' @description
-#' For a single terminal time-to-event outcome, `getWinRatio()` estimates the
-#' **restricted win ratio** and its relatives (win odds, net benefit) from the
-#' covariate-adjusted, censoring-corrected counterfactual survival curves that
-#' `concrete` targets. Comparing a random treated patient to a random control
-#' patient over `[0, Horizon]`:
+#' `getWinRatio()` estimates the **restricted win ratio** and its relatives (win
+#' odds, net benefit) from the covariate-adjusted, censoring-corrected
+#' counterfactual cumulative-incidence curves that `concrete` targets. It supports
+#' a single time-to-event outcome or a **prioritized hierarchy** of competing
+#' events (e.g.\ death \eqn{>} hospitalization \eqn{>} stroke).
 #'
-#' - a treated patient **wins** if the control patient has the event first
-#'   (before the treated patient and before the horizon),
-#' - **loses** if the treated patient has the event first,
-#' - **ties** otherwise (both event-free at the horizon).
-#'
-#' These probabilities are functionals of the marginal counterfactual survival
+#' \strong{Single event.} Comparing a random treated patient to a random control
+#' patient over \eqn{[0,\tau]}: the treated patient \emph{wins} if the control has
+#' the event first (and within the horizon), \emph{loses} if the treated has it
+#' first, and \emph{ties} if both are event-free at \eqn{\tau}. By independence of
+#' the two patients these are functionals of the marginal survival
 #' \eqn{\bar S_a} and cumulative incidence \eqn{\bar F_a = 1 - \bar S_a}:
-#' \deqn{P(\text{win}) = \sum_{t_k \le \tau} \bar S_1(t_k)\, d\bar F_0(t_k), \qquad
-#'       P(\text{loss}) = \sum_{t_k \le \tau} \bar S_0(t_k)\, d\bar F_1(t_k),}
-#' and the win statistics are
-#' \deqn{\text{win ratio} = \frac{P(\text{win})}{P(\text{loss})}, \quad
-#'       \text{win odds} = \frac{P(\text{win}) + P(\text{tie})/2}{P(\text{loss}) + P(\text{tie})/2}, \quad
-#'       \text{net benefit} = P(\text{win}) - P(\text{loss}).}
-#' Because the win/loss probabilities are smooth functionals of the targeted
-#' curves, their influence functions are weighted combinations of the per-subject
-#' curve influence functions; the win ratio, win odds, and net benefit then
-#' follow by the delta method, giving doubly-robust, covariate-adjusted inference.
-#' Unlike the standard (unadjusted, censoring-sensitive) win ratio, this is
-#' restricted to the horizon and corrects for censoring through the same
-#' inverse-probability machinery as the rest of the package.
+#' \deqn{P(\text{win}) = \int_0^\tau \bar S_1(t)\, d\bar F_0(t), \qquad
+#'       P(\text{loss}) = \int_0^\tau \bar S_0(t)\, d\bar F_1(t).}
 #'
-#' This is the single-terminal-event version; a hierarchical / competing-risk
-#' win ratio is planned. The integral is taken over the fitted target times, so
-#' use a reasonably dense `TargetTime` grid.
+#' \strong{Hierarchy.} When `TargetEvent` lists several event codes in priority
+#' order (highest priority first), the comparison is the prioritized
+#' (Pocock / Finkelstein--Schoenfeld) rule applied to the patients' \emph{first}
+#' events: a patient who is event-free beats one who had any event; between two
+#' patients with events of \emph{different} priority, the one whose event is
+#' \emph{lower} priority (less severe) wins; between two with the \emph{same}
+#' event, the one whose event is \emph{later} wins. Writing the per-arm
+#' cause-specific cumulative incidences \eqn{F_a^{(k)}} for priority \eqn{k}
+#' (\eqn{k=1} highest), the win probability is again a smooth functional of those
+#' marginal curves,
+#' \deqn{P(\text{win}) = S_1(\tau)\bigl(1 - S_0(\tau)\bigr)
+#'   + \sum_{a>b} F_1^{(a)}(\tau)F_0^{(b)}(\tau)
+#'   + \sum_k \int_0^\tau \bigl[F_1^{(k)}(\tau) - F_1^{(k)}(t)\bigr]\, dF_0^{(k)}(t),}
+#' with \eqn{S_a(\tau) = 1 - \sum_k F_a^{(k)}(\tau)}, and \eqn{P(\text{loss})} the
+#' mirror image. This reduces exactly to the single-event formula when one event
+#' is given.
+#'
+#' In all cases the win/loss probabilities are smooth functionals of the targeted
+#' curves, so their influence functions are weighted combinations of the
+#' per-subject curve influence functions and the win ratio, win odds, and net
+#' benefit follow by the delta method --- giving doubly-robust, covariate-adjusted,
+#' censoring-corrected inference, unlike the standard unadjusted, censoring-
+#' sensitive win ratio. The integral is taken over the fitted target times, so use
+#' a reasonably dense `TargetTime` grid.
+#'
+#' \strong{Assumption (hierarchy).} The prioritized comparison uses each patient's
+#' \emph{first} observed event, treating the listed events as competing risks ---
+#' the structure `concrete` models. Events occurring after a patient's first event
+#' (e.g.\ death following a non-fatal hospitalization) are not used; the fully
+#' semi-competing version requires the within-patient joint law and is future work.
 #'
 #' @param ConcreteEst a `"ConcreteEst"` object from [doConcrete()].
 #' @param Horizon numeric: the restriction horizon \eqn{\tau} (default: the
 #'   largest target time).
 #' @param Intervention length-2 numeric: treatment and control indices.
-#' @param TargetEvent numeric: the single terminal event code (default: the first
+#' @param TargetEvent numeric: the event code, or an ordered vector of event codes
+#'   giving the priority hierarchy from highest to lowest (default: the first
 #'   targeted event).
 #' @param Signif numeric (default 0.05): alpha for confidence intervals and
 #'   p-values. Win ratio and win odds are inferred on the log scale.
@@ -58,8 +74,12 @@ getWinRatio <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
 
   TargetTime <- attr(ConcreteEst, "TargetTime")
   if (is.null(TargetEvent)) TargetEvent <- attr(ConcreteEst, "TargetEvent")[1]
-  if (length(TargetEvent) != 1L)
-    stop("getWinRatio() handles a single terminal event; pass one TargetEvent.")
+  TargetEvent <- as.numeric(TargetEvent)            # priority order, highest first
+  if (anyDuplicated(TargetEvent))
+    stop("TargetEvent must list each event code at most once (its priority order).")
+  if (!all(TargetEvent %in% attr(ConcreteEst, "TargetEvent")))
+    stop("All TargetEvent codes must have been targeted in doConcrete().")
+  K <- length(TargetEvent)
   if (is.null(Horizon)) Horizon <- max(TargetTime)
   grid <- sort(unique(TargetTime[TargetTime <= Horizon]))
   if (length(grid) < 2L)
@@ -67,47 +87,68 @@ getWinRatio <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
             "refit with a denser TargetTime grid.")
   A1 <- names(ConcreteEst)[Intervention[1]]
   A0 <- names(ConcreteEst)[Intervention[2]]
-  jj <- as.numeric(TargetEvent)
-
-  ## marginal CIF curves and per-subject influence functions at the grid times
-  RisksObj <- getRisk(ConcreteEst, TargetTime = grid, TargetEvent = TargetEvent, GComp = FALSE)
-  Risks <- data.table::as.data.table(RisksObj)[Estimator == "tmle" & Event == jj]
-  IC <- data.table::as.data.table(attr(RisksObj, "IC"))
-  IC <- IC[Event == jj]
-  n <- length(unique(IC[["ID"]]))
-
-  Fcurve <- function(arm) {
-    sel <- Risks[["Intervention"]] == arm
-    r <- Risks[sel, ]
-    data.table::setorder(r, Time)
-    stats::setNames(c(0, r[["Pt Est"]]), as.character(c(0, grid)))   # F(0) = 0
-  }
-  ICmat <- function(arm) {
-    sel <- IC[["Intervention"]] == arm
-    d <- IC[sel, ]
-    m <- data.table::dcast(d, Time ~ ID, value.var = "IC")
-    data.table::setorder(m, Time)
-    as.matrix(m[, setdiff(names(m), "Time"), with = FALSE])           # (#grid) x n, grid order
-  }
-  F1 <- Fcurve(A1); F0 <- Fcurve(A0)                                  # length m+1 (incl t0=0)
-  S1 <- 1 - F1; S0 <- 1 - F0
-  D1 <- ICmat(A1); D0 <- ICmat(A0)                                    # m x n (grid, no t0)
   m <- length(grid)
-  dF1 <- diff(F1); dF0 <- diff(F0)                                    # increments at grid times, length m
-  S1g <- S1[-1]; S0g <- S0[-1]                                        # survival at grid times, length m
 
-  Pwin <- sum(S1g * dF0)
-  Ploss <- sum(S0g * dF1)
+  ## marginal cause-specific CIF curves and per-subject influence functions, at
+  ## the grid times, for every event in the hierarchy
+  RisksObj <- getRisk(ConcreteEst, TargetTime = grid, TargetEvent = TargetEvent, GComp = FALSE)
+  Risks <- data.table::as.data.table(RisksObj)[Estimator == "tmle"]
+  ICdt <- data.table::as.data.table(attr(RisksObj, "IC"))
+  n <- length(unique(ICdt[["ID"]]))
+
+  Fcurve <- function(arm, k) {                      # length-m CIF on the grid
+    r <- Risks[Risks[["Intervention"]] == arm & Event == k & Time %in% grid, ]
+    data.table::setorder(r, Time)
+    r[["Pt Est"]]
+  }
+  ICmat <- function(arm, k) {                       # m x n IC matrix, grid order
+    d <- ICdt[ICdt[["Intervention"]] == arm & Event == k & Time %in% grid, ]
+    mm <- data.table::dcast(d, Time ~ ID, value.var = "IC")
+    data.table::setorder(mm, Time)
+    as.matrix(mm[, setdiff(names(mm), "Time"), with = FALSE])
+  }
+  ## index by priority position 1..K (1 = highest priority); G = treated, H = control
+  G  <- lapply(TargetEvent, function(k) Fcurve(A1, k))
+  H  <- lapply(TargetEvent, function(k) Fcurve(A0, k))
+  DG <- lapply(TargetEvent, function(k) ICmat(A1, k))
+  DH <- lapply(TargetEvent, function(k) ICmat(A0, k))
+
+  ## win probability and its per-subject influence function for a given
+  ## (winner, loser) assignment of the two arms. W/L are lists of length-m CIF
+  ## curves (one per priority level); DW/DL the matching m x n IC matrices.
+  winProb <- function(W, L, DW, DL) {
+    Wtau <- vapply(W, function(v) v[m], numeric(1))   # CIF at tau, per level
+    Ltau <- vapply(L, function(v) v[m], numeric(1))
+    SWtau <- 1 - sum(Wtau)                            # winner-arm survival at tau
+    ## point estimate
+    P <- SWtau * sum(Ltau) +
+      (if (K >= 2) sum(vapply(2:K, function(a) W[[a]][m] * sum(Ltau[seq_len(a - 1)]),
+                              numeric(1))) else 0) +
+      sum(vapply(seq_len(K), function(k) {
+        dL <- diff(c(0, L[[k]]))
+        sum((W[[k]][m] - W[[k]]) * dL)
+      }, numeric(1)))
+    ## influence function via gradient coefficients, contracted with the IC mats
+    D <- numeric(n)
+    for (k in seq_len(K)) {
+      dL <- diff(c(0, L[[k]]))
+      ## d P / d W^{(k)}(t_i)
+      cW <- -dL
+      cW[m] <- cW[m] - (if (k < K) sum(Ltau[(k + 1):K]) else 0)
+      ## d P / d L^{(k)}(t_i)
+      cL <- numeric(m)
+      if (m >= 2) cL[1:(m - 1)] <- W[[k]][2:m] - W[[k]][1:(m - 1)]
+      cL[m] <- SWtau + (if (k < K) sum(Wtau[(k + 1):K]) else 0)
+      D <- D + colSums(cW * DW[[k]]) + colSums(cL * DL[[k]])
+    }
+    list(P = P, D = D)
+  }
+
+  win  <- winProb(G, H, DG, DH)                       # treated beats control
+  loss <- winProb(H, G, DH, DG)                       # control beats treated
+  Pwin <- win$P;  Dwin <- win$D
+  Ploss <- loss$P; Dloss <- loss$D
   Ptie <- max(0, 1 - Pwin - Ploss)
-
-  ## gradient coefficients (functional delta method); index k = 1..m over grid
-  nextdF1 <- c(dF1[-1], NA); nextdF0 <- c(dF0[-1], NA)
-  coef0 <- ifelse(seq_len(m) < m, nextdF1, S1g[m])   # dP(win)/dF0(t_k)
-  coef1 <- ifelse(seq_len(m) < m, nextdF0, S0g[m])   # dP(loss)/dF1(t_k)
-
-  ## per-subject influence functions of P(win) and P(loss)
-  Dwin <- colSums((-dF0) * D1) + colSums(coef0 * D0)
-  Dloss <- colSums((-dF1) * D0) + colSums(coef1 * D1)
   Dtie <- -(Dwin + Dloss)
 
   z <- stats::qnorm(1 - Signif / 2)
@@ -136,13 +177,15 @@ getWinRatio <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
     probRow("P(win)", Pwin, Dwin),
     probRow("P(loss)", Ploss, Dloss),
     probRow("P(tie)", Ptie, Dtie)))
+  EventLab <- if (K == 1L) TargetEvent[1] else paste(TargetEvent, collapse = ">")
   Output[, `:=`(Intervention = paste0("[", A1, "] vs [", A0, "]"),
-                Estimator = "tmle", Event = jj, Time = Horizon)]
+                Estimator = "tmle", Event = EventLab, Time = Horizon)]
   data.table::setcolorder(Output, c("Intervention", "Estimand", "Estimator", "Event", "Time",
                                     "Pt Est", "se", "CI Low", "CI Hi", "pValue"))
   attr(Output, "Signif") <- Signif
   attr(Output, "Horizon") <- Horizon
   attr(Output, "Estimand") <- "Win Ratio"
+  attr(Output, "Priority") <- TargetEvent
   attr(Output, "Simultaneous") <- FALSE
   attr(Output, "GComp") <- FALSE
   class(Output) <- union("ConcreteOut", class(Output))

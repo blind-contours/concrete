@@ -88,5 +88,4 @@ inst/doc
 # Simulation summary outputs (regenerated)
 scripts/*-summary.csv
 scripts/*-bytime.csv
-scripts/*-run.log
-scripts/coverage-runs.log
+scripts/*.log
