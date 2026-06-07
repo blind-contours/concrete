@@ -345,6 +345,9 @@ formatDataTable <- function(DT, EventTime, EventType, Treatment, ID, LongTime, V
     DT <- try(data.table::as.data.table(DT))
   if (!inherits(DT, "data.table"))
     stop("CovDataTable must be a data.table or coercible into a data.table.")
+  # work on a copy so in-place ops below (ID assignment, setcolorder) never mutate
+  # the caller's data.table by reference
+  DT <- data.table::copy(DT)
   if (any(is.infinite(unlist(DT)), anyNA(unlist(DT))))
     stop("CovDataTable contains infinite or missing values; regression models may break")
 

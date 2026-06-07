@@ -18,6 +18,21 @@ test_that("formatArguments works ", {
     expect_error(formatArguments(ConcreteArgs = data))
 })
 
+test_that("formatArguments does not mutate the caller's data.table by reference", {
+    caller <- data.table::as.data.table(survival::pbc)[, c("time", "status", "trt", "id", "age", "sex")]
+    caller[, trt := sample(0:1, length(trt), replace = TRUE)]
+    before_cols <- copy(colnames(caller))
+    before_addr <- data.table::address(caller)
+    before_snap <- data.table::copy(caller)
+    invisible(formatArguments(Data = caller, EventTime = "time", EventType = "status",
+                              Treatment = "trt", ID = "id", Intervention = 0:1,
+                              TargetTime = stats::median(caller[["time"]]),
+                              TargetEvent = setdiff(unique(caller[["status"]]), 0)))
+    # column order, names, and contents of the caller object are unchanged
+    expect_identical(colnames(caller), before_cols)
+    expect_identical(caller, before_snap)
+})
+
 test_that("Data with missingness or incorrect type throw errors", {
     require(data.table)
     DataWithMissing <- as.data.table(survival::pbc)[, c("time", "status", "trt", "id", "age", "sex")]
