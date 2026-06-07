@@ -160,7 +160,12 @@ test_that("RenameCovs = FALSE gets processed correctly", {
                                      TargetTime = mean(data[["time"]]),
                                      TargetEvent = setdiff(unique(data[["status"]]), 0),
                                      RenameCovs = FALSE)
-    expect_equal(colnames(concrete.args$DataTable), colnames(data))
+    # RenameCovs = FALSE keeps the original covariate names (no renaming). The
+    # processed table places the special columns (id/time/event/trt) first, so
+    # compare as sets rather than by order. (formatArguments no longer mutates the
+    # caller's `data` by reference, so its column order is left untouched.)
+    expect_setequal(colnames(concrete.args$DataTable), colnames(data))
+    expect_identical(colnames(data), c("time", "status", "trt", "id", "age", "sex"))
 })
 
 test_that("TargetEvent preserves requested non-censoring subset", {
