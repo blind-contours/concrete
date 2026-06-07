@@ -48,6 +48,13 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
 <div class="section level3">
+<h3 id="bug-fixes-from-package-audit-1-1-1-9000">Bug fixes from package audit<a class="anchor" aria-label="anchor" href="#bug-fixes-from-package-audit-1-1-1-9000"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/formatArguments.html">formatArguments()</a></code> no longer mutates the caller’s <code>data.table</code>.</strong> <code>formatDataTable()</code> assigned the ID column and reordered columns in place, so a user’s own <code>data.table</code> was silently modified by reference on every call (column order changed; ID column added). It now operates on a copy.</li>
+<li>
+<strong>Additive-hazards (<code>aareg</code>) learner: corrected baseline accumulation.</strong> <code><a href="https://rdrr.io/pkg/survival/man/aareg.html" class="external-link">survival::aareg()</a></code> returns the per-event-time coefficient <em>increments</em> <code>dB(t)</code>, but <code>predictAaregHazLearner()</code> treated them as the cumulative coefficients <code>B(t)</code>, producing near-zero, oscillating hazards. The coefficients are now cumulated (<code>cumsum</code>) before forming the cumulative hazard, so <code>aareg</code>-based cause-specific and censoring hazards (and the IPCW weights and estimates that depend on them) are correct. Other learners were unaffected.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="hierarchical-prioritized-win-ratio-1-1-1-9000">Hierarchical (prioritized) win ratio<a class="anchor" aria-label="anchor" href="#hierarchical-prioritized-win-ratio-1-1-1-9000"></a></h3>
 <ul><li>
 <code><a href="../reference/getWinRatio.html">getWinRatio()</a></code> now accepts <code>TargetEvent</code> as an ordered vector of event codes (highest priority first) and computes the <strong>prioritized win ratio, win odds, and net benefit</strong> over a hierarchy of competing events (e.g. <code>TargetEvent = c(1, 2)</code> for death &gt; hospitalization). The win/loss probabilities remain smooth functionals of the per-arm cause-specific cumulative incidence curves, so inference is still covariate-adjusted, doubly-robust, and censoring-corrected via the influence-function delta method. The single-event call (one <code>TargetEvent</code>) is unchanged and is the exact K=1 special case. The prioritized rule compares each patient’s <em>first</em> event (treating the listed events as competing risks); events after a patient’s first event are not used (the fully semi-competing version is future work). Validated against a brute-force pairwise simulation of the same rule.</li>

@@ -2,6 +2,24 @@
 
 ## concrete 1.1.1.9000
 
+### Bug fixes from package audit
+
+- **[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)
+  no longer mutates the caller’s `data.table`.** `formatDataTable()`
+  assigned the ID column and reordered columns in place, so a user’s own
+  `data.table` was silently modified by reference on every call (column
+  order changed; ID column added). It now operates on a copy.
+- **Additive-hazards (`aareg`) learner: corrected baseline
+  accumulation.**
+  [`survival::aareg()`](https://rdrr.io/pkg/survival/man/aareg.html)
+  returns the per-event-time coefficient *increments* `dB(t)`, but
+  `predictAaregHazLearner()` treated them as the cumulative coefficients
+  `B(t)`, producing near-zero, oscillating hazards. The coefficients are
+  now cumulated (`cumsum`) before forming the cumulative hazard, so
+  `aareg`-based cause-specific and censoring hazards (and the IPCW
+  weights and estimates that depend on them) are correct. Other learners
+  were unaffected.
+
 ### Hierarchical (prioritized) win ratio
 
 - [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
