@@ -6,6 +6,8 @@
   quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.md):
 - [Trial-design and regulatory
   toolkit](https://blind-contours.github.io/concrete/articles/regulatory-toolkit.md):
+- [Win ratios for trialists: single, hierarchical, and
+  clinical](https://blind-contours.github.io/concrete/articles/win-ratio.md):
 - [Learner library
   guide](https://blind-contours.github.io/concrete/articles/learner-library.md):
 - [Convergence

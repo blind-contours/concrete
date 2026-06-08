@@ -2,6 +2,40 @@
 
 ## concrete 1.1.1.9000
 
+### Clinical (death-priority) win ratio \[experimental\]
+
+- New experimental
+  [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md):
+  the death-priority win ratio that counts death **even when it follows
+  a non-fatal event** (e.g. CV death \> HF hospitalization) – the
+  estimand the competing-risks/first-event
+  [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
+  cannot produce. It is built on a Markov illness-death model (alive -\>
+  non-fatal -\> death, plus alive -\> death), each transition estimated
+  by a Super Learner (the post-non-fatal death hazard on a
+  left-truncated risk set), with doubly-robust, covariate-adjusted,
+  censoring-corrected (IPCW) influence-function inference. Returns the
+  win ratio, win odds, net benefit, and P(win/loss/tie). Takes a
+  one-row-per-subject multistate data frame (its own interface for now,
+  not the formatArguments pipeline); assumes a single non-fatal event
+  type and conditionally-independent censoring.
+- Validated end-to-end against ground truth (closed-form path
+  probabilities and a brute-force pairwise win ratio on full simulated
+  histories): point estimate recovers truth (~1%), and 95% CI coverage
+  is nominal with and without ~36% censoring. See the new “Win ratios
+  for trialists” article and `scripts/make-clinical-wr-*.R`.
+- Internal `R/getTransitionHazard.R`: a Super Learner for illness-death
+  transition intensities on left-truncated risk sets (the building
+  block), plus `multistateCurves()` (midpoint-quadrature path
+  probabilities).
+
+### Documentation: win ratios for trialists
+
+- New “Win ratios for trialists” vignette explaining the single-event,
+  hierarchical (prioritized), and clinical (death-priority) win ratios –
+  when to use each, how they work, and the simulation coverage evidence
+  (validated vs ground truth) so the inference can be trusted.
+
 ### Documentation: RMST methods comparison
 
 - New “Restricted mean survival time: how concrete compares to other

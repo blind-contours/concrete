@@ -27,6 +27,9 @@
   : Relative efficiency of a covariate-adjusted vs unadjusted analysis
 - [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
   : Covariate-adjusted restricted win ratio, win odds, and net benefit
+- [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
+  : Clinical (death-priority) win ratio for an illness-death outcome
+  (experimental)
 
 ## Estimand framework
 

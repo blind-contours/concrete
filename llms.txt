@@ -414,6 +414,9 @@ If you encounter any bugs or have any specific feature requests, please
   : Relative efficiency of a covariate-adjusted vs unadjusted analysis
 - [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
   : Covariate-adjusted restricted win ratio, win odds, and net benefit
+- [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
+  : Clinical (death-priority) win ratio for an illness-death outcome
+  (experimental)
 
 ## Estimand framework
 
@@ -441,6 +444,8 @@ If you encounter any bugs or have any specific feature requests, please
   quickstart](https://blind-contours.github.io/concrete/articles/trialist-quickstart.md):
 - [Trial-design and regulatory
   toolkit](https://blind-contours.github.io/concrete/articles/regulatory-toolkit.md):
+- [Win ratios for trialists: single, hierarchical, and
+  clinical](https://blind-contours.github.io/concrete/articles/win-ratio.md):
 - [Learner library
   guide](https://blind-contours.github.io/concrete/articles/learner-library.md):
 - [Convergence

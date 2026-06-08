@@ -22,6 +22,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Trialist guides</h6></li>
     <li><a class="dropdown-item" href="../articles/trialist-quickstart.html">Trialist quickstart</a></li>
     <li><a class="dropdown-item" href="../articles/regulatory-toolkit.html">Trial-design and regulatory toolkit</a></li>
+    <li><a class="dropdown-item" href="../articles/win-ratio.html">Win ratios for trialists: single, hierarchical, and clinical</a></li>
     <li><a class="dropdown-item" href="../articles/learner-library.html">Learner library guide</a></li>
     <li><a class="dropdown-item" href="../articles/convergence-diagnostics.html">Convergence diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/trialist-testing-protocol.html">Testing protocol and current limitations</a></li>
@@ -48,6 +49,16 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
+<div class="section level3">
+<h3 id="clinical-death-priority-win-ratio-experimental-1-1-1-9000">Clinical (death-priority) win ratio [experimental]<a class="anchor" aria-label="anchor" href="#clinical-death-priority-win-ratio-experimental-1-1-1-9000"></a></h3>
+<ul><li>New experimental <code><a href="../reference/clinicalWinRatio.html">clinicalWinRatio()</a></code>: the death-priority win ratio that counts death <strong>even when it follows a non-fatal event</strong> (e.g. CV death &gt; HF hospitalization) – the estimand the competing-risks/first-event <code><a href="../reference/getWinRatio.html">getWinRatio()</a></code> cannot produce. It is built on a Markov illness-death model (alive -&gt; non-fatal -&gt; death, plus alive -&gt; death), each transition estimated by a Super Learner (the post-non-fatal death hazard on a left-truncated risk set), with doubly-robust, covariate-adjusted, censoring-corrected (IPCW) influence-function inference. Returns the win ratio, win odds, net benefit, and P(win/loss/tie). Takes a one-row-per-subject multistate data frame (its own interface for now, not the formatArguments pipeline); assumes a single non-fatal event type and conditionally-independent censoring.</li>
+<li>Validated end-to-end against ground truth (closed-form path probabilities and a brute-force pairwise win ratio on full simulated histories): point estimate recovers truth (~1%), and 95% CI coverage is nominal with and without ~36% censoring. See the new “Win ratios for trialists” article and <code>scripts/make-clinical-wr-*.R</code>.</li>
+<li>Internal <code>R/getTransitionHazard.R</code>: a Super Learner for illness-death transition intensities on left-truncated risk sets (the building block), plus <code>multistateCurves()</code> (midpoint-quadrature path probabilities).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-win-ratios-for-trialists-1-1-1-9000">Documentation: win ratios for trialists<a class="anchor" aria-label="anchor" href="#documentation-win-ratios-for-trialists-1-1-1-9000"></a></h3>
+<ul><li>New “Win ratios for trialists” vignette explaining the single-event, hierarchical (prioritized), and clinical (death-priority) win ratios – when to use each, how they work, and the simulation coverage evidence (validated vs ground truth) so the inference can be trusted.</li>
+</ul></div>
 <div class="section level3">
 <h3 id="documentation-rmst-methods-comparison-1-1-1-9000">Documentation: RMST methods comparison<a class="anchor" aria-label="anchor" href="#documentation-rmst-methods-comparison-1-1-1-9000"></a></h3>
 <ul><li>New “Restricted mean survival time: how concrete compares to other packages” vignette. On a competing-risks toy trial with a closed-form true RMST, it puts <code>concrete</code> (<code>getRMST</code>/<code>targetRMST</code>) head-to-head with <code>survRM2</code> (unadjusted and Tian-adjusted) and <code>eventglm</code>, and describes <code>riskRegression::ate</code>. It reports, truthfully, parity on the event-free RMST difference; the genuine differentiators (direct RMST-equation targeting, competing-risks years-lost that <code>survRM2</code> cannot do, ML + cross-fitted double robustness, and the integrated estimand toolkit); where the established tools are better (maturity, speed, simplicity); and the grid-discretization caveat for <code>getRMST</code> (use a dense <code>TargetTime</code> grid and/or <code>targetRMST</code>). Adds <code>survRM2</code> and <code>eventglm</code> to Suggests.</li>
