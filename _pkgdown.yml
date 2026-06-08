@@ -25,6 +25,7 @@ articles:
     contents:
       - trialist-quickstart
       - regulatory-toolkit
+      - win-ratio
       - learner-library
       - convergence-diagnostics
       - trialist-testing-protocol
@@ -53,6 +54,7 @@ reference:
       - targetRMST
       - getRelativeEfficiency
       - getWinRatio
+      - clinicalWinRatio
   - title: Estimand framework
     contents:
       - makeEstimand
