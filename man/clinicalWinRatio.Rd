@@ -2,7 +2,7 @@
 % Please edit documentation in R/clinicalWinRatio.R
 \name{clinicalWinRatio}
 \alias{clinicalWinRatio}
-\title{Clinical (death-priority) win ratio for an illness-death outcome \link{EXPERIMENTAL}}
+\title{Clinical (death-priority) win ratio for an illness-death outcome (experimental)}
 \usage{
 clinicalWinRatio(
   data,

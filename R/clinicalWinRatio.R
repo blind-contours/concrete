@@ -1,4 +1,4 @@
-#' Clinical (death-priority) win ratio for an illness-death outcome [EXPERIMENTAL]
+#' Clinical (death-priority) win ratio for an illness-death outcome (experimental)
 #'
 #' @description
 #' \strong{Experimental.} Estimates the \emph{clinical} (death-priority) win
