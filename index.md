@@ -181,6 +181,13 @@ targets the RMST estimating equation directly and is better conditioned.
 targetRMST(ConcreteEst, Horizon = 1460, Intervention = c(1, 2))
 ```
 
+For how this compares to the established RMST tools (`survRM2`,
+`eventglm`, and `riskRegression`) — a worked toy trial with a known true
+RMST, a head-to-head bias/coverage table, a capability matrix, and an
+honest read on where `concrete` is at parity versus where it adds
+something — see [Comparing RMST
+estimators](https://blind-contours.github.io/concrete/articles/rmst-methods-comparison.html).
+
 ### Win ratio, win odds, and net benefit
 
 For a head-to-head, hierarchy-friendly summary,
