@@ -2,6 +2,21 @@
 
 ## concrete 1.1.1.9000
 
+### Documentation: RMST methods comparison
+
+- New “Restricted mean survival time: how concrete compares to other
+  packages” vignette. On a competing-risks toy trial with a closed-form
+  true RMST, it puts `concrete` (`getRMST`/`targetRMST`) head-to-head
+  with `survRM2` (unadjusted and Tian-adjusted) and `eventglm`, and
+  describes `riskRegression::ate`. It reports, truthfully, parity on the
+  event-free RMST difference; the genuine differentiators (direct
+  RMST-equation targeting, competing-risks years-lost that `survRM2`
+  cannot do, ML + cross-fitted double robustness, and the integrated
+  estimand toolkit); where the established tools are better (maturity,
+  speed, simplicity); and the grid-discretization caveat for `getRMST`
+  (use a dense `TargetTime` grid and/or `targetRMST`). Adds `survRM2`
+  and `eventglm` to Suggests.
+
 ### Bug fixes from package audit
 
 - **[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)

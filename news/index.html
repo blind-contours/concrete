@@ -29,6 +29,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Methodology &amp; evidence</h6></li>
     <li><a class="dropdown-item" href="../articles/how-concrete-works.html">How concrete works</a></li>
     <li><a class="dropdown-item" href="../articles/simulation-evidence.html">Simulation evidence</a></li>
+    <li><a class="dropdown-item" href="../articles/rmst-methods-comparison.html">Restricted mean survival time: how concrete compares to other packages</a></li>
     <li><a class="dropdown-item" href="../articles/Using-concrete.html">Reference walkthrough</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -47,6 +48,10 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.1.9000" id="concrete-1119000">concrete 1.1.1.9000<a class="anchor" aria-label="anchor" href="#concrete-1119000"></a></h2>
+<div class="section level3">
+<h3 id="documentation-rmst-methods-comparison-1-1-1-9000">Documentation: RMST methods comparison<a class="anchor" aria-label="anchor" href="#documentation-rmst-methods-comparison-1-1-1-9000"></a></h3>
+<ul><li>New “Restricted mean survival time: how concrete compares to other packages” vignette. On a competing-risks toy trial with a closed-form true RMST, it puts <code>concrete</code> (<code>getRMST</code>/<code>targetRMST</code>) head-to-head with <code>survRM2</code> (unadjusted and Tian-adjusted) and <code>eventglm</code>, and describes <code>riskRegression::ate</code>. It reports, truthfully, parity on the event-free RMST difference; the genuine differentiators (direct RMST-equation targeting, competing-risks years-lost that <code>survRM2</code> cannot do, ML + cross-fitted double robustness, and the integrated estimand toolkit); where the established tools are better (maturity, speed, simplicity); and the grid-discretization caveat for <code>getRMST</code> (use a dense <code>TargetTime</code> grid and/or <code>targetRMST</code>). Adds <code>survRM2</code> and <code>eventglm</code> to Suggests.</li>
+</ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-from-package-audit-1-1-1-9000">Bug fixes from package audit<a class="anchor" aria-label="anchor" href="#bug-fixes-from-package-audit-1-1-1-9000"></a></h3>
 <ul><li>

@@ -19,6 +19,8 @@
   works](https://blind-contours.github.io/concrete/articles/how-concrete-works.md):
 - [Simulation
   evidence](https://blind-contours.github.io/concrete/articles/simulation-evidence.md):
+- [Restricted mean survival time: how concrete compares to other
+  packages](https://blind-contours.github.io/concrete/articles/rmst-methods-comparison.md):
 
 ### Reference walkthrough
 
