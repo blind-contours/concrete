@@ -69,27 +69,18 @@ armFit <- function(est){
 
 ## single-event win EIF on overall survival (mirror existing getWinRatio coef logic)
 ## win1 = sum SDmid_T * dFC ; returns per-subject Dwin1_T (treated) and Dwin1_C (control)
-levelOneIF <- function(A, B){  # A=treated arm fit, B=control arm fit
-  SDt<-A$SDbar; SDc<-B$SDbar    # length Mp1 (overall survival)
-  Ft<-1-SDt; Fc<-1-SDc; dFc<-diff(Fc); dFt<-diff(Ft)           # increments length M
-  SmT<-sqrt(SDt[1:M]*SDt[2:Mp1])                               # midpoint S^D_T
-  ## P(win1)=sum SmT*dFc ; gradient wrt F_C(t_k): coef on dFc ; wrt S_T: SmT
-  ## treated contributes via D[F^D_T]; control via D[F^D_C]
-  ## use the single-event win gradient: Dwin1 = sum_k SmT[k]*dD_FC[k] + sum_k ( -nextSmT? )...
-  ## Build exactly as integral: win1 = sum_k SmT[k]*(Fc[k+1]-Fc[k]); linear in F_C and in S_T.
-  ## d/dF_C(t_j): appears in dFc[j-1] (coef +SmT[j-1]) and dFc[j] (coef -SmT[j]).
-  ## d/dS^D_T enters via SmT; approximate gradient wrt F_T at grid as the mirror.
-  ## treated-side gradient (vary S^D_T): win1 = sum_k SmT[k]*dFc[k]; SmT[k]=sqrt(SDt[k]SDt[k+1]).
-  ##   dSmT[k]/dSDt[k]=0.5 SmT[k]/SDt[k]; /dSDt[k+1]=0.5 SmT[k]/SDt[k+1]. and dFD_T=-dSD_T.
-  ## control-side gradient (vary F_C): coef_j = SmT[j-1]-SmT[j] (with edges).
-  cFc<-numeric(Mp1)
-  for(j in 1:Mp1){ a<- if(j-1>=1&&j-1<=M) SmT[j-1] else 0; b<- if(j>=1&&j<=M) SmT[j] else 0; cFc[j]<-a-b }
-  Dwin1 <- as.numeric(crossprod(cFc, B$DFD))                    # control contributes via D[F^D_C]
-  ## treated contributes via D[S^D_T]= -D[F^D_T]; coef on SDt[j]:
-  cSDt<-numeric(Mp1)
-  for(k in 1:M){ cSDt[k]<-cSDt[k]+0.5*SmT[k]/SDt[k]*dFc[k]; cSDt[k+1]<-cSDt[k+1]+0.5*SmT[k]/SDt[k+1]*dFc[k] }
-  Dwin1 <- Dwin1 + as.numeric(crossprod(cSDt, -A$DFD))         # D[S^D_T] = -D[F^D_T]
-  list(point=sum(SmT*dFc), Dt=cSDt, Dc=cFc)                    # store coef vectors for assembly
+levelOneIF <- function(A, B){  # win = A (treated) survives longer than B (control)
+  ## exact single-event win EIF (getWinRatio coef logic) on overall survival S^D.
+  ## win1 = sum_k S^D_A(t_k) dF^D_B(t_k); F^D = 1 - S^D.
+  ST<-A$SDbar; SC<-B$SDbar                                     # length Mp1, at grid g[1..Mp1]
+  FT<-1-ST; FC<-1-SC
+  S1g<-ST[2:Mp1]; dF0<-diff(FC); dF1<-diff(FT)                 # length M, at grid ends t_1..t_M
+  nextdF1<-c(dF1[-1L], NA)
+  coef0<-ifelse(seq_len(M)<M, nextdF1, S1g[M])                 # dP(win)/dF0(t_k)
+  DfA<-A$DFD[2:Mp1,,drop=FALSE]; DfB<-B$DFD[2:Mp1,,drop=FALSE] # per-subject D[F^D] at t_1..t_M
+  Dt<-colSums((-dF0)*DfA)                                      # A-arm (treated) subject contribution
+  Dc<-colSums(coef0*DfB)                                       # B-arm (control) subject contribution
+  list(point=sum(S1g*dF0), Dt=Dt, Dc=Dc)
 }
 
 ## ---- assemble clinical WR + per-subject IF, two-arm 1/pi weighting ----
@@ -106,7 +97,7 @@ oneRep <- function(seed_t, seed_c){
   ## per-subject IFs (each subject contributes to its own arm; pooled vector length 2n with 1/pi)
   ## D_Pwin: level1(treated via Dt on S^D_T, control via Dc on F^D_C) + W2 + B
   ## treated subjects:
-  D_Pwin_T <- as.numeric(crossprod(L1w$Dt, -AT$DFD))            # treated level-1 contribution (D S^D_T)
+  D_Pwin_T <- L1w$Dt                                           # treated level-1 (exact win EIF)
   D_Pwin_T <- D_Pwin_T + AC$Theta*AT$Da                        # product rule: Theta_C * D_aT
   ## B_T treated side: sum_k hC[k]*D[Theta_T^{>t_k}] -- reuse DTheta-style but moved limit; approx via tail of pimat IF
   ## (approximate D[Theta_T^{>t_k}] by the centered plug-in of tail pi + its xi using moved-limit phi; use cumulative)
@@ -115,14 +106,14 @@ oneRep <- function(seed_t, seed_c){
   wC_lt<-c(0,cumsum(hC)[1:(M-1)])                              # sum_{k<m} hC[k]
   D_Pwin_T <- D_Pwin_T + (colSums(wC_lt*AT$pimat) - sum(wC_lt*hT))   # treated B via weighted pi plug-in IF (centered)
   ## control subjects:
-  D_Pwin_C <- as.numeric(crossprod(L1w$Dc, AC$DFD))            # control level-1 (D F^D_C)
+  D_Pwin_C <- L1w$Dc                                           # control level-1 (exact win EIF)
   D_Pwin_C <- D_Pwin_C + AT$a*AC$DTheta                        # product rule: a_T * D_Theta_C
   wT_gt<-rev(cumsum(rev(hT)))-hT                               # sum_{m>k} hT[m] (= tailT) weight on control HFH at k
   D_Pwin_C <- D_Pwin_C + (colSums(wT_gt*AC$pimat) - sum(wT_gt*hC))
   ## D_Ploss mirror
-  D_Ploss_C <- as.numeric(crossprod(L1l$Dt, -AC$DFD)) + AT$Theta*AC$Da +
+  D_Ploss_C <- L1l$Dt + AT$Theta*AC$Da +                        # L1l=levelOneIF(AC,AT): Dt=control
                (colSums(c(0,cumsum(hT)[1:(M-1)])*AC$pimat) - sum(c(0,cumsum(hT)[1:(M-1)])*hC))
-  D_Ploss_T <- as.numeric(crossprod(L1l$Dc, AT$DFD)) + AC$a*AT$DTheta +
+  D_Ploss_T <- L1l$Dc + AC$a*AT$DTheta +                        # Dc=treated
                (colSums((rev(cumsum(rev(hC)))-hC)*AT$pimat) - sum((rev(cumsum(rev(hC)))-hC)*hT))
   ## delta method per arm, pooled 1/pi weights
   Dwr_T <- (1/piT)*( D_Pwin_T/Ploss - Pwin/Ploss^2 * D_Ploss_T )
