@@ -34,6 +34,8 @@ Suggests:
     randomForestSRC,
     hal9001,
     ggplot2,
+    survRM2,
+    eventglm,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown,

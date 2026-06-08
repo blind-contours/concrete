@@ -33,6 +33,7 @@ articles:
     contents:
       - how-concrete-works
       - simulation-evidence
+      - rmst-methods-comparison
   - title: Reference walkthrough
     navbar: ~
     contents:
