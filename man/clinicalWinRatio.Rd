@@ -2,7 +2,7 @@
 % Please edit documentation in R/clinicalWinRatio.R
 \name{clinicalWinRatio}
 \alias{clinicalWinRatio}
-\title{Clinical (death-priority) win ratio for an illness-death outcome (experimental)}
+\title{Hierarchical (death-priority) clinical win ratio (experimental)}
 \usage{
 clinicalWinRatio(
   data,
@@ -13,6 +13,7 @@ clinicalWinRatio(
   covariates,
   horizon = NULL,
   n.grid = 60L,
+  n.folds = 5L,
   SL.library = c("SL.mean", "SL.glm"),
   Signif = 0.05
 )
@@ -22,8 +23,11 @@ clinicalWinRatio(
 
 \item{arm}{character: name of the binary treatment column (1 = active arm).}
 
-\item{illness.time}{character: name of the non-fatal-event time column; \code{NA}
-(or \code{Inf}) for subjects who never had the non-fatal event.}
+\item{illness.time}{character vector: the non-fatal-event time columns, \strong{ordered
+highest priority first} (e.g.\ \code{c("t_stroke", "t_hosp")} for stroke > hosp).
+Each entry is the time of that subject's first such event, \code{NA} (or \code{Inf}) if
+it never occurred. A single column reproduces the two-tier illness-death case.
+Death is always the top-priority tier.}
 
 \item{terminal.time}{character: name of the terminal time column (time of death
 or of censoring, whichever came first).}
@@ -39,6 +43,14 @@ largest terminal time).}
 \item{n.grid}{integer (default 60): number of time intervals for the discrete
 hazard / path-probability quadrature.}
 
+\item{n.folds}{integer (default 5): number of cross-fitting folds. The
+transition and censoring hazards are fit out-of-fold, which gives honest
+inference when the \code{SL.library} contains flexible learners that could over-fit
+in sample; with simple parametric learners it makes little difference. Set to
+1 to disable cross-fitting (faster). \strong{Note:} cross-fitting does
+\emph{not} fix the mild small-sample anti-conservatism described below --- that
+is a finite-sample property of the win ratio itself.}
+
 \item{SL.library}{character vector: SuperLearner library for the transition and
 censoring hazards (default \code{c("SL.mean", "SL.glm")}).}
 
@@ -51,34 +63,61 @@ influence-function standard error, confidence interval, and (for the
 comparative statistics) a p-value against the null of no difference.
 }
 \description{
-\strong{Experimental.} Estimates the \emph{clinical} (death-priority) win
-ratio, win odds, and net benefit for a two-arm trial with a non-fatal
-intercurrent event (e.g.\ heart-failure hospitalization) and a terminal event
-(death). Unlike the competing-risks (first-event) win ratio in \code{\link[=getWinRatio]{getWinRatio()}},
-this estimand counts \strong{death even when it follows the non-fatal event} --- the
-clinically intended hierarchy "compare on death first; break ties on the
-non-fatal event." It is built on a Markov illness-death model with three
-transition intensities (alive\eqn{\to}non-fatal, alive\eqn{\to}death,
-post-non-fatal\eqn{\to}death), each estimated by a Super Learner (the
-post-non-fatal death hazard on a left-truncated risk set), and returns
-influence-function confidence intervals that are doubly-robust, covariate-
-adjusted, and censoring-corrected (IPCW).
+\strong{The recommended win ratio for most trials.} Estimates the
+\emph{clinical}, death-priority win ratio, win odds, and net benefit for a
+two-arm trial with an ordered hierarchy of a terminal event (death) and one or
+more non-fatal events (e.g.\ heart-failure hospitalization, stroke, valve
+intervention). Unlike the first-event / competing-risks win ratio in
+\code{\link[=getWinRatio]{getWinRatio()}}, this estimand counts \strong{a higher-priority event even when it
+follows a lower-priority one} --- death after a non-fatal event, or a stroke
+after a hospitalization. That is the clinically intended hierarchy ("compare on
+the most serious event first; break ties on the next"), and it is the win ratio
+the first-event version cannot produce.
 
-The estimator and its inference are validated against ground truth (a
-brute-force pairwise win ratio on full simulated histories): see the
-"Win ratio for trialists" article and \verb{scripts/make-clinical-wr-*.R}. It is
-marked experimental because it currently takes its own multistate data frame
-(below) rather than the standard \code{\link[=formatArguments]{formatArguments()}} pipeline, and assumes a
-single non-fatal event type and conditionally-independent censoring (CAR).
+It is built on a Markov multistate model whose states are the subsets of
+non-fatal events a subject has experienced; every transition intensity (each
+non-fatal event out of each reachable state, and death out of every state) is
+estimated by a Super Learner, with doubly-robust, covariate-adjusted,
+censoring-corrected (IPCW) influence-function inference and optional
+cross-fitting. The estimator and its inference are validated against ground
+truth (a brute-force pairwise win ratio on full simulated histories) for
+hierarchies up to four time-to-event tiers: see the "Win ratios for trialists"
+article and \verb{scripts/genwr-*.R}.
+
+It is marked experimental because it currently takes its own per-subject event
+columns (below) rather than the standard \code{\link[=formatArguments]{formatArguments()}} pipeline, and
+assumes non-recurrent events, conditionally-independent censoring (CAR), and a
+Markov model. Recurrent-event tiers (repeated hospitalizations) and
+continuous/ordinal tiers (e.g.\ KCCQ) are not yet supported.
 }
+\section{Small-sample behavior}{
+
+Like the win ratio in general (including the unadjusted Pocock win ratio), the
+point estimate is a \emph{ratio} and is therefore mildly biased and
+anti-conservative in small samples. In a null simulation (true win ratio 1,
+both arms identical) the estimator is biased downward by \eqn{\approx}1\\% at
+\eqn{\sim}400/arm, with Wald coverage \eqn{\approx}0.93--0.94 and type-I error
+\eqn{\approx}0.06--0.07; this is a finite-sample property of the win-ratio
+functional, not of the nuisance estimation (cross-fitting does not change it).
+The bias and under-coverage shrink at the usual \eqn{O(1/n)} rate, and inference
+is nominal (coverage 0.95--0.97) by \eqn{\sim}800/arm. For small trials,
+interpret the interval as mildly optimistic, or use a resampling interval.
+}
+
 \examples{
 \dontrun{
-# data with: arm, t_hfh (NA if none), t_term (death or censoring), died (1/0), age, sex
-clinicalWinRatio(trial, arm = "arm", illness.time = "t_hfh",
+# Two-tier (death > hospitalization):
+clinicalWinRatio(trial, arm = "arm", illness.time = "t_hosp",
+                 terminal.time = "t_term", terminal.status = "died",
+                 covariates = c("age", "sex"), horizon = 1460)
+# Three-tier hierarchy (death > stroke > hospitalization):
+clinicalWinRatio(trial, arm = "arm", illness.time = c("t_stroke", "t_hosp"),
                  terminal.time = "t_term", terminal.status = "died",
                  covariates = c("age", "sex"), horizon = 1460)
 }
 }
 \seealso{
-\code{\link[=getWinRatio]{getWinRatio()}} for the single-event and competing-risks win ratio.
+\code{\link[=getWinRatio]{getWinRatio()}} for the first-event / competing-risks win ratio (the
+special case where events are mutually exclusive and a higher-priority event
+can never follow a lower-priority one).
 }

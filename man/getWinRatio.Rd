@@ -73,11 +73,17 @@ censoring-corrected inference, unlike the standard unadjusted, censoring-
 sensitive win ratio. The integral is taken over the fitted target times, so use
 a reasonably dense \code{TargetTime} grid.
 
-\strong{Assumption (hierarchy).} The prioritized comparison uses each patient's
-\emph{first} observed event, treating the listed events as competing risks ---
-the structure \code{concrete} models. Events occurring after a patient's first event
-(e.g.\ death following a non-fatal hospitalization) are not used; the fully
-semi-competing version requires the within-patient joint law and is future work.
+\strong{First-event limitation --- use \code{\link[=clinicalWinRatio]{clinicalWinRatio()}} for most trials.}
+The prioritized comparison here uses each patient's \emph{first} observed event,
+treating the listed events as competing risks. A \strong{higher-priority event that
+follows a lower-priority one is therefore not counted} --- death after a
+non-fatal hospitalization, or a stroke after a hospitalization. For the
+clinically intended hierarchy (compare on the most serious event first,
+\emph{whenever} it occurs), which is what most trials mean, use
+\code{\link[=clinicalWinRatio]{clinicalWinRatio()}}: it estimates the death-priority win ratio over an ordered
+hierarchy of fatal and non-fatal time-to-event tiers via a multistate model.
+\code{getWinRatio()} is the right choice only when events are genuinely mutually
+exclusive (a higher-priority event can never follow a lower-priority one).
 }
 \seealso{
 \code{\link[=getRMST]{getRMST()}}, \code{\link[=getOutput]{getOutput()}}
