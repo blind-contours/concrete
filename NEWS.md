@@ -18,6 +18,19 @@
   recovers truth (~1%), and 95% CI coverage is nominal with and without ~36%
   censoring. See the new "Win ratios for trialists" article and
   `scripts/make-clinical-wr-*.R`.
+* `clinicalWinRatio()` now cross-fits the transition and censoring hazards by
+  default (`n.folds = 5`): nuisances are fit out-of-fold so each subject's
+  influence-function contribution uses learners trained without them. This gives
+  honest inference when the `SL.library` contains flexible learners that could
+  over-fit; set `n.folds = 1` for faster in-sample fits with simple learners.
+* Characterized and documented small-sample behavior. Like the win ratio in
+  general (including the unadjusted Pocock win ratio), the estimate is a ratio and
+  is mildly biased/anti-conservative at small n: in a null simulation it is biased
+  downward ~1% at ~400/arm with coverage ~0.93-0.94 / type-I ~0.06-0.07, becoming
+  nominal (0.95-0.97) by ~800/arm. This is a finite-sample property of the
+  win-ratio functional, **not** an over-fitting artifact -- cross-fitting does not
+  change it. Documented in the function help (`@section Small-sample behavior`),
+  the vignette, and `scripts/make-clinical-wr-smalln.R`.
 * Internal `R/getTransitionHazard.R`: a Super Learner for illness-death transition
   intensities on left-truncated risk sets (the building block), plus
   `multistateCurves()` (midpoint-quadrature path probabilities).

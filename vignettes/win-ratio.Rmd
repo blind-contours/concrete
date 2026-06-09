@@ -106,6 +106,28 @@ knitr::include_graphics("figures/clinical-winratio-truth.png")
 `scripts/make-clinical-wr-censoring-validation.R`, and the other
 `scripts/make-clinical-wr-*.R`.)
 
+### A note on small trials
+
+The win ratio is a **ratio**, and ratios are mildly biased and anti-conservative
+in small samples — this is a well-known finite-sample property of the win ratio
+(it affects the unadjusted Pocock win ratio too), not something specific to this
+estimator. In a null simulation (both arms identical, true win ratio 1), the
+point estimate is biased downward by about 1% at ~400/arm, with 95% Wald
+coverage near 0.93–0.94 and type-I error near 0.06–0.07. The effect shrinks at the
+usual `1/n` rate: by ~800/arm the bias is negligible and coverage is nominal
+(0.95–0.97).
+
+```{r smalln-fig, echo = FALSE, eval = TRUE, out.width = "100%", fig.alt = "win ratio coverage and bias converge to nominal as sample size grows"}
+knitr::include_graphics("figures/clinical-winratio-smalln.png")
+```
+
+Importantly, this is a property of the win-ratio *functional*, not of the
+machine-learning nuisances: turning on **cross-fitting** (`n.folds = 5`, the
+default) does not change it. Cross-fitting is still worth keeping on — it gives
+honest inference when `SL.library` contains flexible learners that could over-fit
+in sample — but for a small trial, read the interval as mildly optimistic, or use
+a resampling interval. (Reproduce with `scripts/make-clinical-wr-smalln.R`.)
+
 ## Which one should I use?
 
 | Situation | Use |
@@ -127,6 +149,9 @@ arm, and the win ratio's CI crossing 1 is the test of no difference.
   integration are planned.
 - Use a reasonably dense time grid (`n.grid`); like RMST, the path-probability
   integrals carry a small grid-discretization bias that shrinks with the grid.
+- In **small trials** the win ratio is mildly anti-conservative (see *A note on
+  small trials* above) — a finite-sample property of the win ratio that is nominal
+  by ~1000–2000/arm and is not fixed by cross-fitting.
 - For the single/hierarchical versions, use a reasonably dense `TargetTime` grid
   up to the horizon.
 ```
