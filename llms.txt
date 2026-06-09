@@ -190,16 +190,33 @@ estimators](https://blind-contours.github.io/concrete/articles/rmst-methods-comp
 
 ### Win ratio, win odds, and net benefit
 
-For a head-to-head, hierarchy-friendly summary,
+For most trials the win ratio you want is the **clinical, death-priority
+hierarchy**: compare a random treated patient with a random control on
+the most serious event first — *counting a higher-priority event even
+when it follows a lower-priority one* (death after a hospitalization, a
+stroke after a hospitalization) — then break ties on the next tier.
+[`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
+estimates it over an arbitrary ordered hierarchy of a terminal event
+(death) plus non-fatal events, with covariate-adjusted, doubly-robust,
+censoring-corrected influence-function inference (a Markov multistate
+model, each transition a Super Learner). Pass the non-fatal columns in
+priority order:
+
+``` r
+
+# death > stroke > hospitalization (non-fatal columns highest-priority first)
+clinicalWinRatio(trial, arm = "arm", illness.time = c("t_stroke", "t_hosp"),
+  terminal.time = "t_term", terminal.status = "died",
+  covariates = c("age", "sex"), horizon = 1460)
+#> Win Ratio / Win Odds / Net Benefit / P(win,loss,tie), each with an IF CI
+```
+
+The first-event
 [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
-compares a random treated patient with a random control over
-`[0, Horizon]` and reports the covariate-adjusted, censoring-corrected
-**win ratio**, **win odds**, and **net benefit**, each with
-influence-function confidence intervals, alongside the underlying
-win/loss/tie probabilities. Pass a single `TargetEvent` for one
-endpoint, or an ordered vector (highest priority first) for a
-prioritized hierarchy of competing events, e.g. `c(1, 2)` for death \>
-hospitalization.
+is the special case for when events are genuinely **mutually exclusive**
+(a higher-priority event can never follow a lower-priority one). It
+works off the targeted curves and supports a single `TargetEvent` or an
+ordered vector for a prioritized hierarchy of *competing* events:
 
 ``` r
 
@@ -235,6 +252,14 @@ active arm; the win ratio’s CI crossing 1 is the test of no difference
 `P(tie)` sum to 1. For a hierarchy, ties are resolved by the
 lower-priority events, so `P(tie)` shrinks and the comparison uses more
 of the data.
+
+See the [Win ratios for
+trialists](https://blind-contours.github.io/concrete/articles/win-ratio.html)
+article for when to use the single-event, prioritized-hierarchy, and
+clinical (death-priority) win ratios — the last via the experimental
+[`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md),
+which counts death *even when it follows* a non-fatal event — together
+with the simulation coverage evidence so the inference can be trusted.
 
 To check that your installation works before using your own data, run
 the installed smoke test:
@@ -415,8 +440,7 @@ If you encounter any bugs or have any specific feature requests, please
 - [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
   : Covariate-adjusted restricted win ratio, win odds, and net benefit
 - [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
-  : Clinical (death-priority) win ratio for an illness-death outcome
-  (experimental)
+  : Hierarchical (death-priority) clinical win ratio (experimental)
 
 ## Estimand framework
 

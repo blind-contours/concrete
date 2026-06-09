@@ -39,12 +39,21 @@ covariate-adjusted, censoring-corrected inference, unlike the standard
 unadjusted, censoring- sensitive win ratio. The integral is taken over
 the fitted target times, so use a reasonably dense `TargetTime` grid.
 
-**Assumption (hierarchy).** The prioritized comparison uses each
-patient's *first* observed event, treating the listed events as
-competing risks — the structure `concrete` models. Events occurring
-after a patient's first event (e.g.\\ death following a non-fatal
-hospitalization) are not used; the fully semi-competing version requires
-the within-patient joint law and is future work.
+**First-event limitation — use
+[`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
+for most trials.** The prioritized comparison here uses each patient's
+*first* observed event, treating the listed events as competing risks. A
+**higher-priority event that follows a lower-priority one is therefore
+not counted** — death after a non-fatal hospitalization, or a stroke
+after a hospitalization. For the clinically intended hierarchy (compare
+on the most serious event first, *whenever* it occurs), which is what
+most trials mean, use
+[`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md):
+it estimates the death-priority win ratio over an ordered hierarchy of
+fatal and non-fatal time-to-event tiers via a multistate model.
+`getWinRatio()` is the right choice only when events are genuinely
+mutually exclusive (a higher-priority event can never follow a
+lower-priority one).
 
 ## Usage
 

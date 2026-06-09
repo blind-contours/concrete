@@ -125,25 +125,33 @@ death is not used. When death after a non-fatal event matters, use the
 clinical win ratio below.</p>
 </div>
 <div class="section level2">
-<h2 id="clinical-death-priority-win-ratio-experimental">3. Clinical (death-priority) win ratio — experimental<a class="anchor" aria-label="anchor" href="#clinical-death-priority-win-ratio-experimental"></a>
+<h2 id="clinical-death-priority-hierarchical-win-ratio-the-one-you-usually-want-experimental">3. Clinical (death-priority) hierarchical win ratio — <strong>the
+one you usually want</strong> (experimental)<a class="anchor" aria-label="anchor" href="#clinical-death-priority-hierarchical-win-ratio-the-one-you-usually-want-experimental"></a>
 </h2>
 <p><code><a href="../reference/clinicalWinRatio.html">clinicalWinRatio()</a></code> targets the win ratio cardiologists
-usually mean: <strong>compare on death first — counting death even when
-it follows the non-fatal event — then break ties on the non-fatal
-event.</strong> This requires modelling the full illness–death structure
-(alive → non-fatal → death, plus alive → death), which
-<code>concrete</code> does with three transition hazards, each a Super
-Learner; the post-non-fatal death hazard is fit on a left-truncated risk
-set (subjects enter at their non-fatal-event time). Inference is
-doubly-robust, covariate-adjusted, and censoring-corrected (IPCW).</p>
-<p>It currently takes its own one-row-per-subject multistate data
-frame:</p>
+actually mean: <strong>compare on the most serious event first —
+counting a higher-priority event even when it follows a lower-priority
+one — then break ties on the next tier.</strong> Death counts even after
+a hospitalization; a stroke counts even after a hospitalization. This is
+the clinically intended hierarchy, and it is the win ratio the
+first-event version (§1–2) cannot produce.</p>
+<p>It handles an <strong>arbitrary ordered hierarchy</strong> of a
+terminal event (death) plus one or more non-fatal events. Internally it
+is a Markov multistate model whose states are the subsets of non-fatal
+events a subject has experienced; every transition (each non-fatal event
+out of each reachable state, and death out of every state) is a Super
+Learner, with doubly-robust, covariate-adjusted, censoring-corrected
+(IPCW) influence-function inference and optional cross-fitting. Pass the
+non-fatal event columns <strong>in priority order</strong> (highest
+first); a single column is the two-tier illness–death case.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># columns: arm (1=active), t_hfh (non-fatal-event time; NA if none),</span></span>
-<span><span class="co">#          t_term (death or censoring time), died (1/0), plus covariates</span></span>
-<span><span class="fu"><a href="../reference/clinicalWinRatio.html">clinicalWinRatio</a></span><span class="op">(</span></span>
-<span>  <span class="va">trial</span>,</span>
-<span>  arm <span class="op">=</span> <span class="st">"arm"</span>, illness.time <span class="op">=</span> <span class="st">"t_hfh"</span>,</span>
+<code class="sourceCode R"><span><span class="co"># Two-tier (death &gt; hospitalization):</span></span>
+<span><span class="fu"><a href="../reference/clinicalWinRatio.html">clinicalWinRatio</a></span><span class="op">(</span><span class="va">trial</span>, arm <span class="op">=</span> <span class="st">"arm"</span>, illness.time <span class="op">=</span> <span class="st">"t_hosp"</span>,</span>
+<span>  terminal.time <span class="op">=</span> <span class="st">"t_term"</span>, terminal.status <span class="op">=</span> <span class="st">"died"</span>,</span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"sex"</span><span class="op">)</span>, horizon <span class="op">=</span> <span class="fl">1460</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Three-tier hierarchy (death &gt; stroke &gt; hospitalization):</span></span>
+<span><span class="fu"><a href="../reference/clinicalWinRatio.html">clinicalWinRatio</a></span><span class="op">(</span><span class="va">trial</span>, arm <span class="op">=</span> <span class="st">"arm"</span>, illness.time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"t_stroke"</span>, <span class="st">"t_hosp"</span><span class="op">)</span>,</span>
 <span>  terminal.time <span class="op">=</span> <span class="st">"t_term"</span>, terminal.status <span class="op">=</span> <span class="st">"died"</span>,</span>
 <span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"sex"</span><span class="op">)</span>, horizon <span class="op">=</span> <span class="fl">1460</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Win Ratio / Win Odds / Net Benefit / P(win,loss,tie), each with an IF CI</span></span></code></pre></div>
@@ -163,6 +171,28 @@ pairwise truth essentially exactly, with and without censoring:</p>
 <p>(Reproduce with <code>scripts/make-winratio-coverage.R</code>,
 <code>scripts/make-clinical-wr-censoring-validation.R</code>, and the
 other <code>scripts/make-clinical-wr-*.R</code>.)</p>
+<div class="section level3">
+<h3 id="a-note-on-small-trials">A note on small trials<a class="anchor" aria-label="anchor" href="#a-note-on-small-trials"></a>
+</h3>
+<p>The win ratio is a <strong>ratio</strong>, and ratios are mildly
+biased and anti-conservative in small samples — this is a well-known
+finite-sample property of the win ratio (it affects the unadjusted
+Pocock win ratio too), not something specific to this estimator. In a
+null simulation (both arms identical, true win ratio 1), the point
+estimate is biased downward by about 1% at ~400/arm, with 95% Wald
+coverage near 0.93–0.94 and type-I error near 0.06–0.07. The effect
+shrinks at the usual <code>1/n</code> rate: by ~800/arm the bias is
+negligible and coverage is nominal (0.95–0.97).</p>
+<p><img src="figures/clinical-winratio-smalln.png" class="r-plt" alt="win ratio coverage and bias converge to nominal as sample size grows" width="100%"></p>
+<p>Importantly, this is a property of the win-ratio <em>functional</em>,
+not of the machine-learning nuisances: turning on
+<strong>cross-fitting</strong> (<code>n.folds = 5</code>, the default)
+does not change it. Cross-fitting is still worth keeping on — it gives
+honest inference when <code>SL.library</code> contains flexible learners
+that could over-fit in sample — but for a small trial, read the interval
+as mildly optimistic, or use a resampling interval. (Reproduce with
+<code>scripts/make-clinical-wr-smalln.R</code>.)</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="which-one-should-i-use">Which one should I use?<a class="anchor" aria-label="anchor" href="#which-one-should-i-use"></a>
@@ -178,25 +208,36 @@ other <code>scripts/make-clinical-wr-*.R</code>.)</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td><strong>Prioritized clinical hierarchy (death &gt; … &gt; non-fatal
+events) — most trials</strong></td>
+<td><strong><code><a href="../reference/clinicalWinRatio.html">clinicalWinRatio()</a></code></strong></td>
+</tr>
+<tr class="even">
+<td>A higher-priority event can follow a lower-priority one (death after
+a hospitalization; stroke after a hospitalization)</td>
+<td><code><a href="../reference/clinicalWinRatio.html">clinicalWinRatio()</a></code></td>
+</tr>
+<tr class="odd">
 <td>One time-to-event endpoint</td>
 <td>
 <code><a href="../reference/getWinRatio.html">getWinRatio()</a></code> (single <code>TargetEvent</code>)</td>
 </tr>
 <tr class="even">
-<td>Prioritized endpoints, mutually-exclusive first events</td>
+<td>Prioritized endpoints where first events are genuinely
+<strong>mutually exclusive</strong>
+</td>
 <td>
 <code><a href="../reference/getWinRatio.html">getWinRatio()</a></code> (ordered <code>TargetEvent</code>)</td>
 </tr>
-<tr class="odd">
-<td>Death must count <em>even after</em> a non-fatal event (e.g. CV
-death &gt; HF hospitalization)</td>
-<td><code><a href="../reference/clinicalWinRatio.html">clinicalWinRatio()</a></code></td>
-</tr>
 </tbody>
 </table>
-<p>In all three, a win ratio above 1 (and net benefit above 0) favors
-the active arm, and the win ratio’s CI crossing 1 is the test of no
-difference.</p>
+<p><strong>Start with <code><a href="../reference/clinicalWinRatio.html">clinicalWinRatio()</a></code></strong> — it is
+the clinically correct hierarchy and what most composite/win-ratio
+endpoints (e.g. TRILUMINATE, TRISCEND II) actually mean. Reach for the
+first-event <code><a href="../reference/getWinRatio.html">getWinRatio()</a></code> only when a higher-priority event
+can never follow a lower-priority one. In all cases a win ratio above 1
+(and net benefit above 0) favors the active arm, and the win ratio’s CI
+crossing 1 is the test of no difference.</p>
 </div>
 <div class="section level2">
 <h2 id="caveats">Caveats<a class="anchor" aria-label="anchor" href="#caveats"></a>
@@ -204,15 +245,21 @@ difference.</p>
 <ul>
 <li>
 <strong><code><a href="../reference/clinicalWinRatio.html">clinicalWinRatio()</a></code> is experimental.</strong> It
-uses its own multistate data interface (not yet the [formatArguments()]
-pipeline), assumes a <strong>single</strong> non-fatal event type,
+uses its own per-subject event columns (not yet the [formatArguments()]
+pipeline), and assumes <strong>non-recurrent</strong> events,
 <strong>conditionally-independent censoring</strong> (CAR), and a
-<strong>Markov</strong> illness–death model (the post-non-fatal death
-hazard depends on calendar time, not time-since-event). A semi-Markov
-option and tighter integration are planned.</li>
+<strong>Markov</strong> multistate model. The estimand and its
+influence-function inference are validated against brute-force ground
+truth for hierarchies up to four time-to-event tiers. Recurrent-event
+tiers (repeated hospitalizations) and continuous/ordinal tiers
+(e.g. KCCQ) are not yet supported.</li>
 <li>Use a reasonably dense time grid (<code>n.grid</code>); like RMST,
 the path-probability integrals carry a small grid-discretization bias
 that shrinks with the grid.</li>
+<li>In <strong>small trials</strong> the win ratio is mildly
+anti-conservative (see <em>A note on small trials</em> above) — a
+finite-sample property of the win ratio that is nominal by
+~1000–2000/arm and is not fixed by cross-fitting.</li>
 <li>For the single/hierarchical versions, use a reasonably dense
 <code>TargetTime</code> grid up to the horizon. ```</li>
 </ul>

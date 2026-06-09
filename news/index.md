@@ -2,6 +2,35 @@
 
 ## concrete 1.1.1.9000
 
+### Hierarchical (death-priority) win ratio is now the flagship \[experimental\]
+
+- [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
+  is generalized from the two-tier illness-death case to an **arbitrary
+  ordered hierarchy** of a terminal event (death) plus one or more
+  non-fatal events: pass `illness.time` as an ordered vector of
+  non-fatal event columns (highest priority first). A single column
+  reproduces the previous two-tier behavior (backward compatible). It
+  counts a **higher-priority event even when it follows a lower-priority
+  one** (death after a hospitalization, a stroke after a
+  hospitalization) – the clinically intended hierarchy, and the one the
+  first-event
+  [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
+  cannot produce. This is now the recommended win ratio for most trials
+  (e.g. TRILUMINATE / TRISCEND II-style composites).
+- Internally it is a Markov multistate model whose states are the
+  subsets of non-fatal events experienced; every transition (each
+  non-fatal event out of each reachable state, and death out of every
+  state) is a Super Learner, with doubly-robust, covariate-adjusted,
+  censoring-corrected (IPCW) influence-function inference via
+  adjoint-value clever covariates, and cross-fitting. The estimand and
+  its inference are validated against a brute-force pairwise win ratio
+  for hierarchies up to four time-to-event tiers (`scripts/genwr-*.R`).
+- [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
+  documentation now flags its first-event limitation and points to
+  [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
+  for hierarchies where a higher-priority event can follow a
+  lower-priority one.
+
 ### Clinical (death-priority) win ratio \[experimental\]
 
 - New experimental
@@ -24,6 +53,23 @@
   histories): point estimate recovers truth (~1%), and 95% CI coverage
   is nominal with and without ~36% censoring. See the new “Win ratios
   for trialists” article and `scripts/make-clinical-wr-*.R`.
+- [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
+  now cross-fits the transition and censoring hazards by default
+  (`n.folds = 5`): nuisances are fit out-of-fold so each subject’s
+  influence-function contribution uses learners trained without them.
+  This gives honest inference when the `SL.library` contains flexible
+  learners that could over-fit; set `n.folds = 1` for faster in-sample
+  fits with simple learners.
+- Characterized and documented small-sample behavior. Like the win ratio
+  in general (including the unadjusted Pocock win ratio), the estimate
+  is a ratio and is mildly biased/anti-conservative at small n: in a
+  null simulation it is biased downward ~1% at ~400/arm with coverage
+  ~0.93-0.94 / type-I ~0.06-0.07, becoming nominal (0.95-0.97) by
+  ~800/arm. This is a finite-sample property of the win-ratio
+  functional, **not** an over-fitting artifact – cross-fitting does not
+  change it. Documented in the function help
+  (`@section Small-sample behavior`), the vignette, and
+  `scripts/make-clinical-wr-smalln.R`.
 - Internal `R/getTransitionHazard.R`: a Super Learner for illness-death
   transition intensities on left-truncated risk sets (the building
   block), plus `multistateCurves()` (midpoint-quadrature path
