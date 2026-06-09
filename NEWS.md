@@ -10,7 +10,8 @@
   even when it follows a lower-priority one** (death after a hospitalization, a
   stroke after a hospitalization) -- the clinically intended hierarchy, and the
   one the first-event `getWinRatio()` cannot produce. This is now the recommended
-  win ratio for most trials (e.g. TRILUMINATE / TRISCEND II-style composites).
+  win ratio for most trials (e.g. device or oncology trials, or wherever a
+  hierarchical composite endpoint is used).
 * Internally it is a Markov multistate model whose states are the subsets of
   non-fatal events experienced; every transition (each non-fatal event out of each
   reachable state, and death out of every state) is a Super Learner, with
