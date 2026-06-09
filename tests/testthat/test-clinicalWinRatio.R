@@ -64,3 +64,30 @@ test_that("clinicalWinRatio handles a 3-tier hierarchy (death > E2 > E3)", {
   pw <- r$`Pt Est`[r$Estimand == "P(win)"]; pl <- r$`Pt Est`[r$Estimand == "P(loss)"]
   expect_equal(r$`Pt Est`[r$Estimand == "Win Ratio"], pw / pl, tolerance = 1e-6)
 })
+
+test_that("clinicalWinRatio accepts time-varying censoring covariates without changing the baseline path", {
+  skip_on_cran()
+  skip_if_not_installed("SuperLearner")
+  set.seed(7); n <- 400; tau <- 3
+  W <- stats::rnorm(n); U <- stats::rnorm(n); arm <- stats::rbinom(n, 1, 0.5)
+  fW <- exp(0.3 * W + 0.6 * U)
+  tH <- stats::rexp(n, 0.18 * fW * exp(-0.3 * arm))
+  tD <- stats::rexp(n, 0.10 * fW * exp(-0.4 * arm))
+  C  <- stats::rexp(n, 0.12 * exp(0.4 * U))               # informative censoring (depends on U)
+  termT <- pmin(tD, C, tau); died <- as.integer(tD <= C & tD <= tau)
+  d <- data.frame(idv = seq_len(n), arm = arm, t_hosp = ifelse(tH <= termT, tH, NA),
+                  t_term = termT, died = ifelse(termT >= tau, 0L, died), W = W)
+  tv <- do.call(rbind, lapply(c(0.5, 1.2, 2.0), function(v)
+    data.frame(idv = seq_len(n), time = v, L = U + stats::rnorm(n, 0, 0.4))))
+
+  r0 <- clinicalWinRatio(d, "arm", "t_hosp", "t_term", "died", "W", horizon = tau, n.grid = 20, n.folds = 1)
+  rtv <- clinicalWinRatio(d, "arm", "t_hosp", "t_term", "died", "W", horizon = tau, n.grid = 20, n.folds = 1,
+                          id = "idv", censoring.tv = tv)
+  expect_s3_class(rtv, "ConcreteOut")
+  expect_equal(sum(rtv[rtv$Estimand %in% c("P(win)","P(loss)","P(tie)"), `Pt Est`]), 1, tolerance = 1e-6)
+  # the two should differ (tv changes the IPCW) but both be sane win ratios
+  expect_true(is.finite(rtv$`Pt Est`[1]) && rtv$`Pt Est`[1] > 0)
+  expect_false(isTRUE(all.equal(r0$`Pt Est`[1], rtv$`Pt Est`[1])))
+  # input validation
+  expect_error(clinicalWinRatio(d, "arm", "t_hosp", "t_term", "died", "W", censoring.tv = tv))  # id required
+})

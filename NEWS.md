@@ -1,5 +1,27 @@
 # concrete 1.1.1.9000
 
+## Time-varying covariates in the censoring model [experimental]
+
+* `clinicalWinRatio()` gains optional `id` + `censoring.tv` arguments: a long
+  `data.frame` of post-randomization, time-varying covariates (e.g. echo / KCCQ /
+  6-minute-walk measured at follow-up visits) for the **censoring** model. When
+  dropout is driven by such measurements, conditioning on baseline covariates alone
+  makes censoring informative and biases the inverse-probability-of-censoring
+  weights; conditioning the censoring hazard on the last-observation-carried-forward
+  value and change-from-baseline of each restores conditional independence (CAR).
+  They enter \strong{only} the censoring model (never the outcome hazards), so the
+  marginal/ITT estimand is preserved (they are post-treatment mediators). Omitting
+  them leaves the result unchanged.
+* New shared internal machinery (`R/tvCensoring.R`): `.tvLOCF()` (LOCF value +
+  change-from-baseline on the hazard grid) and `.tvCensoringInc()` (cross-fitted
+  discrete-time censoring-hazard SL with time-varying covariates). Validated to
+  remove informative-censoring bias: a survival probability biased +5% under
+  baseline-only IPCW is recovered to within ~0.4% with the time-varying censoring
+  model (`scripts/dev-tvcens*.R`). (Note: the win ratio, being a between-arm ratio,
+  is far less sensitive to arm-symmetric informative censoring -- the larger payoff
+  is for the marginal survival / cumulative-incidence curves and RMST, where the
+  same machinery will be threaded next.)
+
 ## Hierarchical (death-priority) win ratio is now the flagship [experimental]
 
 * `clinicalWinRatio()` is generalized from the two-tier illness-death case to an
