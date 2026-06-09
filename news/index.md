@@ -16,7 +16,8 @@
   first-event
   [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
   cannot produce. This is now the recommended win ratio for most trials
-  (e.g. TRILUMINATE / TRISCEND II-style composites).
+  (e.g. device or oncology trials, or wherever a hierarchical composite
+  endpoint is used).
 - Internally it is a Markov multistate model whose states are the
   subsets of non-fatal events experienced; every transition (each
   non-fatal event out of each reachable state, and death out of every

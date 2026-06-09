@@ -144,8 +144,9 @@ read the interval as mildly optimistic, or use a resampling interval.
 **Start with
 [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)**
 — it is the clinically correct hierarchy and what most
-composite/win-ratio endpoints (e.g. TRILUMINATE, TRISCEND II) actually
-mean. Reach for the first-event
+composite/win-ratio endpoints (common in device and oncology trials, or
+wherever a hierarchical composite endpoint is used) actually mean. Reach
+for the first-event
 [`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
 only when a higher-priority event can never follow a lower-priority one.
 In all cases a win ratio above 1 (and net benefit above 0) favors the
