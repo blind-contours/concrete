@@ -220,6 +220,12 @@ with the RMST result). `P(win)`, `P(loss)`, and `P(tie)` sum to 1. For a
 hierarchy, ties are resolved by the lower-priority events, so `P(tie)` shrinks
 and the comparison uses more of the data.
 
+See the [Win ratios for trialists](https://blind-contours.github.io/concrete/articles/win-ratio.html)
+article for when to use the single-event, prioritized-hierarchy, and clinical
+(death-priority) win ratios — the last via the experimental `clinicalWinRatio()`,
+which counts death *even when it follows* a non-fatal event — together with the
+simulation coverage evidence so the inference can be trusted.
+
 To check that your installation works before using your own data, run the
 installed smoke test:
 

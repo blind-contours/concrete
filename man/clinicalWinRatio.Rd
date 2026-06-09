@@ -13,6 +13,7 @@ clinicalWinRatio(
   covariates,
   horizon = NULL,
   n.grid = 60L,
+  n.folds = 5L,
   SL.library = c("SL.mean", "SL.glm"),
   Signif = 0.05
 )
@@ -38,6 +39,17 @@ largest terminal time).}
 
 \item{n.grid}{integer (default 60): number of time intervals for the discrete
 hazard / path-probability quadrature.}
+
+\item{n.folds}{integer (default 5): number of cross-fitting folds. The
+transition and censoring hazards are fit out-of-fold (each subject's
+influence-function contribution uses nuisances estimated without them), which
+removes the empirical-process (over-fitting) term. This matters when the
+\code{SL.library} contains flexible learners (random forests, HAL, penalized
+regression) that could over-fit in sample; with simple parametric learners it
+makes little difference. Set to 1 to disable cross-fitting (in-sample fits;
+faster). \strong{Note:} cross-fitting does \emph{not} fix the mild small-sample
+anti-conservatism described below --- that is a finite-sample property of the
+win ratio itself, not an over-fitting artifact.}
 
 \item{SL.library}{character vector: SuperLearner library for the transition and
 censoring hazards (default \code{c("SL.mean", "SL.glm")}).}
@@ -71,6 +83,20 @@ marked experimental because it currently takes its own multistate data frame
 (below) rather than the standard \code{\link[=formatArguments]{formatArguments()}} pipeline, and assumes a
 single non-fatal event type and conditionally-independent censoring (CAR).
 }
+\section{Small-sample behavior}{
+
+Like the win ratio in general (including the unadjusted Pocock win ratio), the
+point estimate is a \emph{ratio} and is therefore mildly biased and
+anti-conservative in small samples. In a null simulation (true win ratio 1,
+both arms identical) the estimator is biased downward by \eqn{\approx}1--2\\% at
+\eqn{\sim}400/arm, with Wald coverage \eqn{\approx}0.93 and type-I error
+\eqn{\approx}0.07; this is a finite-sample property of the win-ratio functional,
+not of the nuisance estimation (cross-fitting does not change it). The bias and
+under-coverage shrink at the usual \eqn{O(1/n)} rate and inference is nominal
+(coverage 0.95--0.97) by \eqn{\sim}1000--2000/arm. For small trials, interpret
+the interval as mildly optimistic, or use a resampling interval.
+}
+
 \examples{
 \dontrun{
 # data with: arm, t_hfh (NA if none), t_term (death or censoring), died (1/0), age, sex

@@ -34,6 +34,16 @@
 #'   largest terminal time).
 #' @param n.grid integer (default 60): number of time intervals for the discrete
 #'   hazard / path-probability quadrature.
+#' @param n.folds integer (default 5): number of cross-fitting folds. The
+#'   transition and censoring hazards are fit out-of-fold (each subject's
+#'   influence-function contribution uses nuisances estimated without them), which
+#'   removes the empirical-process (over-fitting) term. This matters when the
+#'   `SL.library` contains flexible learners (random forests, HAL, penalized
+#'   regression) that could over-fit in sample; with simple parametric learners it
+#'   makes little difference. Set to 1 to disable cross-fitting (in-sample fits;
+#'   faster). \strong{Note:} cross-fitting does \emph{not} fix the mild small-sample
+#'   anti-conservatism described below --- that is a finite-sample property of the
+#'   win ratio itself, not an over-fitting artifact.
 #' @param SL.library character vector: SuperLearner library for the transition and
 #'   censoring hazards (default `c("SL.mean", "SL.glm")`).
 #' @param Signif numeric (default 0.05): alpha for confidence intervals.
@@ -42,6 +52,19 @@
 #'   net benefit, and the win/loss/tie probabilities, each with an
 #'   influence-function standard error, confidence interval, and (for the
 #'   comparative statistics) a p-value against the null of no difference.
+#'
+#' @section Small-sample behavior:
+#' Like the win ratio in general (including the unadjusted Pocock win ratio), the
+#' point estimate is a \emph{ratio} and is therefore mildly biased and
+#' anti-conservative in small samples. In a null simulation (true win ratio 1,
+#' both arms identical) the estimator is biased downward by \eqn{\approx}1\% at
+#' \eqn{\sim}400/arm, with Wald coverage \eqn{\approx}0.93--0.94 and type-I error
+#' \eqn{\approx}0.06--0.07; this is a finite-sample property of the win-ratio
+#' functional, not of the nuisance estimation (cross-fitting does not change it).
+#' The bias and under-coverage shrink at the usual \eqn{O(1/n)} rate, and inference
+#' is nominal (coverage 0.95--0.97) by \eqn{\sim}800/arm. For small trials,
+#' interpret the interval as mildly optimistic, or use a resampling interval.
+#' See `scripts/make-clinical-wr-smalln.R`.
 #'
 #' @seealso [getWinRatio()] for the single-event and competing-risks win ratio.
 #' @export clinicalWinRatio
@@ -54,7 +77,7 @@
 #'                  covariates = c("age", "sex"), horizon = 1460)
 #' }
 clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.status,
-                             covariates, horizon = NULL, n.grid = 60L,
+                             covariates, horizon = NULL, n.grid = 60L, n.folds = 5L,
                              SL.library = c("SL.mean", "SL.glm"), Signif = 0.05) {
   data <- as.data.frame(data)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
@@ -90,8 +113,8 @@ clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.st
       check.names = FALSE)
   }
   idxT <- which(A == 1); idxC <- which(A == 0)
-  AT <- cwrArmFit(parse(idxT), covariates, grid, SL.library)
-  AC <- cwrArmFit(parse(idxC), covariates, grid, SL.library)
+  AT <- cwrArmFit(parse(idxT), covariates, grid, SL.library, n.folds)
+  AC <- cwrArmFit(parse(idxC), covariates, grid, SL.library, n.folds)
   out <- cwrAssemble(AT, AC, piT = mean(A == 1), piC = mean(A == 0),
                      Ntot = length(A), Signif = Signif)
   attr(out, "Horizon") <- tau
@@ -104,18 +127,37 @@ clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.st
 #' Per-arm transition fits + building-block influence functions (IPCW).
 #' @keywords internal
 #' @noRd
-cwrArmFit <- function(est, covariates, grid, SL.library) {
+cwrArmFit <- function(est, covariates, grid, SL.library, n.folds = 5L) {
   M <- length(grid) - 1L; Mp1 <- M + 1L; starts <- grid[-Mp1]; Gmin <- 0.05
   n <- nrow(est); Cov <- est[, covariates, drop = FALSE]
-  f01 <- fitTransitionSL(rep(0, n), est$exit0, est$d01, Cov, grid, SL.library = SL.library)
-  f02 <- fitTransitionSL(rep(0, n), est$exit0, est$d02, Cov, grid, SL.library = SL.library)
-  sub <- est$d01 == 1
-  f12 <- fitTransitionSL(est$entry1[sub], est$exit1[sub], est$d12[sub],
-                         Cov[sub, , drop = FALSE], grid, SL.library = SL.library)
-  fc  <- fitTransitionSL(rep(0, n), est$obsT, est$censE, Cov, grid, SL.library = SL.library)
-  I01 <- predictTransitionSL(f01, Cov); I02 <- predictTransitionSL(f02, Cov)
-  I12 <- predictTransitionSL(f12, Cov)
-  Glag <- pmax(rbind(1, exp(-apply(predictTransitionSL(fc, Cov), 2, cumsum)))[1:M, , drop = FALSE], Gmin)
+  ## cross-fitting: fit the transition + censoring hazards on training folds and
+  ## predict OUT-OF-FOLD, so each subject's influence-function contribution uses
+  ## nuisances estimated without them (removes the empirical-process term).
+  V <- max(1L, min(as.integer(n.folds), floor(n / 30)))
+  I01 <- I02 <- I12 <- ICm <- matrix(0, M, n)
+  fitPredict <- function(trEntry, trExit, trEvent, trCov, teCov) {
+    f <- fitTransitionSL(trEntry, trExit, trEvent, trCov, grid, SL.library = SL.library)
+    predictTransitionSL(f, teCov)
+  }
+  if (V <= 1L) {
+    sub <- est$d01 == 1
+    I01[] <- fitPredict(rep(0, n), est$exit0, est$d01, Cov, Cov)
+    I02[] <- fitPredict(rep(0, n), est$exit0, est$d02, Cov, Cov)
+    I12[] <- fitPredict(est$entry1[sub], est$exit1[sub], est$d12[sub], Cov[sub, , drop = FALSE], Cov)
+    ICm[] <- fitPredict(rep(0, n), est$obsT, est$censE, Cov, Cov)
+  } else {
+    fold <- sample(rep(seq_len(V), length.out = n))
+    for (v in seq_len(V)) {
+      te <- which(fold == v); tr <- which(fold != v)
+      Cte <- Cov[te, , drop = FALSE]; Ctr <- Cov[tr, , drop = FALSE]
+      s1 <- tr[est$d01[tr] == 1]
+      I01[, te] <- fitPredict(rep(0, length(tr)), est$exit0[tr], est$d01[tr], Ctr, Cte)
+      I02[, te] <- fitPredict(rep(0, length(tr)), est$exit0[tr], est$d02[tr], Ctr, Cte)
+      I12[, te] <- fitPredict(est$entry1[s1], est$exit1[s1], est$d12[s1], Cov[s1, , drop = FALSE], Cte)
+      ICm[, te] <- fitPredict(rep(0, length(tr)), est$obsT[tr], est$censE[tr], Ctr, Cte)
+    }
+  }
+  Glag <- pmax(rbind(1, exp(-apply(ICm, 2, cumsum)))[1:M, , drop = FALSE], Gmin)
   cur <- multistateCurves(I01, I02, I12); S0 <- cur$S0; SD <- cur$SD; pimat <- cur$pi
   L12 <- rbind(0, apply(I12, 2, cumsum)); S12tau <- cur$S12toTau
   ## martingale increments (Y already censoring-adjusted via exit times)
