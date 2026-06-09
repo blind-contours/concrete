@@ -45,7 +45,9 @@ clinicalWinRatio(
   n.grid = 60L,
   n.folds = 5L,
   SL.library = c("SL.mean", "SL.glm"),
-  Signif = 0.05
+  Signif = 0.05,
+  id = NULL,
+  censoring.tv = NULL
 )
 ```
 
@@ -109,6 +111,26 @@ clinicalWinRatio(
 - Signif:
 
   numeric (default 0.05): alpha for confidence intervals.
+
+- id:
+
+  character (optional): name of a subject id column, required only when
+  `censoring.tv` is supplied (to link the longitudinal measurements to
+  subjects).
+
+- censoring.tv:
+
+  optional `data.frame` of **time-varying covariates for the censoring
+  model** (e.g.\\ post-randomization echo / KCCQ / 6-minute-walk
+  measured at follow-up visits), in long form with the id column (named
+  as `id`), a `time` column, and one or more value columns. When
+  supplied, the censoring hazard is conditioned on the
+  last-observation-carried-forward value and change-from-baseline of
+  each, which corrects inverse-probability-of-censoring bias when
+  dropout is driven by these measurements. They enter **only** the
+  censoring model (never the outcome hazards), so the marginal/ITT
+  estimand is preserved (they are post-treatment mediators). No effect
+  on the result when omitted.
 
 ## Value
 

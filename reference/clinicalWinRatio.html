@@ -134,7 +134,9 @@ continuous/ordinal tiers (e.g.\ KCCQ) are not yet supported.</p>
 <span>  n.grid <span class="op">=</span> <span class="fl">60L</span>,</span>
 <span>  n.folds <span class="op">=</span> <span class="fl">5L</span>,</span>
 <span>  SL.library <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SL.mean"</span>, <span class="st">"SL.glm"</span><span class="op">)</span>,</span>
-<span>  Signif <span class="op">=</span> <span class="fl">0.05</span></span>
+<span>  Signif <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  censoring.tv <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -199,6 +201,24 @@ censoring hazards (default <code>c("SL.mean", "SL.glm")</code>).</p></dd>
 
 <dt id="arg-signif">Signif<a class="anchor" aria-label="anchor" href="#arg-signif"></a></dt>
 <dd><p>numeric (default 0.05): alpha for confidence intervals.</p></dd>
+
+
+<dt id="arg-id">id<a class="anchor" aria-label="anchor" href="#arg-id"></a></dt>
+<dd><p>character (optional): name of a subject id column, required only when
+<code>censoring.tv</code> is supplied (to link the longitudinal measurements to subjects).</p></dd>
+
+
+<dt id="arg-censoring-tv">censoring.tv<a class="anchor" aria-label="anchor" href="#arg-censoring-tv"></a></dt>
+<dd><p>optional <code>data.frame</code> of <strong>time-varying covariates for
+the censoring model</strong> (e.g.\ post-randomization echo / KCCQ / 6-minute-walk
+measured at follow-up visits), in long form with the id column (named as <code>id</code>),
+a <code>time</code> column, and one or more value columns. When supplied, the censoring
+hazard is conditioned on the last-observation-carried-forward value and
+change-from-baseline of each, which corrects inverse-probability-of-censoring
+bias when dropout is driven by these measurements. They enter <strong>only</strong> the
+censoring model (never the outcome hazards), so the marginal/ITT estimand is
+preserved (they are post-treatment mediators). No effect on the result when
+omitted.</p></dd>
 
 </dl></div>
     <div class="section level2">
