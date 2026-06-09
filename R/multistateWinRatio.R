@@ -252,7 +252,7 @@
 #' inverse lagged censoring survival). `n.folds <= 1` gives in-sample fits.
 #' @keywords internal
 #' @noRd
-.msNuisances <- function(eng, D, covariates, SL.library, n.folds) {
+.msNuisances <- function(eng, D, covariates, SL.library, n.folds, tvMats = NULL) {
   M <- eng$M; grid <- eng$grid; structTrans <- eng$structTrans; tau <- eng$tau; n <- nrow(D)
   V <- max(1L, min(as.integer(n.folds), floor(n / 30)))
   rmat <- stats::setNames(lapply(structTrans, function(k) matrix(1e-10, M, n)), structTrans)
@@ -272,10 +272,14 @@
         predictTransitionSL(fit, CovTe)
       }), error = function(e) matrix(1e-10, M, length(te)))
     }
-    cFit <- tryCatch(suppressWarnings(fitTransitionSL(rep(0, length(tr)), obsT[tr], censInd[tr],
-              D[tr, covariates, drop = FALSE], grid, SL.library = SL.library)), error = function(e) NULL)
-    incC[, te] <- if (is.null(cFit)) matrix(1e-8, M, length(te)) else predictTransitionSL(cFit, CovTe)
+    if (is.null(tvMats)) {                               # baseline censoring (unchanged when no L(t))
+      cFit <- tryCatch(suppressWarnings(fitTransitionSL(rep(0, length(tr)), obsT[tr], censInd[tr],
+                D[tr, covariates, drop = FALSE], grid, SL.library = SL.library)), error = function(e) NULL)
+      incC[, te] <- if (is.null(cFit)) matrix(1e-8, M, length(te)) else predictTransitionSL(cFit, CovTe)
+    }
   }
+  if (!is.null(tvMats))                                  # time-varying censoring (own cross-fit)
+    incC <- .tvCensoringInc(grid, obsT, censInd, D[, covariates, drop = FALSE], tvMats, SL.library, n.folds)
   Glag <- pmax(rbind(1, exp(-apply(incC, 2, cumsum)))[1:M, , drop = FALSE], 0.05)
   list(rmat = rmat, Ginv = 1 / t(Glag))
 }

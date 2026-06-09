@@ -15,7 +15,9 @@ clinicalWinRatio(
   n.grid = 60L,
   n.folds = 5L,
   SL.library = c("SL.mean", "SL.glm"),
-  Signif = 0.05
+  Signif = 0.05,
+  id = NULL,
+  censoring.tv = NULL
 )
 }
 \arguments{
@@ -55,6 +57,20 @@ is a finite-sample property of the win ratio itself.}
 censoring hazards (default \code{c("SL.mean", "SL.glm")}).}
 
 \item{Signif}{numeric (default 0.05): alpha for confidence intervals.}
+
+\item{id}{character (optional): name of a subject id column, required only when
+\code{censoring.tv} is supplied (to link the longitudinal measurements to subjects).}
+
+\item{censoring.tv}{optional \code{data.frame} of \strong{time-varying covariates for
+the censoring model} (e.g.\ post-randomization echo / KCCQ / 6-minute-walk
+measured at follow-up visits), in long form with the id column (named as \code{id}),
+a \code{time} column, and one or more value columns. When supplied, the censoring
+hazard is conditioned on the last-observation-carried-forward value and
+change-from-baseline of each, which corrects inverse-probability-of-censoring
+bias when dropout is driven by these measurements. They enter \strong{only} the
+censoring model (never the outcome hazards), so the marginal/ITT estimand is
+preserved (they are post-treatment mediators). No effect on the result when
+omitted.}
 }
 \value{
 a \code{data.table} of class \code{"ConcreteOut"} with the win ratio, win odds,

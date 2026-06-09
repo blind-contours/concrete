@@ -54,6 +54,18 @@
 #' @param SL.library character vector: SuperLearner library for the transition and
 #'   censoring hazards (default `c("SL.mean", "SL.glm")`).
 #' @param Signif numeric (default 0.05): alpha for confidence intervals.
+#' @param id character (optional): name of a subject id column, required only when
+#'   `censoring.tv` is supplied (to link the longitudinal measurements to subjects).
+#' @param censoring.tv optional `data.frame` of \strong{time-varying covariates for
+#'   the censoring model} (e.g.\ post-randomization echo / KCCQ / 6-minute-walk
+#'   measured at follow-up visits), in long form with the id column (named as `id`),
+#'   a `time` column, and one or more value columns. When supplied, the censoring
+#'   hazard is conditioned on the last-observation-carried-forward value and
+#'   change-from-baseline of each, which corrects inverse-probability-of-censoring
+#'   bias when dropout is driven by these measurements. They enter \strong{only} the
+#'   censoring model (never the outcome hazards), so the marginal/ITT estimand is
+#'   preserved (they are post-treatment mediators). No effect on the result when
+#'   omitted.
 #'
 #' @return a `data.table` of class `"ConcreteOut"` with the win ratio, win odds,
 #'   net benefit, and the win/loss/tie probabilities, each with an
@@ -89,7 +101,8 @@
 #' }
 clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.status,
                              covariates, horizon = NULL, n.grid = 60L, n.folds = 5L,
-                             SL.library = c("SL.mean", "SL.glm"), Signif = 0.05) {
+                             SL.library = c("SL.mean", "SL.glm"), Signif = 0.05,
+                             id = NULL, censoring.tv = NULL) {
   data <- as.data.frame(data)
   illness.time <- as.character(illness.time)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
@@ -111,10 +124,22 @@ clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.st
   }
   D$C <- ifelse(delta == 0, term, Inf)
 
+  ## --- optional time-varying censoring covariates (LOCF value + change) ---
+  tvMats <- NULL
+  if (!is.null(censoring.tv)) {
+    if (is.null(id)) stop("`id` (subject id column) is required when `censoring.tv` is supplied.")
+    if (!id %in% names(data)) stop("id column '", id, "' not found in data.")
+    censoring.tv <- as.data.frame(censoring.tv)
+    if (!"time" %in% names(censoring.tv)) stop("`censoring.tv` must have a 'time' column.")
+    if (!id %in% names(censoring.tv)) stop("`censoring.tv` must have the id column '", id, "'.")
+    tvMats <- .tvLOCF(data[[id]], censoring.tv, id, "time", grid[-length(grid)])
+  }
+
   eng <- .msEngine(K, grid)
   buildArm <- function(av) {
-    Da <- D[A == av, , drop = FALSE]
-    nu <- .msNuisances(eng, Da, covariates, SL.library, n.folds)
+    sel <- A == av; Da <- D[sel, , drop = FALSE]
+    tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[sel, , drop = FALSE])
+    nu <- .msNuisances(eng, Da, covariates, SL.library, n.folds, tvA)
     eng$armSetup(Da, nu$rmat, nu$Ginv)
   }
   out <- .msWinRatioOut(eng, buildArm(1), buildArm(0), Signif)
