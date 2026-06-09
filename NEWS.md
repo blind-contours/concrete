@@ -1,5 +1,27 @@
 # concrete 1.1.1.9000
 
+## Hierarchical (death-priority) win ratio is now the flagship [experimental]
+
+* `clinicalWinRatio()` is generalized from the two-tier illness-death case to an
+  **arbitrary ordered hierarchy** of a terminal event (death) plus one or more
+  non-fatal events: pass `illness.time` as an ordered vector of non-fatal event
+  columns (highest priority first). A single column reproduces the previous
+  two-tier behavior (backward compatible). It counts a **higher-priority event
+  even when it follows a lower-priority one** (death after a hospitalization, a
+  stroke after a hospitalization) -- the clinically intended hierarchy, and the
+  one the first-event `getWinRatio()` cannot produce. This is now the recommended
+  win ratio for most trials (e.g. TRILUMINATE / TRISCEND II-style composites).
+* Internally it is a Markov multistate model whose states are the subsets of
+  non-fatal events experienced; every transition (each non-fatal event out of each
+  reachable state, and death out of every state) is a Super Learner, with
+  doubly-robust, covariate-adjusted, censoring-corrected (IPCW) influence-function
+  inference via adjoint-value clever covariates, and cross-fitting. The estimand
+  and its inference are validated against a brute-force pairwise win ratio for
+  hierarchies up to four time-to-event tiers (`scripts/genwr-*.R`).
+* `getWinRatio()` documentation now flags its first-event limitation and points to
+  `clinicalWinRatio()` for hierarchies where a higher-priority event can follow a
+  lower-priority one.
+
 ## Clinical (death-priority) win ratio [experimental]
 
 * New experimental `clinicalWinRatio()`: the death-priority win ratio that counts

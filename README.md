@@ -184,14 +184,30 @@ estimators](https://blind-contours.github.io/concrete/articles/rmst-methods-comp
 
 ### Win ratio, win odds, and net benefit
 
-For a head-to-head, hierarchy-friendly summary, `getWinRatio()` compares
-a random treated patient with a random control over `[0, Horizon]` and
-reports the covariate-adjusted, censoring-corrected **win ratio**, **win
-odds**, and **net benefit**, each with influence-function confidence
-intervals, alongside the underlying win/loss/tie probabilities. Pass a
-single `TargetEvent` for one endpoint, or an ordered vector (highest
-priority first) for a prioritized hierarchy of competing events,
-e.g. `c(1, 2)` for death &gt; hospitalization.
+For most trials the win ratio you want is the **clinical, death-priority
+hierarchy**: compare a random treated patient with a random control on
+the most serious event first — *counting a higher-priority event even
+when it follows a lower-priority one* (death after a hospitalization, a
+stroke after a hospitalization) — then break ties on the next tier.
+`clinicalWinRatio()` estimates it over an arbitrary ordered hierarchy of
+a terminal event (death) plus non-fatal events, with covariate-adjusted,
+doubly-robust, censoring-corrected influence-function inference (a
+Markov multistate model, each transition a Super Learner). Pass the
+non-fatal columns in priority order:
+
+``` r
+# death > stroke > hospitalization (non-fatal columns highest-priority first)
+clinicalWinRatio(trial, arm = "arm", illness.time = c("t_stroke", "t_hosp"),
+  terminal.time = "t_term", terminal.status = "died",
+  covariates = c("age", "sex"), horizon = 1460)
+#> Win Ratio / Win Odds / Net Benefit / P(win,loss,tie), each with an IF CI
+```
+
+The first-event `getWinRatio()` is the special case for when events are
+genuinely **mutually exclusive** (a higher-priority event can never
+follow a lower-priority one). It works off the targeted curves and
+supports a single `TargetEvent` or an ordered vector for a prioritized
+hierarchy of *competing* events:
 
 ``` r
 ConcreteArgs <- formatArguments(
