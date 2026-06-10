@@ -81,6 +81,7 @@ makeITT() returns an Intervention list for a single, binary, point-treatment var
 <span>  EICStopAbsTol <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  CrossFit <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  HazEnsemble <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  CensoringTV <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -235,6 +236,25 @@ ensemble (Super Learner) by minimizing the counting-process
 negative log-likelihood of the weighted hazard, instead of
 the default discrete (winner-take-all) selection. The
 treatment propensity already uses an ensemble Super Learner.</p></dd>
+
+
+<dt id="arg-censoringtv">CensoringTV<a class="anchor" aria-label="anchor" href="#arg-censoringtv"></a></dt>
+<dd><p>optional <code>data.frame</code> (default NULL) of <strong>time-varying
+covariates for the censoring model</strong>, in long form with the
+id column (the same name passed to <code>ID</code>), a <code>time</code> column,
+and one or more value columns (e.g. post-randomization
+echo / KCCQ / 6-minute-walk measured at follow-up visits).
+When supplied, the censoring hazard — and hence the
+inverse-probability-of-censoring weight used by every
+estimand (survival / cumulative-incidence curves, RMST, win
+ratio) — is conditioned on the last-observation-carried-
+forward value and change-from-baseline of each. This corrects
+informative-censoring bias when dropout is driven by such
+measurements. These covariates enter <strong>only</strong> the
+censoring model (never the outcome hazards), so the marginal
+/ intent-to-treat estimand is preserved (they are
+post-treatment mediators). An <code>ID</code> column is required.
+No effect on results when omitted.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

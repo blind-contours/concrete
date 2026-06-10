@@ -4,6 +4,22 @@
 
 ### Time-varying covariates in the censoring model \[experimental\]
 
+- **Threaded through the core.**
+  [`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)
+  gains an optional `CensoringTV` argument (a long `data.frame` of
+  time-varying covariates for the censoring model, with the `ID` column,
+  a `time` column, and value columns). When supplied, the
+  inverse-probability-of-censoring weight used by **every** estimand —
+  the targeted survival / cumulative-incidence curves,
+  `getRMST`/`targetRMST`, and `getWinRatio` — is conditioned on the LOCF
+  value and change-from-baseline of each. Implemented as an override of
+  the lagged censoring survival in `get(CV)InitialEstimate()` (the
+  single object the censoring hazard feeds), so the outcome hazards and
+  the rest of the TMLE are untouched; no `CensoringTV` reproduces the
+  previous behavior exactly. This matters most for the **marginal**
+  (non-ratio) estimands: in simulation a targeted absolute risk biased
+  by informative censoring under baseline-only IPCW is recovered with
+  the time-varying censoring model (`scripts/dev-tvcens-core.R`).
 - [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
   gains optional `id` + `censoring.tv` arguments: a long `data.frame` of
   post-randomization, time-varying covariates (e.g. echo / KCCQ /
