@@ -20,7 +20,7 @@
 #' @keywords internal
 #' @importFrom origami make_folds
 getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, TargetTime,
-                                 Regime, ReturnModels, HazEnsemble = FALSE) {
+                                 Regime, ReturnModels, HazEnsemble = FALSE, CensoringTV = NULL) {
     Time <- NULL
     n <- nrow(Data)
     Censored <- any(Data[[attr(Data, "EventType")]] <= 0)
@@ -105,6 +105,14 @@ getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent,
         warning("Some event types were absent from a cross-fitting training fold; ",
                 "their hazards were set to 0 for the affected subjects. Consider ",
                 "fewer folds or pooling rare competing events.")
+
+    ## time-varying censoring covariates: override the lagged censoring survival
+    ## (cross-fit internally by .tvCensoringInc) so the corrected IPCW flows
+    ## throughout. Outcome hazards are untouched.
+    if (Censored && !is.null(CensoringTV)) {
+        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time)
+        for (a in arms) LagCensFull[[a]][] <- LagTV
+    }
 
     InitialEstimates <- lapply(arms, function(a) {
         PropScore <- PropFull[[a]]

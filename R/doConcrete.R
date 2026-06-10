@@ -66,7 +66,7 @@ doConCRTmle <- function(DataTable, TargetTime, TargetEvent, Regime, CVFolds, Mod
                         OneStepEps, MinNuisance, Verbose, GComp, ReturnModels,
                         UpdateMethod = "standard",
                         EICStopRule = "relative", EICStopAbsTol = 0, CrossFit = FALSE,
-                        HazEnsemble = FALSE, ...)
+                        HazEnsemble = FALSE, CensoringTV = NULL, ...)
 {
     ratio <- Time <- Event <- PnEIC <- `seEIC/(sqrt(n)log(n))` <- NULL # for data.table compatibility w/ global var binding check
     EICStopRule <- getEICStopRule(EICStopRule)
@@ -77,7 +77,8 @@ doConCRTmle <- function(DataTable, TargetTime, TargetEvent, Regime, CVFolds, Mod
     Estimates <- InitFn(Data = DataTable, Model = Model, CVFolds = CVFolds,
                         MinNuisance = MinNuisance, TargetEvent = TargetEvent,
                         TargetTime = TargetTime, Regime = Regime,
-                        ReturnModels = ReturnModels, HazEnsemble = HazEnsemble)
+                        ReturnModels = ReturnModels, HazEnsemble = HazEnsemble,
+                        CensoringTV = CensoringTV)
 
     # get initial EIC (possibly with GComp plug-in estimate) ---------------------------------------------
     Estimates <- getEIC(Estimates = Estimates, Data = DataTable, Regime = Regime,

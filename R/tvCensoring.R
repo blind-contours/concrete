@@ -81,3 +81,27 @@ NULL
     inc[, te] <- tryCatch(fitPred(tr, te), error = function(e) inc[, te]) }
   inc
 }
+
+#' Build the lagged censoring-survival matrix with time-varying covariates, in the
+#' core's `LaggedCensSurv` convention (matches `getHazSurvPred()`), for overriding
+#' the IPCW throughout the pipeline. `CensoringTV` is a long data.frame with the
+#' data's id column (`attr(Data, "ID")`), a `time` column, and value columns.
+#' @return a `length(times) x n` matrix of lagged censoring survival.
+#' @keywords internal
+#' @noRd
+.tvCensLaggedSurv <- function(Data, CensoringTV, times,
+                              SL.library = c("SL.mean", "SL.glm"), n.folds = 5L) {
+  idcol <- attr(Data, "ID"); typecol <- attr(Data, "EventType"); timecol <- attr(Data, "EventTime")
+  CensoringTV <- as.data.frame(CensoringTV)
+  if (!idcol %in% names(CensoringTV)) stop("CensoringTV must contain the id column '", idcol, "'.")
+  if (!"time" %in% names(CensoringTV)) stop("CensoringTV must contain a 'time' column.")
+  ids <- Data[[idcol]]
+  obsT <- Data[[timecol]]; censInd <- as.integer(Data[[typecol]] <= 0)
+  covcols <- c(attr(Data, "Treatment"), attr(Data, "CovNames")[["ColName"]])
+  baseCov <- as.data.frame(Data[, .SD, .SDcols = covcols])
+  M <- length(times) - 1L
+  tvMats <- .tvLOCF(ids, CensoringTV, idcol, "time", times[-(M + 1L)])
+  incC <- .tvCensoringInc(times, obsT, censInd, baseCov, tvMats, SL.library, n.folds)
+  hazTV <- rbind(0, incC)                            # node convention: increment over (t_{k-1}, t_k], haz_1 = 0
+  apply(hazTV, 2, function(haz) c(1, utils::head(exp(-cumsum(haz)), -1)))
+}

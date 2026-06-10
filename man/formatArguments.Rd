@@ -30,6 +30,7 @@ formatArguments(
   EICStopAbsTol = 0,
   CrossFit = FALSE,
   HazEnsemble = FALSE,
+  CensoringTV = NULL,
   ...
 )
 
@@ -139,6 +140,23 @@ ensemble (Super Learner) by minimizing the counting-process
 negative log-likelihood of the weighted hazard, instead of
 the default discrete (winner-take-all) selection. The
 treatment propensity already uses an ensemble Super Learner.}
+
+\item{CensoringTV}{optional \code{data.frame} (default NULL) of \strong{time-varying
+covariates for the censoring model}, in long form with the
+id column (the same name passed to \code{ID}), a \code{time} column,
+and one or more value columns (e.g. post-randomization
+echo / KCCQ / 6-minute-walk measured at follow-up visits).
+When supplied, the censoring hazard --- and hence the
+inverse-probability-of-censoring weight used by every
+estimand (survival / cumulative-incidence curves, RMST, win
+ratio) --- is conditioned on the last-observation-carried-
+forward value and change-from-baseline of each. This corrects
+informative-censoring bias when dropout is driven by such
+measurements. These covariates enter \strong{only} the
+censoring model (never the outcome hazards), so the marginal
+/ intent-to-treat estimand is preserved (they are
+post-treatment mediators). An \code{ID} column is required.
+No effect on results when omitted.}
 
 \item{...}{additional arguments to be passed into print methods}
 

@@ -85,6 +85,22 @@
 #'                      negative log-likelihood of the weighted hazard, instead of
 #'                      the default discrete (winner-take-all) selection. The
 #'                      treatment propensity already uses an ensemble Super Learner.
+#' @param CensoringTV optional `data.frame` (default NULL) of \strong{time-varying
+#'                      covariates for the censoring model}, in long form with the
+#'                      id column (the same name passed to `ID`), a `time` column,
+#'                      and one or more value columns (e.g. post-randomization
+#'                      echo / KCCQ / 6-minute-walk measured at follow-up visits).
+#'                      When supplied, the censoring hazard --- and hence the
+#'                      inverse-probability-of-censoring weight used by every
+#'                      estimand (survival / cumulative-incidence curves, RMST, win
+#'                      ratio) --- is conditioned on the last-observation-carried-
+#'                      forward value and change-from-baseline of each. This corrects
+#'                      informative-censoring bias when dropout is driven by such
+#'                      measurements. These covariates enter \strong{only} the
+#'                      censoring model (never the outcome hazards), so the marginal
+#'                      / intent-to-treat estimand is preserved (they are
+#'                      post-treatment mediators). An `ID` column is required.
+#'                      No effect on results when omitted.
 #' @param ... ...
 #'
 #' @return a list of class "ConcreteArgs"
@@ -209,6 +225,7 @@ formatArguments <- function(DataTable,
                             EICStopAbsTol = 0,
                             CrossFit = FALSE,
                             HazEnsemble = FALSE,
+                            CensoringTV = NULL,
                             ...)
 {
   ## Data Structure - incorporate prodlim::EventHistory.frame?
@@ -226,7 +243,8 @@ formatArguments <- function(DataTable,
                                      EICStopRule = EICStopRule,
                                      EICStopAbsTol = EICStopAbsTol,
                                      CrossFit = CrossFit,
-                                     HazEnsemble = HazEnsemble)
+                                     HazEnsemble = HazEnsemble,
+                                     CensoringTV = CensoringTV)
   }
 
   with(ConcreteArgs, {
@@ -294,7 +312,7 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
                              MaxUpdateIter, OneStepEps, MinNuisance,
                              Verbose, GComp, ReturnModels, ID, RenameCovs, UpdateMethod,
                              EICStopRule, EICStopAbsTol, CrossFit = FALSE,
-                             HazEnsemble = FALSE) {
+                             HazEnsemble = FALSE, CensoringTV = NULL) {
   ConcreteArgs <- new.env()
   with(ConcreteArgs, {
     DataTable <- DataTable
@@ -319,6 +337,7 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
     EICStopAbsTol <- EICStopAbsTol
     CrossFit <- CrossFit
     HazEnsemble <- HazEnsemble
+    CensoringTV <- CensoringTV
   })
   class(ConcreteArgs) <- union("ConcreteArgs", class(ConcreteArgs))
   return(ConcreteArgs)
