@@ -11,7 +11,7 @@
 #' @keywords internal
 
 getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, TargetTime,
-                               Regime, ReturnModels, HazEnsemble = FALSE) {
+                               Regime, ReturnModels, HazEnsemble = FALSE, CensoringTV = NULL) {
     Time <- NULL
     TimeVal <- Data[[attr(Data, "EventTime")]]
     Censored <- any(Data[[attr(Data, "EventType")]] <= 0)
@@ -38,6 +38,15 @@ getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, T
     HazSurvPreds <- getHazSurvPred(Data = Data, HazFits = HazFits, MinNuisance = MinNuisance,
                                    TargetEvent = TargetEvent, TargetTime = TargetTime,
                                    Regime = Regime)
+    ## time-varying censoring covariates: override the lagged censoring survival
+    ## (the only object the censoring hazard feeds) so the corrected IPCW flows to
+    ## every downstream estimand. Outcome hazards are untouched.
+    if (Censored && !is.null(CensoringTV)) {
+        message("\nRe-estimating censoring with time-varying covariates:\n")
+        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time)
+        for (a in seq_along(HazSurvPreds))
+            HazSurvPreds[[a]][["Survival"]][["LaggedCensSurv"]] <- LagTV
+    }
     InitialEstimates <- lapply(seq_along(PropScores), function(a) {
         if (Censored) {
             NuisanceDenom <- sapply(seq_along(PropScores[[a]]), function(i) {
