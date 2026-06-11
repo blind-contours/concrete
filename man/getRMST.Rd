@@ -40,6 +40,9 @@ difference) and \code{"upper"} when a smaller value is better.}
 \value{
 a \code{data.table} of class \code{"ConcreteOut"} with point estimates,
 influence-function standard errors, confidence intervals, and p-values.
+If the fit was built with \code{Strata} (see \code{\link[=formatArguments]{formatArguments()}}), the standard
+errors are corrected for the stratified / covariate-adaptive randomization
+design.
 }
 \description{
 \code{getRMST()} turns a fitted \code{"ConcreteEst"} object into restricted mean

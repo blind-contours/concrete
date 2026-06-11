@@ -30,7 +30,9 @@ p-values. Win ratio and win odds are inferred on the log scale.}
 \value{
 a \code{data.table} of class \code{"ConcreteOut"} with the win ratio, win odds,
 net benefit, and the win/loss/tie probabilities, each with a CI and (for the
-comparative statistics) a p-value against the null of no difference.
+comparative statistics) a p-value against the null of no difference. If the
+fit was built with \code{Strata} (see \code{\link[=formatArguments]{formatArguments()}}), the standard errors
+are corrected for the stratified / covariate-adaptive randomization design.
 }
 \description{
 \code{getWinRatio()} estimates the \strong{restricted win ratio} and its relatives (win

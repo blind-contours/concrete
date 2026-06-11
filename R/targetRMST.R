@@ -44,7 +44,9 @@
 #'
 #' @return a `data.table` of class `"ConcreteOut"` with the directly-targeted
 #'   RMST / life-years-lost estimates. The per-arm convergence status is stored
-#'   in `attr(., "RMSTConverged")`.
+#'   in `attr(., "RMSTConverged")`. If the fit was built with `Strata` (see
+#'   [formatArguments()]), the standard errors are corrected for the stratified
+#'   / covariate-adaptive randomization design.
 #'
 #' @seealso [getRMST()] for the integrate-pointwise-risks version.
 #' @export targetRMST

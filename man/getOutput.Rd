@@ -52,7 +52,9 @@ usual risk-difference case) and \code{"lower"} when larger is better.}
 }
 \value{
 data.table of point estimates and standard deviations. Comparative
-estimands carry a two-sided Wald \code{pValue}.
+estimands carry a two-sided Wald \code{pValue}. If the fit was built with
+\code{Strata} (see \code{\link[=formatArguments]{formatArguments()}}), all standard errors are corrected for
+the stratified / covariate-adaptive randomization design.
 }
 \description{
 getOutput

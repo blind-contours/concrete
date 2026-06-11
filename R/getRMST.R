@@ -35,6 +35,9 @@
 #'
 #' @return a `data.table` of class `"ConcreteOut"` with point estimates,
 #'   influence-function standard errors, confidence intervals, and p-values.
+#'   If the fit was built with `Strata` (see [formatArguments()]), the standard
+#'   errors are corrected for the stratified / covariate-adaptive randomization
+#'   design.
 #'
 #' @seealso [targetRMST()] for the directly-targeted version that fluctuates the
 #'   hazards for the RMST estimating equation instead of integrating

@@ -53,7 +53,9 @@ rescaled fraction-of-horizon scale.}
 \value{
 a \code{data.table} of class \code{"ConcreteOut"} with the directly-targeted
 RMST / life-years-lost estimates. The per-arm convergence status is stored
-in \code{attr(., "RMSTConverged")}.
+in \code{attr(., "RMSTConverged")}. If the fit was built with \code{Strata} (see
+\code{\link[=formatArguments]{formatArguments()}}), the standard errors are corrected for the stratified
+/ covariate-adaptive randomization design.
 }
 \description{
 \code{targetRMST()} runs an additional one-step TMLE update that targets the

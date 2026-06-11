@@ -17,7 +17,9 @@
 #'          usual risk-difference case) and `"lower"` when larger is better.
 #'
 #' @return data.table of point estimates and standard deviations. Comparative
-#'   estimands carry a two-sided Wald `pValue`.
+#'   estimands carry a two-sided Wald `pValue`. If the fit was built with
+#'   `Strata` (see [formatArguments()]), all standard errors are corrected for
+#'   the stratified / covariate-adaptive randomization design.
 #' @export getOutput
 #'
 #' @examples
