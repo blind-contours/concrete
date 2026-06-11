@@ -13,9 +13,12 @@
   coefficients depend on both arms' current curves they are recomputed at every
   fluctuation step and the arms are updated jointly. Reports the win ratio, win
   odds, net benefit, and win/loss/tie probabilities with influence-function
-  (and, with `Strata`, design-corrected) inference. On dense target grids it
-  agrees closely with the plug-in; the gains are on sparse grids and for the
-  win odds / net benefit. Derivation: `notes/target-win-ratio.md`.
+  (and, with `Strata`, design-corrected) inference. Validated against
+  brute-force pairwise ground truth (120 reps/cell, n = 500/arm): on a sparse
+  2-time grid the plug-in win-ratio bias/coverage was +0.078 / 0.933 vs the
+  direct method's +0.015 / 0.958; on a dense grid +0.042 / 0.967 vs
+  +0.009 / 0.975, converging in 100% of replicates
+  (`scripts/dev-targetwr-validation.R`). Derivation: `notes/target-win-ratio.md`.
 
 ## Variance correction for stratified / covariate-adaptive randomization
 
