@@ -307,10 +307,32 @@ are:
   [`applyIntercurrentEvent()`](https://blind-contours.github.io/concrete/reference/makeEstimand.md)
   encodes treatment-policy, hypothetical (via censoring/IPCW), and
   composite strategies for competing or intercurrent events.
+- **Treatment switching (crossover): ITT vs per-protocol.** Pass
+  `Crossover` (a column of per-subject switch times) to move from the
+  intent-to-treat estimand to the hypothetical “no-switching” estimand:
+  switchers are re-censored at their switch time and a *separate
+  crossover hazard* is multiplied into the IPCW,
+  `1 / (S_dropout * S_crossover)`, removing the selection bias of naive
+  per-protocol censoring.
+- **Time-varying covariates in the censoring model.** Pass `CensoringTV`
+  (long-form post-randomization measurements — echo, KCCQ, six-minute
+  walk) to condition the censoring (and, by default, crossover) hazard
+  on the follow-up history, correcting informative dropout. These enter
+  only the censoring/crossover hazards — never the outcome model — and
+  the correction flows through every IPCW-based estimand (survival,
+  cumulative incidence, RMST, win ratio).
 - **Censoring sensitivity (tipping point).**
   [`senseCensoring()`](https://blind-contours.github.io/concrete/reference/senseCensoring.md)
   runs a delta-shift sensitivity analysis on the independent-censoring
-  (MAR) assumption and reports where conclusions would change.
+  (MAR) assumption and reports where conclusions would change. With a
+  crossover model it can tip dropout and switching separately or jointly
+  (`mechanism = "dropout" / "crossover" / "all"`), so each
+  intercurrent-event assumption gets its own tipping point.
+- **Positivity diagnostics.**
+  [`getPositivityDx()`](https://blind-contours.github.io/concrete/reference/getPositivityDx.md)
+  reports per-arm effective sample size, maximum weight, and truncation
+  share, flagging when an IPCW estimand (especially the hypothetical
+  no-switching one) rests on heavy extrapolation.
 - **Adjustment efficiency.**
   [`getRelativeEfficiency()`](https://blind-contours.github.io/concrete/reference/getRelativeEfficiency.md)
   reports the variance ratio of the covariate-adjusted estimator versus
@@ -338,6 +360,20 @@ getRelativeEfficiency(
 # Sensitivity to the independent-censoring assumption: impute an increasing
 # fraction (delta) of censored subjects as events and see if conclusions hold
 senseCensoring(ConcreteArgs, deltas = c(0, 0.05, 0.1, 0.15, 0.2), Estimand = "RD")
+
+# Treatment switching: intent-to-treat vs the hypothetical "no-switching" estimand.
+# `switch_time` is a column of per-subject crossover times (NA if never switched);
+# the crossover hazard inherits the censoring covariates (incl. CensoringTV).
+pp_args <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetTime = c(365, 730), TargetEvent = 1,
+  Crossover = "switch_time"           # add CensoringTV = tv for informative dropout
+)
+pp_est <- doConcrete(pp_args)
+getOutput(pp_est, Estimand = "RD", TargetTime = 730)  # hypothetical no-switching
+
+# Always check positivity / effective sample size for an IPCW estimand:
+getPositivityDx(pp_est)
 ```
 
 ## Advanced TMLE controls

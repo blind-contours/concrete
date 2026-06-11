@@ -32,6 +32,7 @@ formatArguments(
   CrossFit = FALSE,
   HazEnsemble = FALSE,
   CensoringTV = NULL,
+  Crossover = NULL,
   ...
 )
 
@@ -216,8 +217,31 @@ print(x, ...)
   when dropout is driven by such measurements. These covariates enter
   **only** the censoring model (never the outcome hazards), so the
   marginal / intent-to-treat estimand is preserved (they are
-  post-treatment mediators). An `ID` column is required. No effect on
-  results when omitted.
+  post-treatment mediators). An `ID` column is required. The crossover
+  hazard (see `Crossover`) inherits these same covariates by default. No
+  effect on results when omitted.
+
+- Crossover:
+
+  optional character (default NULL): the column name of a per-subject
+  **treatment-switching (crossover) time** (`NA`/`Inf` for participants
+  who never switch). Supplying it moves the analysis from the
+  intent-to-treat (treatment-policy) estimand to the hypothetical
+  “no-switching” (per-protocol-type) estimand: each switcher's outcome
+  is re-censored at their switch time, and a **separate crossover
+  hazard** is fit and multiplied into the
+  inverse-probability-of-censoring weight alongside the dropout hazard,
+  so the IPCW becomes `1 / (S_dropout * S_crossover)`. The crossover
+  hazard uses the same baseline covariates as the censoring model and,
+  when `CensoringTV` is supplied, the same time-varying covariates. This
+  targets the cumulative incidence that would have been observed had no
+  one switched, under the assumption that switching acts as
+  conditionally independent censoring given those covariates (pair it
+  with
+  [`getPositivityDx()`](https://blind-contours.github.io/concrete/reference/getPositivityDx.md)
+  and
+  [`senseCensoring()`](https://blind-contours.github.io/concrete/reference/senseCensoring.md)).
+  No effect on results when omitted.
 
 - ...:
 

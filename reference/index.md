@@ -39,6 +39,8 @@
   strategy
 - [`senseCensoring()`](https://blind-contours.github.io/concrete/reference/senseCensoring.md)
   : Tipping-point sensitivity analysis for informative censoring
+- [`getPositivityDx()`](https://blind-contours.github.io/concrete/reference/getPositivityDx.md)
+  : Positivity / inverse-weight diagnostics for a fitted estimate
 
 ## Package overview
 

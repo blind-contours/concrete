@@ -166,6 +166,89 @@ interest, defining a composite endpoint.</li>
 supported: the former is a different (descriptive) estimand that an IPCW
 estimator does not target, and the latter needs latent stratification
 beyond the current scope.</p>
+<div class="section level3">
+<h3 id="treatment-switching-crossover-itt-vs-per-protocol">Treatment switching (crossover): ITT vs per-protocol<a class="anchor" aria-label="anchor" href="#treatment-switching-crossover-itt-vs-per-protocol"></a>
+</h3>
+<p>Treatment switching is the intercurrent event of device and oncology
+trials: control participants cross over to the active arm (or vice
+versa) at a time that is <em>not</em> fixed in advance, so it cannot be
+coded as a single event type. Two estimands answer two different
+questions:</p>
+<ul>
+<li>
+<strong>Intent-to-treat (treatment policy).</strong> Analyze as
+randomized; switching is part of the strategy being estimated. This is
+the default — do nothing special.</li>
+<li>
+<strong>Hypothetical (per-protocol-type).</strong> Estimate the
+cumulative incidence that <em>would</em> have been seen had no one
+switched. <code>concrete</code> targets this when you pass a column of
+per-subject switch times to <code>Crossover</code>. Each switcher’s
+outcome is re-censored at their switch time, and a <strong>separate
+crossover hazard</strong> is fit and multiplied into the
+inverse-probability-of-censoring weight alongside the ordinary dropout
+hazard, so the weight denominator becomes
+<code>S_dropout(t) * S_crossover(t)</code>. This removes the selection
+bias that naive per-protocol censoring would introduce, because the
+crossover hazard reweights the participants who <em>would</em> have
+switched back into the at-risk set.</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># `switch_time` holds each participant's crossover time (NA / Inf if they never</span></span>
+<span><span class="co"># switched). The crossover hazard inherits the censoring model's covariates.</span></span>
+<span><span class="va">args_pp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
+<span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
+<span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="../reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>, TargetTime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">365</span>, <span class="fl">730</span><span class="op">)</span>, TargetEvent <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  Crossover <span class="op">=</span> <span class="st">"switch_time"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">est_pp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">args_pp</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Report ITT and the hypothetical no-switching estimand side by side:</span></span>
+<span><span class="fu"><a href="../reference/getOutput.html">getOutput</a></span><span class="op">(</span><span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">args_itt</span><span class="op">)</span>, Estimand <span class="op">=</span> <span class="st">"RD"</span>, TargetTime <span class="op">=</span> <span class="fl">730</span><span class="op">)</span>  <span class="co"># treatment policy</span></span>
+<span><span class="fu"><a href="../reference/getOutput.html">getOutput</a></span><span class="op">(</span><span class="va">est_pp</span>,               Estimand <span class="op">=</span> <span class="st">"RD"</span>, TargetTime <span class="op">=</span> <span class="fl">730</span><span class="op">)</span>  <span class="co"># no-switching</span></span></code></pre></div>
+<p>The no-switching estimand rests on the assumption that switching acts
+as conditionally independent censoring given the covariates — the same
+MAR-type assumption as ordinary censoring. Because it multiplies two
+weights, the effective sample size can shrink in heavy-crossover trials;
+check it with <code><a href="../reference/getPositivityDx.html">getPositivityDx()</a></code> (Section 8) and probe the
+assumption with the tipping-point analysis (Section 6).</p>
+</div>
+<div class="section level3">
+<h3 id="time-varying-covariates-in-the-censoring-and-crossover-model">Time-varying covariates in the censoring (and crossover) model<a class="anchor" aria-label="anchor" href="#time-varying-covariates-in-the-censoring-and-crossover-model"></a>
+</h3>
+<p>When dropout — or the decision to switch — is driven by
+<em>post-randomization</em> measurements (echocardiography, KCCQ,
+six-minute walk distance recorded at follow-up visits), conditioning the
+censoring hazard on baseline covariates alone leaves it informative,
+biasing the IPCW. Pass those measurements as <code>CensoringTV</code>, a
+long <code>data.frame</code> with the <code>ID</code> column, a
+<code>time</code> column, and one value column per measurement.
+<code>concrete</code> conditions the censoring hazard — and, when
+<code>Crossover</code> is supplied, the crossover hazard, which inherits
+these covariates by default — on the last-observation-carried-forward
+value and the change from baseline of each, restoring conditional
+independence (CAR).</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Long-form post-randomization measurements: one row per (id, visit), with the</span></span>
+<span><span class="co"># ID column, a `time` column, and one column per measurement.</span></span>
+<span><span class="va">tv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="va">visits</span><span class="op">$</span><span class="va">id</span>, time <span class="op">=</span> <span class="va">visits</span><span class="op">$</span><span class="va">visit_day</span>,</span>
+<span>                 kccq <span class="op">=</span> <span class="va">visits</span><span class="op">$</span><span class="va">kccq</span>, six_min_walk <span class="op">=</span> <span class="va">visits</span><span class="op">$</span><span class="va">six_min_walk</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">args_tv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
+<span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
+<span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="../reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>, TargetTime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">365</span>, <span class="fl">730</span><span class="op">)</span>, TargetEvent <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  CensoringTV <span class="op">=</span> <span class="va">tv</span>,            <span class="co"># used ONLY in the censoring / crossover hazards</span></span>
+<span>  Crossover   <span class="op">=</span> <span class="st">"switch_time"</span>  <span class="co"># optional; inherits the same covariates</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">est_tv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">args_tv</span><span class="op">)</span></span></code></pre></div>
+<p>These covariates enter <strong>only</strong> the censoring and
+crossover hazards, never the outcome hazards: they are post-treatment
+mediators, so keeping them out of the outcome model preserves the
+marginal / intent-to-treat target while still correcting informative
+dropout. The correction flows through every estimand that uses the IPCW
+— survival and cumulative-incidence curves, RMST, and the win ratio —
+not just one of them.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="cross-fitting-cv-tmle-for-machine-learning-nuisances">3. Cross-fitting (CV-TMLE) for machine-learning nuisances<a class="anchor" aria-label="anchor" href="#cross-fitting-cv-tmle-for-machine-learning-nuisances"></a>
@@ -175,7 +258,7 @@ machine-learning fits, the plug-in carries an empirical-process
 (overfitting) term that can invalidate influence-function inference.
 Cross-fitting removes it by predicting each subject’s nuisances from
 folds that did not include them. Turn it on with a single argument:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">args_cf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
 <span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
 <span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="../reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>, TargetTime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">365</span>, <span class="fl">730</span><span class="op">)</span>, TargetEvent <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -197,7 +280,7 @@ cross-validation <em>selects</em> the single best hazard learner.
 <em>combination</em> of the library, with weights chosen to minimize the
 cross-validated counting-process loss. This is more robust when no
 single learner dominates across the time axis.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">args_ens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
 <span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
 <span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="../reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>, TargetTime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">365</span>, <span class="fl">730</span><span class="op">)</span>, TargetEvent <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -221,7 +304,7 @@ influence-function confidence interval. Because it is built from the
 targeted curves rather than from raw pairwise comparisons, it inherits
 <code>concrete</code>’s covariate adjustment and censoring handling. Use
 a reasonably dense <code>TargetTime</code> grid up to the horizon.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">args_wr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
 <span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
 <span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="../reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -242,7 +325,7 @@ death first and breaks ties on hospitalization (the Pocock /
 Finkelstein–Schoenfeld rule). The events must have been targeted in
 <code><a href="../reference/doConcrete.html">doConcrete()</a></code>, and the comparison uses each patient’s first
 event (the competing- risks structure <code>concrete</code> models).</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">args_h</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
 <span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
 <span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="../reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -262,7 +345,7 @@ had the event of interest, re-fits the estimator at each
 <code>delta</code>, and reports the <strong>tipping point</strong> — the
 smallest fraction at which a significant conclusion would be
 overturned.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/senseCensoring.html">senseCensoring</a></span><span class="op">(</span></span>
 <span>  <span class="va">args_wr</span>,</span>
 <span>  deltas <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.05</span>, <span class="fl">0.10</span>, <span class="fl">0.15</span>, <span class="fl">0.20</span><span class="op">)</span>,</span>
@@ -273,6 +356,25 @@ overturned.</p>
 <p>A conclusion that survives a large <code>delta</code> is robust to
 departures from independent censoring; one that tips at a small
 <code>delta</code> should be reported with caution.</p>
+<p>When the fit carries a crossover model (Section 2), the censored
+subjects pool two intercurrent events with two <em>different</em>
+untestable assumptions — ordinary dropout (MAR censoring) and switching
+(the no-switching counterfactual). The <code>mechanism</code> argument
+lets you tip each pool individually or jointly, so each assumption gets
+its own tipping point:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sc_drop</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/senseCensoring.html">senseCensoring</a></span><span class="op">(</span><span class="va">args_pp</span>, deltas <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.1</span>, <span class="fl">0.2</span><span class="op">)</span>,</span>
+<span>                           Estimand <span class="op">=</span> <span class="st">"RD"</span>, mechanism <span class="op">=</span> <span class="st">"dropout"</span><span class="op">)</span>    <span class="co"># MAR only</span></span>
+<span><span class="va">sc_xover</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/senseCensoring.html">senseCensoring</a></span><span class="op">(</span><span class="va">args_pp</span>, deltas <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.1</span>, <span class="fl">0.2</span><span class="op">)</span>,</span>
+<span>                           Estimand <span class="op">=</span> <span class="st">"RD"</span>, mechanism <span class="op">=</span> <span class="st">"crossover"</span><span class="op">)</span>  <span class="co"># no-switching only</span></span>
+<span><span class="va">sc_both</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/senseCensoring.html">senseCensoring</a></span><span class="op">(</span><span class="va">args_pp</span>, deltas <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.1</span>, <span class="fl">0.2</span><span class="op">)</span>,</span>
+<span>                           Estimand <span class="op">=</span> <span class="st">"RD"</span>, mechanism <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span>        <span class="co"># jointly (default)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">sc_drop</span>, <span class="va">sc_xover</span>, <span class="va">sc_both</span><span class="op">)</span>   <span class="co"># leading `mechanism` column distinguishes them</span></span></code></pre></div>
+<p>For a per-protocol (no-switching) analysis,
+<code>mechanism = "crossover"</code> answers the reviewer’s question
+directly: <em>how sensitive is the conclusion to the assumption that
+switchers would not have had the event had they stayed on their assigned
+arm?</em></p>
 </div>
 <div class="section level2">
 <h2 id="how-much-did-covariate-adjustment-buy-you">7. How much did covariate adjustment buy you?<a class="anchor" aria-label="anchor" href="#how-much-did-covariate-adjustment-buy-you"></a>
@@ -282,7 +384,7 @@ trial, but it can tighten the confidence intervals. Fit an unadjusted
 (treatment-only) version and compare with
 <code><a href="../reference/getRelativeEfficiency.html">getRelativeEfficiency()</a></code>, which reports the variance
 ratio.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">unadj_args</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
 <span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
 <span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="../reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>, TargetTime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">365</span>, <span class="fl">730</span><span class="op">)</span>, TargetEvent <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -302,15 +404,41 @@ value of 1.25 says the adjusted analysis has the precision of an
 unadjusted analysis on 25% more participants.</p>
 </div>
 <div class="section level2">
+<h2 id="positivity-and-effective-sample-size">8. Positivity and effective sample size<a class="anchor" aria-label="anchor" href="#positivity-and-effective-sample-size"></a>
+</h2>
+<p>Every IPCW-based estimand depends on participants having a
+non-trivial probability of remaining uncensored (and, under the
+hypothetical no-switching estimand, un-switched) through the target
+time. When that probability is small for some participants, their
+inverse weights blow up, the effective sample size (ESS) drops, and the
+variance inflates — the price of the hypothetical estimand.
+<code><a href="../reference/getPositivityDx.html">getPositivityDx()</a></code> reports these diagnostics per arm
+alongside the estimates so the trialist can see when an extrapolation is
+fragile.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/getPositivityDx.html">getPositivityDx</a></span><span class="op">(</span><span class="va">est_pp</span><span class="op">)</span></span>
+<span><span class="co">#&gt; per-arm ESS (overall and worst-time), max weight, minimum observation</span></span>
+<span><span class="co">#&gt; probability, and the % of weights pinned at the truncation bound, with a</span></span>
+<span><span class="co">#&gt; CAUTION flag when ESS is low or truncation is heavy.</span></span></code></pre></div>
+<p>A low ESS or a large fraction of truncated weights is the signal that
+a heavy-crossover (or heavy-dropout) trial cannot support the
+no-switching estimand without strong extrapolation; report it, and lean
+on the tipping-point analysis (Section 6) to bound the conclusion.</p>
+</div>
+<div class="section level2">
 <h2 id="putting-it-together-an-analysis-plan-checklist">Putting it together: an analysis-plan checklist<a class="anchor" aria-label="anchor" href="#putting-it-together-an-analysis-plan-checklist"></a>
 </h2>
 <p>A reproducible, E9(R1)-aware analysis with <code>concrete</code>
 typically records:</p>
 <ol style="list-style-type: decimal">
 <li>The estimand, via <code><a href="../reference/makeEstimand.html">makeEstimand()</a></code>, including the
-intercurrent-event strategy.</li>
+intercurrent-event strategy — and, for treatment switching, whether it
+is intent-to-treat or the hypothetical no-switching estimand
+(<code>Crossover</code>).</li>
 <li>The data handling for that strategy, via
-<code><a href="../reference/makeEstimand.html">applyIntercurrentEvent()</a></code>.</li>
+<code><a href="../reference/makeEstimand.html">applyIntercurrentEvent()</a></code> for event-coded ICEs, or
+<code>Crossover</code> / <code>CensoringTV</code> for switching and
+informative dropout driven by post-randomization measurements.</li>
 <li>A cross-fitted (<code>CrossFit = TRUE</code>), optionally ensemble
 (<code>HazEnsemble = TRUE</code>) fit, so machine-learning nuisances
 keep honest inference.</li>
@@ -319,7 +447,8 @@ keep honest inference.</li>
 (<code><a href="../reference/getRMST.html">getRMST()</a></code> / <code><a href="../reference/targetRMST.html">targetRMST()</a></code>), or win ratio
 (<code><a href="../reference/getWinRatio.html">getWinRatio()</a></code>).</li>
 <li>Pre-specified sensitivity analyses — <code><a href="../reference/senseCensoring.html">senseCensoring()</a></code>
-for the independent-censoring assumption.</li>
+for the independent-censoring assumption — and positivity diagnostics
+via <code><a href="../reference/getPositivityDx.html">getPositivityDx()</a></code>.</li>
 <li>The precision gain from adjustment, via
 <code><a href="../reference/getRelativeEfficiency.html">getRelativeEfficiency()</a></code>.</li>
 </ol>

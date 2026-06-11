@@ -13,7 +13,21 @@ Unlike scaling the censoring weight (which leaves a doubly-robust estimator's
 target unchanged), imputing the event status of the censored changes the
 estimand and so produces a genuine, interpretable sensitivity curve. Because
 it re-fits the estimator for every delta, it is computationally heavier than
-the primary analysis."><meta property="og:description" content="concrete's primary analysis assumes censoring is independent of the event
+the primary analysis.
+When the fit carries a treatment-switching (crossover) model (i.e.
+formatArguments() was called with Crossover), the censored subjects are a
+mix of two intercurrent events with two different untestable assumptions:
+ordinary dropout (conditionally-independent censoring) and crossover
+(the no-switching counterfactual). mechanism selects which pool is imputed,
+so the two assumptions can be probed individually or jointly:
+&quot;dropout&quot; – tip only the genuinely-censored (drop-out) subjects,
+holding the switching handled by the crossover hazard;
+&quot;crossover&quot; – tip only the subjects re-censored at their switch
+time, i.e. probe &amp;#8220;what if switchers would have had the event had
+they not switched&amp;#8221;, holding dropout handled by the censoring weight;
+&quot;all&quot; (default) – tip both pools jointly (the original behaviour).
+With no crossover model, all censored subjects are dropout and the three modes
+coincide."><meta property="og:description" content="concrete's primary analysis assumes censoring is independent of the event
 given the measured covariates. senseCensoring() probes robustness to
 departures from that assumption with a transparent tipping-point (bounds)
 analysis: a fraction delta of the subjects who are censored before the
@@ -27,7 +41,21 @@ Unlike scaling the censoring weight (which leaves a doubly-robust estimator's
 target unchanged), imputing the event status of the censored changes the
 estimand and so produces a genuine, interpretable sensitivity curve. Because
 it re-fits the estimator for every delta, it is computationally heavier than
-the primary analysis."><meta property="og:image" content="https://blind-contours.github.io/concrete/logo.png"></head><body>
+the primary analysis.
+When the fit carries a treatment-switching (crossover) model (i.e.
+formatArguments() was called with Crossover), the censored subjects are a
+mix of two intercurrent events with two different untestable assumptions:
+ordinary dropout (conditionally-independent censoring) and crossover
+(the no-switching counterfactual). mechanism selects which pool is imputed,
+so the two assumptions can be probed individually or jointly:
+&quot;dropout&quot; – tip only the genuinely-censored (drop-out) subjects,
+holding the switching handled by the crossover hazard;
+&quot;crossover&quot; – tip only the subjects re-censored at their switch
+time, i.e. probe &amp;#8220;what if switchers would have had the event had
+they not switched&amp;#8221;, holding dropout handled by the censoring weight;
+&quot;all&quot; (default) – tip both pools jointly (the original behaviour).
+With no crossover model, all censored subjects are dropout and the three modes
+coincide."><meta property="og:image" content="https://blind-contours.github.io/concrete/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -92,6 +120,19 @@ target unchanged), imputing the event status of the censored changes the
 estimand and so produces a genuine, interpretable sensitivity curve. Because
 it re-fits the estimator for every <code>delta</code>, it is computationally heavier than
 the primary analysis.</p>
+<p>When the fit carries a treatment-switching (crossover) model (i.e.
+<code><a href="formatArguments.html">formatArguments()</a></code> was called with <code>Crossover</code>), the censored subjects are a
+mix of two intercurrent events with two <em>different</em> untestable assumptions:
+ordinary <strong>dropout</strong> (conditionally-independent censoring) and <strong>crossover</strong>
+(the no-switching counterfactual). <code>mechanism</code> selects which pool is imputed,
+so the two assumptions can be probed individually or jointly:</p><ul><li><p><code>"dropout"</code> – tip only the genuinely-censored (drop-out) subjects,
+holding the switching handled by the crossover hazard;</p></li>
+<li><p><code>"crossover"</code> – tip only the subjects re-censored at their switch
+time, i.e. probe “what if switchers would have had the event had
+they not switched”, holding dropout handled by the censoring weight;</p></li>
+<li><p><code>"all"</code> (default) – tip both pools jointly (the original behaviour).</p></li>
+</ul><p>With no crossover model, all censored subjects are dropout and the three modes
+coincide.</p>
     </div>
 
     <div class="section level2">
@@ -101,6 +142,7 @@ the primary analysis.</p>
 <span>  deltas <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.25</span><span class="op">)</span>,</span>
 <span>  Estimand <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"RD"</span>, <span class="st">"RR"</span>, <span class="st">"Risk"</span><span class="op">)</span>,</span>
 <span>  Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  mechanism <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"all"</span>, <span class="st">"dropout"</span>, <span class="st">"crossover"</span><span class="op">)</span>,</span>
 <span>  Signif <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  Verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -127,6 +169,12 @@ subjects imputed as having the event of interest. Should include 0.</p></dd>
 <dd><p>length-2 numeric: treatment and control indices.</p></dd>
 
 
+<dt id="arg-mechanism">mechanism<a class="anchor" aria-label="anchor" href="#arg-mechanism"></a></dt>
+<dd><p>one of <code>"all"</code> (default), <code>"dropout"</code>, <code>"crossover"</code>: which
+pool of censored subjects to impute (see Details). <code>"crossover"</code> requires a
+fit built with <code>Crossover</code>.</p></dd>
+
+
 <dt id="arg-signif">Signif<a class="anchor" aria-label="anchor" href="#arg-signif"></a></dt>
 <dd><p>numeric (default 0.05): two-sided alpha.</p></dd>
 
@@ -138,7 +186,8 @@ subjects imputed as having the event of interest. Should include 0.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>a <code>data.table</code> of estimate / CI / p-value by <code>delta</code> x event x time,
-with the tipping point in <code>attr(., "tippingPoint")</code>.</p>
+with a leading <code>mechanism</code> column, the tipping point in
+<code>attr(., "tippingPoint")</code>, and the mechanism in <code>attr(., "mechanism")</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

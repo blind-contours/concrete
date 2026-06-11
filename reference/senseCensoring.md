@@ -18,6 +18,27 @@ changes the estimand and so produces a genuine, interpretable
 sensitivity curve. Because it re-fits the estimator for every `delta`,
 it is computationally heavier than the primary analysis.
 
+When the fit carries a treatment-switching (crossover) model (i.e.
+[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)
+was called with `Crossover`), the censored subjects are a mix of two
+intercurrent events with two *different* untestable assumptions:
+ordinary **dropout** (conditionally-independent censoring) and
+**crossover** (the no-switching counterfactual). `mechanism` selects
+which pool is imputed, so the two assumptions can be probed individually
+or jointly:
+
+- `"dropout"` – tip only the genuinely-censored (drop-out) subjects,
+  holding the switching handled by the crossover hazard;
+
+- `"crossover"` – tip only the subjects re-censored at their switch
+  time, i.e. probe “what if switchers would have had the event had they
+  not switched”, holding dropout handled by the censoring weight;
+
+- `"all"` (default) – tip both pools jointly (the original behaviour).
+
+With no crossover model, all censored subjects are dropout and the three
+modes coincide.
+
 ## Usage
 
 ``` r
@@ -26,6 +47,7 @@ senseCensoring(
   deltas = seq(0, 1, by = 0.25),
   Estimand = c("RD", "RR", "Risk"),
   Intervention = c(1, 2),
+  mechanism = c("all", "dropout", "crossover"),
   Signif = 0.05,
   Verbose = FALSE
 )
@@ -51,6 +73,12 @@ senseCensoring(
 
   length-2 numeric: treatment and control indices.
 
+- mechanism:
+
+  one of `"all"` (default), `"dropout"`, `"crossover"`: which pool of
+  censored subjects to impute (see Details). `"crossover"` requires a
+  fit built with `Crossover`.
+
 - Signif:
 
   numeric (default 0.05): two-sided alpha.
@@ -62,4 +90,5 @@ senseCensoring(
 ## Value
 
 a `data.table` of estimate / CI / p-value by `delta` x event x time,
-with the tipping point in `attr(., "tippingPoint")`.
+with a leading `mechanism` column, the tipping point in
+`attr(., "tippingPoint")`, and the mechanism in `attr(., "mechanism")`.
