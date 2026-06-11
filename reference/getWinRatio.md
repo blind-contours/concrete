@@ -99,6 +99,10 @@ getWinRatio(
 a `data.table` of class `"ConcreteOut"` with the win ratio, win odds,
 net benefit, and the win/loss/tie probabilities, each with a CI and (for
 the comparative statistics) a p-value against the null of no difference.
+If the fit was built with `Strata` (see
+[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)),
+the standard errors are corrected for the stratified /
+covariate-adaptive randomization design.
 
 ## See also
 

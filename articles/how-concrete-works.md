@@ -163,6 +163,22 @@ one target time, `getOutput(Simultaneous = TRUE)` adds simultaneous
 confidence bands using a multiplier-bootstrap maximum over the
 correlated component influence functions.
 
+The iid influence-function variance assumes simple randomization. When
+the trial randomized within strata using a strong-balance scheme
+(permuted blocks, stratified biased coin), that variance is
+conservative: the design removes the between-arm-within-stratum
+component $`\pi(1-\pi)\sum_s p_s \Delta(s)^2`$, where $`\Delta(s)`$ is
+the between-arm difference of within-stratum means of the influence
+function. Passing the stratum columns as `Strata` to
+[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)
+subtracts exactly that component (computed in a nonnegative
+residual-plus-between-stratum form) from the variance of every reported
+estimand — risks, RD/RR, RMST, and the win ratio. When the working
+models adjust for the stratification variables, $`\Delta(s) \approx 0`$
+and the correction vanishes; see the [regulatory
+toolkit](https://blind-contours.github.io/concrete/articles/regulatory-toolkit.md)
+for usage and caveats.
+
 ## Where to go next
 
 - [Trialist

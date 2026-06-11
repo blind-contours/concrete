@@ -426,6 +426,50 @@ no-switching estimand without strong extrapolation; report it, and lean
 on the tipping-point analysis (Section 6) to bound the conclusion.</p>
 </div>
 <div class="section level2">
+<h2 id="variance-under-stratified-randomization">9. Variance under stratified randomization<a class="anchor" aria-label="anchor" href="#variance-under-stratified-randomization"></a>
+</h2>
+<p>Nearly every phase-3 trial randomizes within strata (site, disease
+severity, biomarker) using permuted blocks or a stratified biased coin,
+and ICH E9 and the FDA covariate-adjustment guidance ask the analysis to
+reflect that design. The usual influence-function standard errors assume
+<em>simple</em> randomization; under covariate-adaptive schemes they are
+generically <strong>conservative</strong> — they ignore the
+between-arm-within-stratum variance the design removes — which gives
+away exactly the precision covariate adjustment is meant to buy.</p>
+<p>Pass the randomization strata to <code><a href="../reference/formatArguments.html">formatArguments()</a></code> and
+every reported standard error — absolute risk, risk difference and
+ratio, RMST and life-years lost, and the win ratio — is corrected
+following Bugni–Canay–Shaikh / Ye–Shao:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">args_strat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formatArguments.html">formatArguments</a></span><span class="op">(</span></span>
+<span>  DataTable <span class="op">=</span> <span class="va">trial</span>, EventTime <span class="op">=</span> <span class="st">"time"</span>, EventType <span class="op">=</span> <span class="st">"event"</span>, Treatment <span class="op">=</span> <span class="st">"arm"</span>,</span>
+<span>  ID <span class="op">=</span> <span class="st">"id"</span>, Intervention <span class="op">=</span> <span class="fu"><a href="../reference/formatArguments.html">makeITT</a></span><span class="op">(</span><span class="op">)</span>, TargetTime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">365</span>, <span class="fl">730</span><span class="op">)</span>, TargetEvent <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  Strata <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"site"</span>, <span class="st">"severity"</span><span class="op">)</span>   <span class="co"># the variables randomization was stratified on</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">est_strat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/doConcrete.html">doConcrete</a></span><span class="op">(</span><span class="va">args_strat</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/getOutput.html">getOutput</a></span><span class="op">(</span><span class="va">est_strat</span>, Estimand <span class="op">=</span> <span class="st">"RD"</span><span class="op">)</span>   <span class="co"># SEs reflect the stratified design</span></span></code></pre></div>
+<p>Three things to know:</p>
+<ul>
+<li>The strata columns stay in the data as adjustment covariates
+(recommended). When the working models adjust for them well, the
+correction is approximately zero — the iid variance is then already
+correct. The correction matters exactly when adjustment for the
+stratification variables is absent or imperfect.</li>
+<li>Only supply <code>Strata</code> when randomization truly was
+stratified: applying the correction under simple randomization
+understates the variance.</li>
+<li>Each stratum needs both arms represented (at least 2 subjects per
+arm); if not, <code>concrete</code> warns and reports the conservative
+iid standard errors instead. Pool very small strata before
+analysis.</li>
+</ul>
+<p>Missing baseline covariates, incidentally, no longer stop the
+pipeline: NA values in baseline covariates are imputed (median / mode)
+with a missingness indicator added per affected column — the handling
+endorsed for pre-randomization covariates by the FDA guidance. The
+outcome, treatment, and ID columns must still be complete.</p>
+</div>
+<div class="section level2">
 <h2 id="putting-it-together-an-analysis-plan-checklist">Putting it together: an analysis-plan checklist<a class="anchor" aria-label="anchor" href="#putting-it-together-an-analysis-plan-checklist"></a>
 </h2>
 <p>A reproducible, E9(R1)-aware analysis with <code>concrete</code>
@@ -449,6 +493,9 @@ keep honest inference.</li>
 <li>Pre-specified sensitivity analyses — <code><a href="../reference/senseCensoring.html">senseCensoring()</a></code>
 for the independent-censoring assumption — and positivity diagnostics
 via <code><a href="../reference/getPositivityDx.html">getPositivityDx()</a></code>.</li>
+<li>The randomization design reflected in the variance: pass
+<code>Strata</code> when randomization was stratified (permuted blocks,
+biased coin, minimization).</li>
 <li>The precision gain from adjustment, via
 <code><a href="../reference/getRelativeEfficiency.html">getRelativeEfficiency()</a></code>.</li>
 </ol>

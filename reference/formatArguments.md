@@ -33,6 +33,7 @@ formatArguments(
   HazEnsemble = FALSE,
   CensoringTV = NULL,
   Crossover = NULL,
+  Strata = NULL,
   ...
 )
 
@@ -242,6 +243,24 @@ print(x, ...)
   and
   [`senseCensoring()`](https://blind-contours.github.io/concrete/reference/senseCensoring.md)).
   No effect on results when omitted.
+
+- Strata:
+
+  optional character (default NULL): column name(s) of the
+  **randomization strata** – the variables the trial actually randomized
+  within (e.g. site, disease severity) using permuted blocks, a
+  stratified biased coin, or minimization. When supplied, all reported
+  standard errors (absolute risk, RD, RR, RMST / life-years-lost, win
+  ratio) are corrected for the covariate-adaptive randomization
+  following Bugni–Canay–Shaikh / Ye–Shao: the iid variance is
+  generically conservative under such schemes because it ignores the
+  between-arm-within-stratum variance the design removes. The strata
+  columns stay in the data as adjustment covariates (recommended; when
+  the working models adjust for them the correction is approximately
+  zero and the iid SE is already correct). Only supply this when
+  randomization truly was stratified – applying it under simple
+  randomization understates the variance. Strata cannot contain missing
+  values, and each stratum must contain both arms.
 
 - ...:
 

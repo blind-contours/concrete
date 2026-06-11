@@ -102,6 +102,10 @@ positive event code and code censoring as <code>0</code>.</p>
 <p>Your analysis data set should have one row per participant for the
 current package interface.</p>
 <table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
 <thead><tr class="header">
 <th>Item</th>
 <th>Requirement</th>
@@ -128,10 +132,26 @@ current package interface.</p>
 </tr>
 <tr class="odd">
 <td>Covariates</td>
-<td>Baseline covariates measured before treatment</td>
+<td>Baseline covariates measured before treatment; <code>NA</code>s are
+allowed and are imputed (median / mode) with a missingness indicator
+added per affected column</td>
+</tr>
+<tr class="even">
+<td>Randomization strata (optional)</td>
+<td>If randomization was stratified (permuted blocks, biased coin), keep
+the stratum column(s) and pass them as <code>Strata</code> so the
+standard errors reflect the design</td>
+</tr>
+<tr class="odd">
+<td>Switch times (optional)</td>
+<td>If participants crossed over to the other arm, a per-subject
+switch-time column (<code>NA</code> if never) can be passed as
+<code>Crossover</code> for the hypothetical no-switching estimand</td>
 </tr>
 </tbody>
 </table>
+<p>The id, time, event-type, and treatment columns must be complete —
+only baseline covariates may carry <code>NA</code>s.</p>
 <p>Check these before fitting:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">trial</span><span class="op">[</span>, <span class="va">.N</span>, by <span class="op">=</span> <span class="va">event</span><span class="op">]</span></span>
@@ -145,7 +165,14 @@ current package interface.</p>
 <li>one row per participant</li>
 <li>right-censored event time data</li>
 <li>optional competing risks</li>
-<li>baseline covariate adjustment</li>
+<li>baseline covariate adjustment (missing baseline values imputed
+automatically)</li>
+<li>stratified / covariate-adaptive randomization (<code>Strata</code>;
+corrected standard errors)</li>
+<li>treatment switching via a crossover hazard (<code>Crossover</code>;
+hypothetical no-switching estimand)</li>
+<li>time-varying post-randomization covariates in the censoring model
+(<code>CensoringTV</code>)</li>
 </ul>
 <p>Currently out of scope:</p>
 <ul>
@@ -154,6 +181,9 @@ current package interface.</p>
 <li>left truncation or delayed entry</li>
 <li>non-binary treatment without custom intervention work</li>
 </ul>
+<p>The intercurrent-event and design features are walked through in the
+<a href="regulatory-toolkit.html">Trial-design and regulatory
+toolkit</a> article.</p>
 </div>
 <div class="section level2">
 <h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a>

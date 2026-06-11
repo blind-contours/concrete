@@ -327,6 +327,42 @@ library.</p>
 diagnostics.</p>
 </div>
 <div class="section level2">
+<h2 id="step-5-exercise-the-trial-design-features">Step 5: Exercise the trial-design features<a class="anchor" aria-label="anchor" href="#step-5-exercise-the-trial-design-features"></a>
+</h2>
+<p>These are the newest parts of the package, so feedback here is the
+most valuable. Try whichever apply to your trial:</p>
+<ul>
+<li>
+<strong>Missing baseline covariates.</strong> Run your data as-is —
+NA baseline covariates are imputed (median / mode) with a
+<code>&lt;column&gt;_missing</code> indicator added. Check the message
+lists what you expect, and tell us if the imputation behavior surprises
+you.</li>
+<li>
+<strong>Stratified randomization.</strong> If your trial randomized
+within strata (permuted blocks, biased coin), pass
+<code>Strata = c(...)</code> and compare the standard errors with and
+without it. The corrected SEs should be the same or tighter; the point
+estimates must not change.</li>
+<li>
+<strong>Treatment switching.</strong> If participants crossed over,
+pass a switch-time column as <code>Crossover</code> and compare the
+hypothetical no-switching estimand against your ITT run. Always check
+<code><a href="../reference/getPositivityDx.html">getPositivityDx()</a></code> afterwards — heavy switching shrinks the
+effective sample size.</li>
+<li>
+<strong>Informative dropout.</strong> If post-randomization
+measurements (labs, QoL scores, functional tests) drive dropout in your
+trial, supply them as <code>CensoringTV</code> and see how much the
+estimates move.</li>
+<li>
+<strong>Sensitivity.</strong> Run <code><a href="../reference/senseCensoring.html">senseCensoring()</a></code> —
+with <code>mechanism = "dropout"</code> / <code>"crossover"</code>
+separately if you used <code>Crossover</code> — and report whether the
+tipping point lands where your clinical intuition says it should.</li>
+</ul>
+</div>
+<div class="section level2">
 <h2 id="current-limitations">Current limitations<a class="anchor" aria-label="anchor" href="#current-limitations"></a>
 </h2>
 <p>The current public testing target is intentionally narrow.</p>
@@ -341,9 +377,18 @@ diagnostics.</p>
 <li>static interventions such as everyone assigned <code>A = 1</code>
 versus everyone assigned <code>A = 0</code>
 </li>
-<li>baseline covariate adjustment</li>
+<li>baseline covariate adjustment, with missing baseline values imputed
+automatically (missingness indicators added)</li>
+<li>stratified / covariate-adaptive randomization via
+<code>Strata</code> (corrected standard errors)</li>
+<li>treatment switching via <code>Crossover</code> (hypothetical
+no-switching estimand)</li>
+<li>post-baseline time-varying covariates in the
+<strong>censoring</strong> model via <code>CensoringTV</code>
+(informative dropout)</li>
 <li>target absolute risks, risk differences, and risk ratios at
-prespecified times</li>
+prespecified times, plus RMST / life-years lost and the win ratio
+family</li>
 </ul>
 <p>Not currently supported in the main trialist workflow:</p>
 <ul>
@@ -352,7 +397,9 @@ prespecified times</li>
 <li>delayed entry or left truncation</li>
 <li>multi-arm or continuous treatment without custom intervention
 work</li>
-<li>post-baseline time-varying covariates</li>
+<li>post-baseline time-varying covariates in the
+<strong>outcome</strong> model (they are post-treatment mediators; only
+the censoring model uses them)</li>
 <li>clustered trial designs requiring special variance handling</li>
 </ul>
 <p>Use caution when:</p>

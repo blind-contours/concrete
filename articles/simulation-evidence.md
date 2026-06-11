@@ -99,13 +99,58 @@ pointwise](figures/rmst-comparison-coverage.png)
 With a dense target grid the two approaches converge; the direct method
 is the one to prefer for sparse grids, rare events, and long horizons.
 
+## Result 4: type-I error is nominal under the null
+
+Effect-scenario coverage says little about what happens when there is
+nothing to find, so the core absolute-risk TMLE was run on a null DGP —
+two competing events plus censoring, with a treatment that affects
+**neither** cause (160 replicates, n = 500 per arm, target time inside
+the follow-up horizon):
+
+| Quantity                                                 | Value     |
+|----------------------------------------------------------|-----------|
+| Type-I error of the risk-difference Wald test (α = 0.05) | **0.050** |
+| Risk-difference coverage at the true value 0             | **0.950** |
+| SE calibration (empirical SD / mean IF-SE)               | 0.98      |
+| Per-arm absolute-risk bias                               | ≤ 0.003   |
+
+The Wald test rejects a true null at exactly its nominal rate, which is
+the property a primary-endpoint analysis has to have.
+
+## Result 5: standard errors under stratified randomization
+
+Most phase-3 trials randomize within strata using permuted blocks, and
+the usual iid influence-function variance is then conservative — it
+ignores the between-arm-within-stratum variance the design removes.
+Passing the randomization strata via `Strata` applies the
+Bugni–Canay–Shaikh / Ye–Shao correction to every reported standard
+error. The validation (150 replicates per cell, n = 600, permuted blocks
+of 4 within 4 prognostic strata) checks the three behaviors the theory
+predicts:
+
+| Cell | empirical SD / mean SE (iid) | (strata-corrected) | Coverage |
+|----|----|----|----|
+| Models **unadjusted** for the stratum | 0.82 (conservative) | 0.88 | 0.98 |
+| Models **adjusted** for the stratum | 0.86 | 0.86 (correction ≈ 0) | 0.97 |
+| Simple-randomization control | 0.81 | — | 0.98 |
+
+The correction tightens the SEs exactly when the working models do not
+absorb the stratification, reduces to the iid SE (to four decimals) when
+they do, and never went anti-conservative. The simple-randomization
+control attributes the residual conservatism to small-sample behavior
+common to all cells, not to the correction.
+
 ## Takeaways for a trial analysis
 
 - The targeting step is doing real work: it consistently reduces the
   plug-in bias, which is the reason to use TMLE rather than a plain
   g-formula plug-in.
 - Influence-function standard errors are reliable, so the reported
-  intervals are meaningful.
+  intervals are meaningful — and the type-I error of the risk-difference
+  test is nominal under the null.
+- If randomization was stratified, pass `Strata`: the corrected standard
+  errors recover precision the iid variance gives away, and reduce to
+  the iid answer when the models already adjust for the strata.
 - Trust short-to-medium-horizon estimates most; at long horizons under
   likely non-proportional hazards, lean on the diagnostics and a
   flexible hazard library, and report the convergence status.
@@ -122,4 +167,10 @@ source("scripts/make-sim-evidence-figures.R")
 
 # The direct-vs-pointwise RMST comparison (closed-form truth) is self-contained:
 # Rscript scripts/make-rmst-comparison.R 150 400
+
+# The null / type-I validation and the stratified-randomization SE validation
+# are self-contained (closed-form or mega-MC truths, fixed seeds):
+# Rscript scripts/dev-null-typeI.R
+# Rscript scripts/dev-strata-validation.R
+# Rscript scripts/dev-strata-control.R
 ```

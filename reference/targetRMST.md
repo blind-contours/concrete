@@ -104,7 +104,10 @@ targetRMST(
 
 a `data.table` of class `"ConcreteOut"` with the directly-targeted RMST
 / life-years-lost estimates. The per-arm convergence status is stored in
-`attr(., "RMSTConverged")`.
+`attr(., "RMSTConverged")`. If the fit was built with `Strata` (see
+[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)),
+the standard errors are corrected for the stratified /
+covariate-adaptive randomization design.
 
 ## See also
 

@@ -189,6 +189,92 @@ method is the one to prefer for sparse grids, rare events, and long
 horizons.</p>
 </div>
 <div class="section level2">
+<h2 id="result-4-type-i-error-is-nominal-under-the-null">Result 4: type-I error is nominal under the null<a class="anchor" aria-label="anchor" href="#result-4-type-i-error-is-nominal-under-the-null"></a>
+</h2>
+<p>Effect-scenario coverage says little about what happens when there is
+nothing to find, so the core absolute-risk TMLE was run on a null DGP —
+two competing events plus censoring, with a treatment that affects
+<strong>neither</strong> cause (160 replicates, n = 500 per arm, target
+time inside the follow-up horizon):</p>
+<table class="table">
+<thead><tr class="header">
+<th>Quantity</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Type-I error of the risk-difference Wald test (α = 0.05)</td>
+<td><strong>0.050</strong></td>
+</tr>
+<tr class="even">
+<td>Risk-difference coverage at the true value 0</td>
+<td><strong>0.950</strong></td>
+</tr>
+<tr class="odd">
+<td>SE calibration (empirical SD / mean IF-SE)</td>
+<td>0.98</td>
+</tr>
+<tr class="even">
+<td>Per-arm absolute-risk bias</td>
+<td>≤ 0.003</td>
+</tr>
+</tbody>
+</table>
+<p>The Wald test rejects a true null at exactly its nominal rate, which
+is the property a primary-endpoint analysis has to have.</p>
+</div>
+<div class="section level2">
+<h2 id="result-5-standard-errors-under-stratified-randomization">Result 5: standard errors under stratified randomization<a class="anchor" aria-label="anchor" href="#result-5-standard-errors-under-stratified-randomization"></a>
+</h2>
+<p>Most phase-3 trials randomize within strata using permuted blocks,
+and the usual iid influence-function variance is then conservative — it
+ignores the between-arm-within-stratum variance the design removes.
+Passing the randomization strata via <code>Strata</code> applies the
+Bugni–Canay–Shaikh / Ye–Shao correction to every reported standard
+error. The validation (150 replicates per cell, n = 600, permuted blocks
+of 4 within 4 prognostic strata) checks the three behaviors the theory
+predicts:</p>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
+<thead><tr class="header">
+<th>Cell</th>
+<th>empirical SD / mean SE (iid)</th>
+<th>(strata-corrected)</th>
+<th>Coverage</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Models <strong>unadjusted</strong> for the stratum</td>
+<td>0.82 (conservative)</td>
+<td>0.88</td>
+<td>0.98</td>
+</tr>
+<tr class="even">
+<td>Models <strong>adjusted</strong> for the stratum</td>
+<td>0.86</td>
+<td>0.86 (correction ≈ 0)</td>
+<td>0.97</td>
+</tr>
+<tr class="odd">
+<td>Simple-randomization control</td>
+<td>0.81</td>
+<td>—</td>
+<td>0.98</td>
+</tr>
+</tbody>
+</table>
+<p>The correction tightens the SEs exactly when the working models do
+not absorb the stratification, reduces to the iid SE (to four decimals)
+when they do, and never went anti-conservative. The simple-randomization
+control attributes the residual conservatism to small-sample behavior
+common to all cells, not to the correction.</p>
+</div>
+<div class="section level2">
 <h2 id="takeaways-for-a-trial-analysis">Takeaways for a trial analysis<a class="anchor" aria-label="anchor" href="#takeaways-for-a-trial-analysis"></a>
 </h2>
 <ul>
@@ -196,7 +282,12 @@ horizons.</p>
 plug-in bias, which is the reason to use TMLE rather than a plain
 g-formula plug-in.</li>
 <li>Influence-function standard errors are reliable, so the reported
-intervals are meaningful.</li>
+intervals are meaningful — and the type-I error of the risk-difference
+test is nominal under the null.</li>
+<li>If randomization was stratified, pass <code>Strata</code>: the
+corrected standard errors recover precision the iid variance gives away,
+and reduce to the iid answer when the models already adjust for the
+strata.</li>
 <li>Trust short-to-medium-horizon estimates most; at long horizons under
 likely non-proportional hazards, lean on the diagnostics and a flexible
 hazard library, and report the convergence status.</li>
@@ -213,7 +304,13 @@ hazard library, and report the convergence status.</li>
 <span><span class="co"># see scripts/sim-data/referee-sims/run_pilot.R</span></span>
 <span></span>
 <span><span class="co"># The direct-vs-pointwise RMST comparison (closed-form truth) is self-contained:</span></span>
-<span><span class="co"># Rscript scripts/make-rmst-comparison.R 150 400</span></span></code></pre></div>
+<span><span class="co"># Rscript scripts/make-rmst-comparison.R 150 400</span></span>
+<span></span>
+<span><span class="co"># The null / type-I validation and the stratified-randomization SE validation</span></span>
+<span><span class="co"># are self-contained (closed-form or mega-MC truths, fixed seeds):</span></span>
+<span><span class="co"># Rscript scripts/dev-null-typeI.R</span></span>
+<span><span class="co"># Rscript scripts/dev-strata-validation.R</span></span>
+<span><span class="co"># Rscript scripts/dev-strata-control.R</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

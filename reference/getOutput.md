@@ -84,7 +84,11 @@ plot(x, NullLine = TRUE, ask = TRUE, ...)
 ## Value
 
 data.table of point estimates and standard deviations. Comparative
-estimands carry a two-sided Wald `pValue`.
+estimands carry a two-sided Wald `pValue`. If the fit was built with
+`Strata` (see
+[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)),
+all standard errors are corrected for the stratified /
+covariate-adaptive randomization design.
 
 ## Functions
 

@@ -375,6 +375,53 @@ heavy-crossover (or heavy-dropout) trial cannot support the no-switching
 estimand without strong extrapolation; report it, and lean on the
 tipping-point analysis (Section 6) to bound the conclusion.
 
+## 9. Variance under stratified randomization
+
+Nearly every phase-3 trial randomizes within strata (site, disease
+severity, biomarker) using permuted blocks or a stratified biased coin,
+and ICH E9 and the FDA covariate-adjustment guidance ask the analysis to
+reflect that design. The usual influence-function standard errors assume
+*simple* randomization; under covariate-adaptive schemes they are
+generically **conservative** — they ignore the
+between-arm-within-stratum variance the design removes — which gives
+away exactly the precision covariate adjustment is meant to buy.
+
+Pass the randomization strata to
+[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)
+and every reported standard error — absolute risk, risk difference and
+ratio, RMST and life-years lost, and the win ratio — is corrected
+following Bugni–Canay–Shaikh / Ye–Shao:
+
+``` r
+
+args_strat <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetTime = c(365, 730), TargetEvent = 1,
+  Strata = c("site", "severity")   # the variables randomization was stratified on
+)
+est_strat <- doConcrete(args_strat)
+getOutput(est_strat, Estimand = "RD")   # SEs reflect the stratified design
+```
+
+Three things to know:
+
+- The strata columns stay in the data as adjustment covariates
+  (recommended). When the working models adjust for them well, the
+  correction is approximately zero — the iid variance is then already
+  correct. The correction matters exactly when adjustment for the
+  stratification variables is absent or imperfect.
+- Only supply `Strata` when randomization truly was stratified: applying
+  the correction under simple randomization understates the variance.
+- Each stratum needs both arms represented (at least 2 subjects per
+  arm); if not, `concrete` warns and reports the conservative iid
+  standard errors instead. Pool very small strata before analysis.
+
+Missing baseline covariates, incidentally, no longer stop the pipeline:
+NA values in baseline covariates are imputed (median / mode) with a
+missingness indicator added per affected column — the handling endorsed
+for pre-randomization covariates by the FDA guidance. The outcome,
+treatment, and ID columns must still be complete.
+
 ## Putting it together: an analysis-plan checklist
 
 A reproducible, E9(R1)-aware analysis with `concrete` typically records:
@@ -404,7 +451,10 @@ A reproducible, E9(R1)-aware analysis with `concrete` typically records:
     for the independent-censoring assumption — and positivity
     diagnostics via
     [`getPositivityDx()`](https://blind-contours.github.io/concrete/reference/getPositivityDx.md).
-6.  The precision gain from adjustment, via
+6.  The randomization design reflected in the variance: pass `Strata`
+    when randomization was stratified (permuted blocks, biased coin,
+    minimization).
+7.  The precision gain from adjustment, via
     [`getRelativeEfficiency()`](https://blind-contours.github.io/concrete/reference/getRelativeEfficiency.md).
 
 See the [Trialist

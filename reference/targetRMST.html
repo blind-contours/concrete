@@ -181,7 +181,9 @@ rescaled fraction-of-horizon scale.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>a <code>data.table</code> of class <code>"ConcreteOut"</code> with the directly-targeted
 RMST / life-years-lost estimates. The per-arm convergence status is stored
-in <code>attr(., "RMSTConverged")</code>.</p>
+in <code>attr(., "RMSTConverged")</code>. If the fit was built with <code>Strata</code> (see
+<code><a href="formatArguments.html">formatArguments()</a></code>), the standard errors are corrected for the stratified
+/ covariate-adaptive randomization design.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

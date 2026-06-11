@@ -26,13 +26,18 @@ positive event code and code censoring as `0`.
 Your analysis data set should have one row per participant for the
 current package interface.
 
-| Item       | Requirement                                         |
-|------------|-----------------------------------------------------|
-| Subject id | Unique participant id column                        |
-| Time       | Observed event or censoring time, numeric, positive |
-| Event type | `0` for censoring, positive integers for events     |
-| Treatment  | Binary baseline treatment coded `0` and `1`         |
-| Covariates | Baseline covariates measured before treatment       |
+| Item | Requirement |
+|----|----|
+| Subject id | Unique participant id column |
+| Time | Observed event or censoring time, numeric, positive |
+| Event type | `0` for censoring, positive integers for events |
+| Treatment | Binary baseline treatment coded `0` and `1` |
+| Covariates | Baseline covariates measured before treatment; `NA`s are allowed and are imputed (median / mode) with a missingness indicator added per affected column |
+| Randomization strata (optional) | If randomization was stratified (permuted blocks, biased coin), keep the stratum column(s) and pass them as `Strata` so the standard errors reflect the design |
+| Switch times (optional) | If participants crossed over to the other arm, a per-subject switch-time column (`NA` if never) can be passed as `Crossover` for the hypothetical no-switching estimand |
+
+The id, time, event-type, and treatment columns must be complete — only
+baseline covariates may carry `NA`s.
 
 Check these before fitting:
 
@@ -51,7 +56,14 @@ Current scope:
 - one row per participant
 - right-censored event time data
 - optional competing risks
-- baseline covariate adjustment
+- baseline covariate adjustment (missing baseline values imputed
+  automatically)
+- stratified / covariate-adaptive randomization (`Strata`; corrected
+  standard errors)
+- treatment switching via a crossover hazard (`Crossover`; hypothetical
+  no-switching estimand)
+- time-varying post-randomization covariates in the censoring model
+  (`CensoringTV`)
 
 Currently out of scope:
 
@@ -59,6 +71,11 @@ Currently out of scope:
 - recurrent events
 - left truncation or delayed entry
 - non-binary treatment without custom intervention work
+
+The intercurrent-event and design features are walked through in the
+[Trial-design and regulatory
+toolkit](https://blind-contours.github.io/concrete/articles/regulatory-toolkit.md)
+article.
 
 ## Example data
 

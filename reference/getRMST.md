@@ -77,6 +77,10 @@ getRMST(
 
 a `data.table` of class `"ConcreteOut"` with point estimates,
 influence-function standard errors, confidence intervals, and p-values.
+If the fit was built with `Strata` (see
+[`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)),
+the standard errors are corrected for the stratified /
+covariate-adaptive randomization design.
 
 ## See also
 
