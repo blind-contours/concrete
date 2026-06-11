@@ -41,9 +41,12 @@ getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, T
     ## time-varying censoring covariates: override the lagged censoring survival
     ## (the only object the censoring hazard feeds) so the corrected IPCW flows to
     ## every downstream estimand. Outcome hazards are untouched.
-    if (Censored && !is.null(CensoringTV)) {
-        message("\nRe-estimating censoring with time-varying covariates:\n")
-        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time)
+    Crossover <- attr(Data, "CrossoverTime")
+    if (Censored && (!is.null(CensoringTV) || !is.null(Crossover))) {
+        message("\nRe-estimating censoring",
+                if (!is.null(Crossover)) " (+ separate crossover hazard for the hypothetical estimand)" else
+                " with time-varying covariates", ":\n")
+        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time, Crossover = Crossover)
         for (a in seq_along(HazSurvPreds))
             HazSurvPreds[[a]][["Survival"]][["LaggedCensSurv"]] <- LagTV
     }

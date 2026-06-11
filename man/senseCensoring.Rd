@@ -9,6 +9,7 @@ senseCensoring(
   deltas = seq(0, 1, by = 0.25),
   Estimand = c("RD", "RR", "Risk"),
   Intervention = c(1, 2),
+  mechanism = c("all", "dropout", "crossover"),
   Signif = 0.05,
   Verbose = FALSE
 )
@@ -23,13 +24,18 @@ subjects imputed as having the event of interest. Should include 0.}
 
 \item{Intervention}{length-2 numeric: treatment and control indices.}
 
+\item{mechanism}{one of \code{"all"} (default), \code{"dropout"}, \code{"crossover"}: which
+pool of censored subjects to impute (see Details). \code{"crossover"} requires a
+fit built with \code{Crossover}.}
+
 \item{Signif}{numeric (default 0.05): two-sided alpha.}
 
 \item{Verbose}{logical.}
 }
 \value{
 a \code{data.table} of estimate / CI / p-value by \code{delta} x event x time,
-with the tipping point in \code{attr(., "tippingPoint")}.
+with a leading \code{mechanism} column, the tipping point in
+\code{attr(., "tippingPoint")}, and the mechanism in \code{attr(., "mechanism")}.
 }
 \description{
 \code{concrete}'s primary analysis assumes censoring is independent of the event
@@ -48,4 +54,21 @@ target unchanged), imputing the event status of the censored changes the
 estimand and so produces a genuine, interpretable sensitivity curve. Because
 it re-fits the estimator for every \code{delta}, it is computationally heavier than
 the primary analysis.
+
+When the fit carries a treatment-switching (crossover) model (i.e.
+\code{\link[=formatArguments]{formatArguments()}} was called with \code{Crossover}), the censored subjects are a
+mix of two intercurrent events with two \emph{different} untestable assumptions:
+ordinary \strong{dropout} (conditionally-independent censoring) and \strong{crossover}
+(the no-switching counterfactual). \code{mechanism} selects which pool is imputed,
+so the two assumptions can be probed individually or jointly:
+\itemize{
+\item \code{"dropout"} -- tip only the genuinely-censored (drop-out) subjects,
+holding the switching handled by the crossover hazard;
+\item \code{"crossover"} -- tip only the subjects re-censored at their switch
+time, i.e. probe \dQuote{what if switchers would have had the event had
+they not switched}, holding dropout handled by the censoring weight;
+\item \code{"all"} (default) -- tip both pools jointly (the original behaviour).
+}
+With no crossover model, all censored subjects are dropout and the three modes
+coincide.
 }

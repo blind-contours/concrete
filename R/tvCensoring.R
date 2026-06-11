@@ -89,19 +89,44 @@ NULL
 #' @return a `length(times) x n` matrix of lagged censoring survival.
 #' @keywords internal
 #' @noRd
-.tvCensLaggedSurv <- function(Data, CensoringTV, times,
-                              SL.library = c("SL.mean", "SL.glm"), n.folds = 5L) {
+#' `Crossover` (optional) is a per-subject switch-time vector (aligned to `Data`
+#' rows, `Inf`/`NA` if never): when supplied, a \emph{separate} crossover hazard is
+#' fit (same covariates as censoring) and combined with the dropout hazard so the
+#' IPCW becomes `1/(S_dropout * S_crossover)` -- the hypothetical "no-crossover"
+#' estimand. The outcome must already be re-censored at the switch time (the
+#' censored rows whose `Crossover` time matches the observed time are the crossover
+#' events; the rest of the censored rows are real dropout).
+.tvCensLaggedSurv <- function(Data, CensoringTV = NULL, times, Crossover = NULL,
+                              SL.library = c("SL.mean", "SL.glm"), n.folds = 5L, nGridCens = 40L) {
   idcol <- attr(Data, "ID"); typecol <- attr(Data, "EventType"); timecol <- attr(Data, "EventTime")
-  CensoringTV <- as.data.frame(CensoringTV)
-  if (!idcol %in% names(CensoringTV)) stop("CensoringTV must contain the id column '", idcol, "'.")
-  if (!"time" %in% names(CensoringTV)) stop("CensoringTV must contain a 'time' column.")
-  ids <- Data[[idcol]]
-  obsT <- Data[[timecol]]; censInd <- as.integer(Data[[typecol]] <= 0)
+  ids <- Data[[idcol]]; obsT <- Data[[timecol]]; cens <- Data[[typecol]] <= 0
   covcols <- c(attr(Data, "Treatment"), attr(Data, "CovNames")[["ColName"]])
   baseCov <- as.data.frame(Data[, .SD, .SDcols = covcols])
-  M <- length(times) - 1L
-  tvMats <- .tvLOCF(ids, CensoringTV, idcol, "time", times[-(M + 1L)])
-  incC <- .tvCensoringInc(times, obsT, censInd, baseCov, tvMats, SL.library, n.folds)
-  hazTV <- rbind(0, incC)                            # node convention: increment over (t_{k-1}, t_k], haz_1 = 0
-  apply(hazTV, 2, function(haz) c(1, utils::head(exp(-cumsum(haz)), -1)))
+  ## fit the censoring/crossover hazards on a COARSE regular grid (the eval grid is
+  ## every unique event time -> O(n^2) long data; a coarse hazard grid + cumulative-
+  ## hazard interpolation is fast and accurate for the IPCW).
+  G <- max(1L, as.integer(nGridCens)); coarse <- seq(0, max(times), length.out = G + 1L)
+  starts <- coarse[-(G + 1L)]
+  tvMats <- list()
+  if (!is.null(CensoringTV)) {
+    CensoringTV <- as.data.frame(CensoringTV)
+    if (!idcol %in% names(CensoringTV)) stop("CensoringTV must contain the id column '", idcol, "'.")
+    if (!"time" %in% names(CensoringTV)) stop("CensoringTV must contain a 'time' column.")
+    tvMats <- .tvLOCF(ids, CensoringTV, idcol, "time", starts)
+  }
+  if (is.null(Crossover)) {
+    incTotal <- .tvCensoringInc(coarse, obsT, as.integer(cens), baseCov, tvMats, SL.library, n.folds)
+  } else {                                           # separate dropout + crossover hazards
+    xt <- Crossover; xt[is.na(xt)] <- Inf
+    xover <- cens & is.finite(xt) & xt <= obsT + 1e-9   # censored at the switch time
+    drop  <- cens & !xover
+    incD <- .tvCensoringInc(coarse, obsT, as.integer(drop),  baseCov, tvMats, SL.library, n.folds)
+    incX <- .tvCensoringInc(coarse, obsT, as.integer(xover), baseCov, tvMats, SL.library, n.folds)
+    incTotal <- incD + incX                           # combined cumulative-hazard increments
+  }
+  cumHcoarse <- rbind(0, apply(incTotal, 2, cumsum))   # Lambda at coarse nodes, (G+1) x n
+  LamFine <- vapply(seq_len(ncol(cumHcoarse)),         # interpolate cumulative hazard onto eval grid
+                    function(i) stats::approx(coarse, cumHcoarse[, i], xout = times, rule = 2)$y,
+                    numeric(length(times)))
+  rbind(1, exp(-LamFine))[seq_along(times), , drop = FALSE]   # lagged censoring survival
 }
