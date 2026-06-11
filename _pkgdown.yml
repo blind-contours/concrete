@@ -60,6 +60,7 @@ reference:
       - makeEstimand
       - applyIntercurrentEvent
       - senseCensoring
+      - getPositivityDx
   - title: Package overview
     contents:
       - concrete-package
