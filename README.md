@@ -333,11 +333,13 @@ are:
     unadjusted one.
 
 ``` r
-# Cross-fitted, ensemble-hazard fit for ML-based nuisance estimation
+# Cross-fitted, ensemble-hazard fit for ML-based nuisance estimation.
+# Strata = the columns randomization was stratified on: all reported SEs are
+# then corrected for the covariate-adaptive design.
 ConcreteArgs <- formatArguments(
   DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
   ID = "id", Intervention = makeITT(), TargetTime = c(365, 730), TargetEvent = 1,
-  CVArg = list(V = 5), CrossFit = TRUE, HazEnsemble = TRUE
+  CVArg = list(V = 5), CrossFit = TRUE, HazEnsemble = TRUE, Strata = "site"
 )
 ConcreteEst <- doConcrete(ConcreteArgs)
 
