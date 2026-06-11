@@ -18,21 +18,44 @@
 #' it re-fits the estimator for every `delta`, it is computationally heavier than
 #' the primary analysis.
 #'
+#' When the fit carries a treatment-switching (crossover) model (i.e.
+#' [formatArguments()] was called with `Crossover`), the censored subjects are a
+#' mix of two intercurrent events with two *different* untestable assumptions:
+#' ordinary **dropout** (conditionally-independent censoring) and **crossover**
+#' (the no-switching counterfactual). `mechanism` selects which pool is imputed,
+#' so the two assumptions can be probed individually or jointly:
+#' \itemize{
+#'   \item `"dropout"` -- tip only the genuinely-censored (drop-out) subjects,
+#'     holding the switching handled by the crossover hazard;
+#'   \item `"crossover"` -- tip only the subjects re-censored at their switch
+#'     time, i.e. probe \dQuote{what if switchers would have had the event had
+#'     they not switched}, holding dropout handled by the censoring weight;
+#'   \item `"all"` (default) -- tip both pools jointly (the original behaviour).
+#' }
+#' With no crossover model, all censored subjects are dropout and the three modes
+#' coincide.
+#'
 #' @param ConcreteArgs a `"ConcreteArgs"` object from [formatArguments()].
 #' @param deltas numeric in `[0, 1]`: fractions of pre-target-time censored
 #'   subjects imputed as having the event of interest. Should include 0.
 #' @param Estimand one of `"RD"` (default), `"RR"`, `"Risk"`.
 #' @param Intervention length-2 numeric: treatment and control indices.
+#' @param mechanism one of `"all"` (default), `"dropout"`, `"crossover"`: which
+#'   pool of censored subjects to impute (see Details). `"crossover"` requires a
+#'   fit built with `Crossover`.
 #' @param Signif numeric (default 0.05): two-sided alpha.
 #' @param Verbose logical.
 #'
 #' @return a `data.table` of estimate / CI / p-value by `delta` x event x time,
-#'   with the tipping point in `attr(., "tippingPoint")`.
+#'   with a leading `mechanism` column, the tipping point in
+#'   `attr(., "tippingPoint")`, and the mechanism in `attr(., "mechanism")`.
 #' @export senseCensoring
 senseCensoring <- function(ConcreteArgs, deltas = seq(0, 1, by = 0.25),
                            Estimand = c("RD", "RR", "Risk"), Intervention = c(1, 2),
+                           mechanism = c("all", "dropout", "crossover"),
                            Signif = 0.05, Verbose = FALSE) {
   Estimand <- match.arg(Estimand)
+  mechanism <- match.arg(mechanism)
   if (!inherits(ConcreteArgs, "ConcreteArgs"))
     stop("ConcreteArgs must be a 'ConcreteArgs' object returned by formatArguments().")
   if (any(deltas < 0 | deltas > 1)) stop("deltas must lie in [0, 1].")
@@ -47,12 +70,30 @@ senseCensoring <- function(ConcreteArgs, deltas = seq(0, 1, by = 0.25),
   ev1 <- TargetEvent[1]
   EstLabel <- c(RD = "Risk Diff", RR = "Rel Risk", Risk = "Abs Risk")[[Estimand]]
 
-  ## subjects censored before the horizon, ordered for a reproducible imputation
-  censIdx <- which(Data[[TypeCol]] == 0 & Data[[TimeCol]] < tau)
+  ## label each censored row as crossover (re-censored at its switch time) vs
+  ## dropout, using the per-subject switch times stashed by formatArguments().
+  xt <- attr(Data, "CrossoverTime")
+  if (is.null(xt)) {
+    if (mechanism == "crossover")
+      stop("mechanism = \"crossover\" requires a fit built with a crossover model ",
+           "(pass `Crossover` to formatArguments()).")
+    isXover <- rep(FALSE, nrow(Data))
+  } else {
+    isXover <- is.finite(xt) & abs(Data[[TimeCol]] - xt) < 1e-9
+  }
+
+  ## subjects censored before the horizon, restricted to the chosen pool and
+  ## ordered for a reproducible imputation
+  censored <- Data[[TypeCol]] == 0 & Data[[TimeCol]] < tau
+  pool <- switch(mechanism,
+                 all       = censored,
+                 dropout   = censored & !isXover,
+                 crossover = censored &  isXover)
+  censIdx <- which(pool)
   censIdx <- censIdx[order(Data[[TimeCol]][censIdx])]
   m <- length(censIdx)
-  if (m == 0) warning("No subjects are censored before the target time; ",
-                      "the sensitivity analysis is degenerate.")
+  if (m == 0) warning("No ", mechanism, "-censored subjects before the target time; ",
+                      "the sensitivity analysis is degenerate for this mechanism.")
 
   runDelta <- function(delta) {
     # copy the arg environment and the data so the imputation never mutates the
@@ -72,9 +113,11 @@ senseCensoring <- function(ConcreteArgs, deltas = seq(0, 1, by = 0.25),
     out[, list(delta = delta, n_imputed = k, Event, Time, `Pt Est`, se, `CI Low`, `CI Hi`, pValue)]
   }
 
-  if (Verbose) message("Tipping-point censoring sensitivity over ", length(deltas),
+  if (Verbose) message("Tipping-point ", mechanism, " sensitivity over ", length(deltas),
                        " values of delta (re-fit each) ...")
   res <- data.table::rbindlist(lapply(deltas, runDelta))
+  res[, "mechanism" := mechanism]
+  data.table::setcolorder(res, c("mechanism", setdiff(names(res), "mechanism")))
 
   null0 <- if (Estimand == "RR") 1 else 0
   res[, crosses := (`CI Low` <= null0 & `CI Hi` >= null0)]
@@ -94,5 +137,6 @@ senseCensoring <- function(ConcreteArgs, deltas = seq(0, 1, by = 0.25),
   }
   data.table::setattr(res, "tippingPoint", tip)
   data.table::setattr(res, "Estimand", Estimand)
+  data.table::setattr(res, "mechanism", mechanism)
   res[]
 }

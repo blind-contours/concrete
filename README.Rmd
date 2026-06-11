@@ -292,7 +292,10 @@ article walks through all of these on a worked example; the highlights are:
   (survival, cumulative incidence, RMST, win ratio).
 - **Censoring sensitivity (tipping point).** `senseCensoring()` runs a
   delta-shift sensitivity analysis on the independent-censoring (MAR)
-  assumption and reports where conclusions would change.
+  assumption and reports where conclusions would change. With a crossover
+  model it can tip dropout and switching separately or jointly
+  (`mechanism = "dropout" / "crossover" / "all"`), so each intercurrent-event
+  assumption gets its own tipping point.
 - **Positivity diagnostics.** `getPositivityDx()` reports per-arm effective sample
   size, maximum weight, and truncation share, flagging when an IPCW estimand
   (especially the hypothetical no-switching one) rests on heavy extrapolation.

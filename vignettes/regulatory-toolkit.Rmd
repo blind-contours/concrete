@@ -285,6 +285,27 @@ A conclusion that survives a large `delta` is robust to departures from
 independent censoring; one that tips at a small `delta` should be reported with
 caution.
 
+When the fit carries a crossover model (Section 2), the censored subjects pool
+two intercurrent events with two *different* untestable assumptions — ordinary
+dropout (MAR censoring) and switching (the no-switching counterfactual). The
+`mechanism` argument lets you tip each pool individually or jointly, so each
+assumption gets its own tipping point:
+
+```{r sense-mechanism}
+sc_drop  <- senseCensoring(args_pp, deltas = c(0, 0.1, 0.2),
+                           Estimand = "RD", mechanism = "dropout")    # MAR only
+sc_xover <- senseCensoring(args_pp, deltas = c(0, 0.1, 0.2),
+                           Estimand = "RD", mechanism = "crossover")  # no-switching only
+sc_both  <- senseCensoring(args_pp, deltas = c(0, 0.1, 0.2),
+                           Estimand = "RD", mechanism = "all")        # jointly (default)
+rbind(sc_drop, sc_xover, sc_both)   # leading `mechanism` column distinguishes them
+```
+
+For a per-protocol (no-switching) analysis, `mechanism = "crossover"` answers the
+reviewer's question directly: *how sensitive is the conclusion to the assumption
+that switchers would not have had the event had they stayed on their assigned
+arm?*
+
 ## 7. How much did covariate adjustment buy you?
 
 Covariate adjustment does not change the estimand in a randomized trial, but it
