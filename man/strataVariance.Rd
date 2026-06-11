@@ -29,7 +29,7 @@ JASA; Ye, Yi & Shao 2022, Biometrika; Ye, Shao, Yi & Zhao 2023, JASA).
 
 For an asymptotically linear estimator with influence function psi, target
 allocation pi, strata S with frequencies p_s, and
-Delta(s) = E\link{psi | A=1, S=s} - E\link{psi | A=0, S=s}:
+\eqn{\Delta(s) = E(\psi \mid A=1, S=s) - E(\psi \mid A=0, S=s)}:
 \deqn{\sigma^2_{CAR} = \sigma^2_{iid} - \pi(1-\pi)\sum_s p_s \Delta(s)^2.}
 The estimator below computes the equivalent residual + between-stratum form
 \deqn{\hat\sigma^2 = P_n[(\psi - \bar\psi_{A,S})^2] +
