@@ -100,7 +100,26 @@
 #'                      censoring model (never the outcome hazards), so the marginal
 #'                      / intent-to-treat estimand is preserved (they are
 #'                      post-treatment mediators). An `ID` column is required.
-#'                      No effect on results when omitted.
+#'                      The crossover hazard (see `Crossover`) inherits these same
+#'                      covariates by default. No effect on results when omitted.
+#' @param Crossover optional character (default NULL): the column name of a
+#'                      per-subject \strong{treatment-switching (crossover) time}
+#'                      (`NA`/`Inf` for participants who never switch). Supplying it
+#'                      moves the analysis from the intent-to-treat (treatment-policy)
+#'                      estimand to the hypothetical \dQuote{no-switching}
+#'                      (per-protocol-type) estimand: each switcher's outcome is
+#'                      re-censored at their switch time, and a \strong{separate
+#'                      crossover hazard} is fit and multiplied into the
+#'                      inverse-probability-of-censoring weight alongside the dropout
+#'                      hazard, so the IPCW becomes `1 / (S_dropout * S_crossover)`.
+#'                      The crossover hazard uses the same baseline covariates as the
+#'                      censoring model and, when `CensoringTV` is supplied, the same
+#'                      time-varying covariates. This targets the cumulative incidence
+#'                      that would have been observed had no one switched, under the
+#'                      assumption that switching acts as conditionally independent
+#'                      censoring given those covariates (pair it with
+#'                      `getPositivityDx()` and `senseCensoring()`). No effect on
+#'                      results when omitted.
 #' @param ... ...
 #'
 #' @return a list of class "ConcreteArgs"
@@ -226,6 +245,7 @@ formatArguments <- function(DataTable,
                             CrossFit = FALSE,
                             HazEnsemble = FALSE,
                             CensoringTV = NULL,
+                            Crossover = NULL,
                             ...)
 {
   ## Data Structure - incorporate prodlim::EventHistory.frame?
@@ -244,7 +264,8 @@ formatArguments <- function(DataTable,
                                      EICStopAbsTol = EICStopAbsTol,
                                      CrossFit = CrossFit,
                                      HazEnsemble = HazEnsemble,
-                                     CensoringTV = CensoringTV)
+                                     CensoringTV = CensoringTV,
+                                     Crossover = Crossover)
   }
 
   with(ConcreteArgs, {
@@ -264,6 +285,17 @@ formatArguments <- function(DataTable,
 
 
     # Data Spec ----
+    ## crossover (hypothetical "no-crossover" estimand): pull the switch times out
+    ## of the data (so they are not treated as a covariate) before formatting.
+    CrossoverTimes <- NULL
+    if (!is.null(ConcreteArgs[["Crossover"]])) {
+      if (Crossover %in% colnames(DataTable)) {
+        CrossoverTimes <- DataTable[[Crossover]]
+        DataTable[, (Crossover) := NULL]
+      } else if (is.null(attr(DataTable, "CrossoverTime"))) {
+        stop("Crossover column '", Crossover, "' not found in the data.")
+      }
+    }
     DataTable <- formatDataTable(DT = DataTable,
                                  EventTime = EventTime,
                                  EventType = EventType,
@@ -272,6 +304,18 @@ formatArguments <- function(DataTable,
                                  LongTime = NULL,
                                  Verbose = Verbose,
                                  RenameCovs = RenameCovs)
+    ## re-censor the outcome at the switch time (post-crossover follow-up is under
+    ## the other treatment) and stash the switch times for the IPCW crossover hazard.
+    if (!is.null(CrossoverTimes)) {
+      tt <- attr(DataTable, "EventTime"); ty <- attr(DataTable, "EventType")
+      xt <- CrossoverTimes; xt[is.na(xt)] <- Inf
+      reCens <- which(xt < DataTable[[tt]])
+      if (length(reCens)) {
+        data.table::set(DataTable, i = reCens, j = ty, value = 0)
+        data.table::set(DataTable, i = reCens, j = tt, value = xt[reCens])
+      }
+      attr(DataTable, "CrossoverTime") <- xt
+    }
 
 
     # Interventions & Targets ----
@@ -312,7 +356,7 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
                              MaxUpdateIter, OneStepEps, MinNuisance,
                              Verbose, GComp, ReturnModels, ID, RenameCovs, UpdateMethod,
                              EICStopRule, EICStopAbsTol, CrossFit = FALSE,
-                             HazEnsemble = FALSE, CensoringTV = NULL) {
+                             HazEnsemble = FALSE, CensoringTV = NULL, Crossover = NULL) {
   ConcreteArgs <- new.env()
   with(ConcreteArgs, {
     DataTable <- DataTable
@@ -338,6 +382,7 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
     CrossFit <- CrossFit
     HazEnsemble <- HazEnsemble
     CensoringTV <- CensoringTV
+    Crossover <- Crossover
   })
   class(ConcreteArgs) <- union("ConcreteArgs", class(ConcreteArgs))
   return(ConcreteArgs)

@@ -31,6 +31,7 @@ formatArguments(
   CrossFit = FALSE,
   HazEnsemble = FALSE,
   CensoringTV = NULL,
+  Crossover = NULL,
   ...
 )
 
@@ -156,7 +157,27 @@ measurements. These covariates enter \strong{only} the
 censoring model (never the outcome hazards), so the marginal
 / intent-to-treat estimand is preserved (they are
 post-treatment mediators). An \code{ID} column is required.
-No effect on results when omitted.}
+The crossover hazard (see \code{Crossover}) inherits these same
+covariates by default. No effect on results when omitted.}
+
+\item{Crossover}{optional character (default NULL): the column name of a
+per-subject \strong{treatment-switching (crossover) time}
+(\code{NA}/\code{Inf} for participants who never switch). Supplying it
+moves the analysis from the intent-to-treat (treatment-policy)
+estimand to the hypothetical \dQuote{no-switching}
+(per-protocol-type) estimand: each switcher's outcome is
+re-censored at their switch time, and a \strong{separate
+crossover hazard} is fit and multiplied into the
+inverse-probability-of-censoring weight alongside the dropout
+hazard, so the IPCW becomes \code{1 / (S_dropout * S_crossover)}.
+The crossover hazard uses the same baseline covariates as the
+censoring model and, when \code{CensoringTV} is supplied, the same
+time-varying covariates. This targets the cumulative incidence
+that would have been observed had no one switched, under the
+assumption that switching acts as conditionally independent
+censoring given those covariates (pair it with
+\code{getPositivityDx()} and \code{senseCensoring()}). No effect on
+results when omitted.}
 
 \item{...}{additional arguments to be passed into print methods}
 

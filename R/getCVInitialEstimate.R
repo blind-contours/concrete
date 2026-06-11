@@ -109,8 +109,9 @@ getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent,
     ## time-varying censoring covariates: override the lagged censoring survival
     ## (cross-fit internally by .tvCensoringInc) so the corrected IPCW flows
     ## throughout. Outcome hazards are untouched.
-    if (Censored && !is.null(CensoringTV)) {
-        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time)
+    Crossover <- attr(Data, "CrossoverTime")
+    if (Censored && (!is.null(CensoringTV) || !is.null(Crossover))) {
+        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time, Crossover = Crossover)
         for (a in arms) LagCensFull[[a]][] <- LagTV
     }
 

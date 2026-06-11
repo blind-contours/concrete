@@ -98,6 +98,82 @@ not supported: the former is a different (descriptive) estimand that an IPCW
 estimator does not target, and the latter needs latent stratification beyond the
 current scope.
 
+### Treatment switching (crossover): ITT vs per-protocol
+
+Treatment switching is the intercurrent event of device and oncology trials:
+control participants cross over to the active arm (or vice versa) at a time that
+is *not* fixed in advance, so it cannot be coded as a single event type. Two
+estimands answer two different questions:
+
+- **Intent-to-treat (treatment policy).** Analyze as randomized; switching is part
+  of the strategy being estimated. This is the default — do nothing special.
+- **Hypothetical \dQuote{no-switching} (per-protocol-type).** Estimate the
+  cumulative incidence that *would* have been seen had no one switched. `concrete`
+  targets this when you pass a column of per-subject switch times to `Crossover`.
+  Each switcher's outcome is re-censored at their switch time, and a **separate
+  crossover hazard** is fit and multiplied into the
+  inverse-probability-of-censoring weight alongside the ordinary dropout hazard,
+  so the weight denominator becomes `S_dropout(t) * S_crossover(t)`. This removes
+  the selection bias that naive per-protocol censoring would introduce, because
+  the crossover hazard reweights the participants who *would* have switched back
+  into the at-risk set.
+
+```{r crossover, eval = FALSE}
+# `switch_time` holds each participant's crossover time (NA / Inf if they never
+# switched). The crossover hazard inherits the censoring model's covariates.
+args_pp <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetTime = c(365, 730), TargetEvent = 1,
+  Crossover = "switch_time"
+)
+est_pp <- doConcrete(args_pp)
+
+# Report ITT and the hypothetical no-switching estimand side by side:
+getOutput(doConcrete(args_itt), Estimand = "RD", TargetTime = 730)  # treatment policy
+getOutput(est_pp,               Estimand = "RD", TargetTime = 730)  # no-switching
+```
+
+The no-switching estimand rests on the assumption that switching acts as
+conditionally independent censoring given the covariates — the same MAR-type
+assumption as ordinary censoring. Because it multiplies two weights, the
+effective sample size can shrink in heavy-crossover trials; check it with
+`getPositivityDx()` (Section 8) and probe the assumption with the tipping-point
+analysis (Section 6).
+
+### Time-varying covariates in the censoring (and crossover) model
+
+When dropout — or the decision to switch — is driven by *post-randomization*
+measurements (echocardiography, KCCQ, six-minute walk distance recorded at
+follow-up visits), conditioning the censoring hazard on baseline covariates alone
+leaves it informative, biasing the IPCW. Pass those measurements as `CensoringTV`,
+a long `data.frame` with the `ID` column, a `time` column, and one value column
+per measurement. `concrete` conditions the censoring hazard — and, when
+`Crossover` is supplied, the crossover hazard, which inherits these covariates by
+default — on the last-observation-carried-forward value and the change from
+baseline of each, restoring conditional independence (CAR).
+
+```{r censoring-tv, eval = FALSE}
+# Long-form post-randomization measurements: one row per (id, visit), with the
+# ID column, a `time` column, and one column per measurement.
+tv <- data.frame(id = visits$id, time = visits$visit_day,
+                 kccq = visits$kccq, six_min_walk = visits$six_min_walk)
+
+args_tv <- formatArguments(
+  DataTable = trial, EventTime = "time", EventType = "event", Treatment = "arm",
+  ID = "id", Intervention = makeITT(), TargetTime = c(365, 730), TargetEvent = 1,
+  CensoringTV = tv,            # used ONLY in the censoring / crossover hazards
+  Crossover   = "switch_time"  # optional; inherits the same covariates
+)
+est_tv <- doConcrete(args_tv)
+```
+
+These covariates enter **only** the censoring and crossover hazards, never the
+outcome hazards: they are post-treatment mediators, so keeping them out of the
+outcome model preserves the marginal / intent-to-treat target while still
+correcting informative dropout. The correction flows through every estimand that
+uses the IPCW — survival and cumulative-incidence curves, RMST, and the win
+ratio — not just one of them.
+
 ## 3. Cross-fitting (CV-TMLE) for machine-learning nuisances
 
 When the propensity and hazard nuisances are flexible machine-learning fits, the
@@ -236,18 +312,45 @@ A `RelEfficiency` above 1 means adjustment was worth it: a value of 1.25 says th
 adjusted analysis has the precision of an unadjusted analysis on 25% more
 participants.
 
+## 8. Positivity and effective sample size
+
+Every IPCW-based estimand depends on participants having a non-trivial
+probability of remaining uncensored (and, under the hypothetical no-switching
+estimand, un-switched) through the target time. When that probability is small
+for some participants, their inverse weights blow up, the effective sample size
+(ESS) drops, and the variance inflates — the price of the hypothetical estimand.
+`getPositivityDx()` reports these diagnostics per arm alongside the estimates so
+the trialist can see when an extrapolation is fragile.
+
+```{r positivity, eval = FALSE}
+getPositivityDx(est_pp)
+#> per-arm ESS (overall and worst-time), max weight, minimum observation
+#> probability, and the % of weights pinned at the truncation bound, with a
+#> CAUTION flag when ESS is low or truncation is heavy.
+```
+
+A low ESS or a large fraction of truncated weights is the signal that a
+heavy-crossover (or heavy-dropout) trial cannot support the no-switching
+estimand without strong extrapolation; report it, and lean on the tipping-point
+analysis (Section 6) to bound the conclusion.
+
 ## Putting it together: an analysis-plan checklist
 
 A reproducible, E9(R1)-aware analysis with `concrete` typically records:
 
-1. The estimand, via `makeEstimand()`, including the intercurrent-event strategy.
-2. The data handling for that strategy, via `applyIntercurrentEvent()`.
+1. The estimand, via `makeEstimand()`, including the intercurrent-event strategy
+   — and, for treatment switching, whether it is intent-to-treat or the
+   hypothetical no-switching estimand (`Crossover`).
+2. The data handling for that strategy, via `applyIntercurrentEvent()` for
+   event-coded ICEs, or `Crossover` / `CensoringTV` for switching and
+   informative dropout driven by post-randomization measurements.
 3. A cross-fitted (`CrossFit = TRUE`), optionally ensemble (`HazEnsemble = TRUE`)
    fit, so machine-learning nuisances keep honest inference.
 4. The primary summary — risk difference / ratio (`getOutput()`), restricted mean
    survival time (`getRMST()` / `targetRMST()`), or win ratio (`getWinRatio()`).
 5. Pre-specified sensitivity analyses — `senseCensoring()` for the
-   independent-censoring assumption.
+   independent-censoring assumption — and positivity diagnostics via
+   `getPositivityDx()`.
 6. The precision gain from adjustment, via `getRelativeEfficiency()`.
 
 See the [Trialist quickstart](trialist-quickstart.html) for the core workflow and
