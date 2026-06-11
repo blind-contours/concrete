@@ -212,6 +212,31 @@ recomputed and the norm of the PnEIC is checked. The
 a step would increase the objective, so the norm decreases
 monotonically.</p>
 <p><img src="figures/schematic-py_iteration_trace.png" class="r-plt" alt="iteration trace" width="70%"></p>
+<div class="section level3">
+<h3 id="direct-targeting-of-derived-functionals">Direct targeting of derived functionals<a class="anchor" aria-label="anchor" href="#direct-targeting-of-derived-functionals"></a>
+</h3>
+<p>The loop above targets the absolute risks at the chosen target times.
+Estimands <em>derived</em> from the risk curves — the RMST (a
+time-integral) and the win ratio (a bilinear functional of the two arms’
+curves) — can be computed by plugging in those targeted curves, but the
+plug-in inherits the target-time grid (a trapezoid or Riemann sum over a
+few points) and never solves the derived functional’s own estimating
+equation.</p>
+<p><code><a href="../reference/targetRMST.html">targetRMST()</a></code> and <code><a href="../reference/targetWinRatio.html">targetWinRatio()</a></code> instead
+run the same fluctuation machinery with the <strong>derived functional’s
+clever covariate</strong>: by the chain rule, it is the
+gradient-weighted combination of the pointwise clever covariates over
+the <em>full</em> event-time grid — integral weights
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>τ</mi><mo>−</mo><mi>s</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\tau - s)</annotation></semantics></math>
+for the RMST, the win-functional’s exact discrete gradients for the win
+ratio (which depend on both arms’ current curves, so they are recomputed
+each step and both arms fluctuate jointly). The loop stops when the
+functional’s own
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ℙ</mi><mi>n</mi></msub><msup><mi>D</mi><mo>*</mo></msup></mrow><annotation encoding="application/x-tex">\mathbb{P}_n D^*</annotation></semantics></math>
+is solved. In simulation this removes the grid sensitivity and cuts the
+residual bias several-fold for both estimands; see the <a href="rmst-methods-comparison.html">RMST methods comparison</a> and the
+<a href="win-ratio.html">win ratio</a> articles for the numbers.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="step-3-when-to-stop">Step 3: when to stop<a class="anchor" aria-label="anchor" href="#step-3-when-to-stop"></a>

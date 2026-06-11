@@ -2,6 +2,31 @@
 
 ## concrete 1.1.1.9000
 
+### Directly targeted win ratio
+
+- New exported
+  **[`targetWinRatio()`](https://blind-contours.github.io/concrete/reference/targetWinRatio.md)**:
+  a TMLE that fluctuates cause-specific hazards to solve the
+  efficient-influence-function estimating equations of the win and loss
+  probabilities directly, instead of plugging pointwise-targeted risk
+  curves into the win functional
+  ([`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)).
+  The clever covariate is the win-gradient-weighted combination of the
+  pointwise clever covariates over the – the chain-rule analogue of
+  [`targetRMST()`](https://blind-contours.github.io/concrete/reference/targetRMST.md)‘s
+  time-integrated clever covariate – so the win integral no longer
+  depends on the `TargetTime` grid. Because the gradient coefficients
+  depend on both arms’ current curves they are recomputed at every
+  fluctuation step and the arms are updated jointly. Reports the win
+  ratio, win odds, net benefit, and win/loss/tie probabilities with
+  influence-function (and, with `Strata`, design-corrected) inference.
+  Validated against brute-force pairwise ground truth (120 reps/cell, n
+  = 500/arm): on a sparse 2-time grid the plug-in win-ratio
+  bias/coverage was +0.078 / 0.933 vs the direct method’s +0.015 /
+  0.958; on a dense grid +0.042 / 0.967 vs +0.009 / 0.975, converging in
+  100% of replicates (`scripts/dev-targetwr-validation.R`). Derivation:
+  `notes/target-win-ratio.md`.
+
 ### Variance correction for stratified / covariate-adaptive randomization
 
 - [`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)

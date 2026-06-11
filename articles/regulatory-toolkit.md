@@ -231,8 +231,11 @@ turns the targeted survival curves into a covariate-adjusted,
 doubly-robust win ratio, win odds, and net benefit, each with an
 influence-function confidence interval. Because it is built from the
 targeted curves rather than from raw pairwise comparisons, it inherits
-`concrete`’s covariate adjustment and censoring handling. Use a
-reasonably dense `TargetTime` grid up to the horizon.
+`concrete`’s covariate adjustment and censoring handling. As a plug-in
+it evaluates the win integral over the `TargetTime` grid, so use a
+reasonably dense grid up to the horizon — or use
+[`targetWinRatio()`](https://blind-contours.github.io/concrete/reference/targetWinRatio.md)
+below, which removes that grid sensitivity entirely.
 
 ``` r
 
@@ -270,6 +273,23 @@ args_h <- formatArguments(
 )
 getWinRatio(doConcrete(args_h), Horizon = 730, Intervention = c(1, 2),
             TargetEvent = c(1, 2))   # death > hospitalization
+```
+
+For the primary analysis, prefer the **directly targeted** version:
+[`targetWinRatio()`](https://blind-contours.github.io/concrete/reference/targetWinRatio.md)
+fluctuates both arms’ hazards over the full event-time grid until the
+win and loss probabilities’ own estimating equations are solved, rather
+than plugging the pointwise-targeted curves into the win functional. In
+validation it cut the residual win-ratio bias about five-fold and
+restored nominal coverage on sparse target grids (see the [win
+ratio](https://blind-contours.github.io/concrete/articles/win-ratio.md)
+article for the numbers):
+
+``` r
+
+targetWinRatio(doConcrete(args_h), Horizon = 730, Intervention = c(1, 2),
+               TargetEvent = c(1, 2))
+#> same six rows as getWinRatio(); attr(., "WRConverged") reports convergence
 ```
 
 ## 6. Censoring sensitivity (tipping point)
@@ -445,7 +465,10 @@ A reproducible, E9(R1)-aware analysis with `concrete` typically records:
     /
     [`targetRMST()`](https://blind-contours.github.io/concrete/reference/targetRMST.md)),
     or win ratio
-    ([`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)).
+    ([`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
+    /
+    [`targetWinRatio()`](https://blind-contours.github.io/concrete/reference/targetWinRatio.md),
+    preferring the directly targeted version).
 5.  Pre-specified sensitivity analyses —
     [`senseCensoring()`](https://blind-contours.github.io/concrete/reference/senseCensoring.md)
     for the independent-censoring assumption — and positivity

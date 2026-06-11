@@ -55,6 +55,35 @@ is exact and fast, but note the consequence: a patient hospitalized
 hospitalization), so their later death is not used. When death after a
 non-fatal event matters, use the clinical win ratio below.
 
+### Directly targeted version: `targetWinRatio()`
+
+[`getWinRatio()`](https://blind-contours.github.io/concrete/reference/getWinRatio.md)
+is a *plug-in*: it evaluates the win functional on the
+pointwise-targeted risk curves, so the win integral is a Riemann sum
+over your `TargetTime` grid and the functional’s own estimating equation
+is not solved exactly.
+[`targetWinRatio()`](https://blind-contours.github.io/concrete/reference/targetWinRatio.md)
+closes both gaps — the same move
+[`targetRMST()`](https://blind-contours.github.io/concrete/reference/targetRMST.md)
+makes for the RMST. It fluctuates **both arms’** hazards jointly, with a
+clever covariate built from the win-functional gradients over the **full
+event-time grid**, until the win- and loss-probability estimating
+equations are solved:
+
+``` r
+
+targetWinRatio(ConcreteEst, Horizon = 730, Intervention = c(1, 2),
+               TargetEvent = c(1, 2))
+#> Same six rows as getWinRatio(); attr(., "WRConverged") reports convergence.
+```
+
+On a dense `TargetTime` grid the two agree closely. Prefer
+[`targetWinRatio()`](https://blind-contours.github.io/concrete/reference/targetWinRatio.md)
+when the target grid is sparse (the plug-in’s win integral is then
+crude), and in smaller trials where the plug-in’s win-odds / net-benefit
+intervals run slightly anti-conservative. Standard errors honor `Strata`
+like everything else.
+
 ## 3. Clinical (death-priority) hierarchical win ratio — **the one you usually want** (experimental)
 
 [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
@@ -108,6 +137,27 @@ truth](figures/clinical-winratio-truth.png)
 (Reproduce with `scripts/make-winratio-coverage.R`,
 `scripts/make-clinical-wr-censoring-validation.R`, and the other
 `scripts/make-clinical-wr-*.R`.)
+
+### Plug-in vs directly targeted
+
+[`targetWinRatio()`](https://blind-contours.github.io/concrete/reference/targetWinRatio.md)
+was validated against a brute-force pairwise ground truth (4 million
+simulated pairs) alongside the plug-in, 120 replicates per cell at n =
+500 per arm:
+
+| Cell | Estimator | WR bias | WR coverage |
+|----|----|----|----|
+| K = 2 hierarchy, **sparse** 2-time target grid (truth WR 1.47) | plug-in | +0.078 | 0.933 |
+|  | **direct** | **+0.015** | **0.958** |
+| K = 1, dense grid (truth WR 1.63) | plug-in | +0.042 | 0.967 |
+|  | **direct** | **+0.009** | **0.975** |
+
+Direct targeting converged in 100% of replicates in both cells, and the
+net benefit was unbiased and nominal for both estimators throughout. The
+pattern is the same as for the RMST: the plug-in is fine on dense grids;
+the direct method removes the target-grid sensitivity and cuts the
+residual win-ratio bias about five-fold either way. (Reproduce with
+`scripts/dev-targetwr-validation.R`.)
 
 ### A note on small trials
 

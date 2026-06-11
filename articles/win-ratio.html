@@ -123,6 +123,29 @@ consequence: a patient hospitalized <strong>and then</strong> dying is
 recorded by their first event (the hospitalization), so their later
 death is not used. When death after a non-fatal event matters, use the
 clinical win ratio below.</p>
+<div class="section level3">
+<h3 id="directly-targeted-version-targetwinratio">Directly targeted version: <code>targetWinRatio()</code><a class="anchor" aria-label="anchor" href="#directly-targeted-version-targetwinratio"></a>
+</h3>
+<p><code><a href="../reference/getWinRatio.html">getWinRatio()</a></code> is a <em>plug-in</em>: it evaluates the
+win functional on the pointwise-targeted risk curves, so the win
+integral is a Riemann sum over your <code>TargetTime</code> grid and the
+functional’s own estimating equation is not solved exactly.
+<code><a href="../reference/targetWinRatio.html">targetWinRatio()</a></code> closes both gaps — the same move
+<code><a href="../reference/targetRMST.html">targetRMST()</a></code> makes for the RMST. It fluctuates <strong>both
+arms’</strong> hazards jointly, with a clever covariate built from the
+win-functional gradients over the <strong>full event-time grid</strong>,
+until the win- and loss-probability estimating equations are solved:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/targetWinRatio.html">targetWinRatio</a></span><span class="op">(</span><span class="va">ConcreteEst</span>, Horizon <span class="op">=</span> <span class="fl">730</span>, Intervention <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>               TargetEvent <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Same six rows as getWinRatio(); attr(., "WRConverged") reports convergence.</span></span></code></pre></div>
+<p>On a dense <code>TargetTime</code> grid the two agree closely. Prefer
+<code><a href="../reference/targetWinRatio.html">targetWinRatio()</a></code> when the target grid is sparse (the
+plug-in’s win integral is then crude), and in smaller trials where the
+plug-in’s win-odds / net-benefit intervals run slightly
+anti-conservative. Standard errors honor <code>Strata</code> like
+everything else.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="clinical-death-priority-hierarchical-win-ratio-the-one-you-usually-want-experimental">3. Clinical (death-priority) hierarchical win ratio — <strong>the
@@ -144,7 +167,7 @@ Learner, with doubly-robust, covariate-adjusted, censoring-corrected
 (IPCW) influence-function inference and optional cross-fitting. Pass the
 non-fatal event columns <strong>in priority order</strong> (highest
 first); a single column is the two-tier illness–death case.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Two-tier (death &gt; hospitalization):</span></span>
 <span><span class="fu"><a href="../reference/clinicalWinRatio.html">clinicalWinRatio</a></span><span class="op">(</span><span class="va">trial</span>, arm <span class="op">=</span> <span class="st">"arm"</span>, illness.time <span class="op">=</span> <span class="st">"t_hosp"</span>,</span>
 <span>  terminal.time <span class="op">=</span> <span class="st">"t_term"</span>, terminal.status <span class="op">=</span> <span class="st">"died"</span>,</span>
@@ -171,6 +194,60 @@ pairwise truth essentially exactly, with and without censoring:</p>
 <p>(Reproduce with <code>scripts/make-winratio-coverage.R</code>,
 <code>scripts/make-clinical-wr-censoring-validation.R</code>, and the
 other <code>scripts/make-clinical-wr-*.R</code>.)</p>
+<div class="section level3">
+<h3 id="plug-in-vs-directly-targeted">Plug-in vs directly targeted<a class="anchor" aria-label="anchor" href="#plug-in-vs-directly-targeted"></a>
+</h3>
+<p><code><a href="../reference/targetWinRatio.html">targetWinRatio()</a></code> was validated against a brute-force
+pairwise ground truth (4 million simulated pairs) alongside the plug-in,
+120 replicates per cell at n = 500 per arm:</p>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
+<thead><tr class="header">
+<th>Cell</th>
+<th>Estimator</th>
+<th>WR bias</th>
+<th>WR coverage</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>K = 2 hierarchy, <strong>sparse</strong> 2-time target grid (truth
+WR 1.47)</td>
+<td>plug-in</td>
+<td>+0.078</td>
+<td>0.933</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><strong>direct</strong></td>
+<td><strong>+0.015</strong></td>
+<td><strong>0.958</strong></td>
+</tr>
+<tr class="odd">
+<td>K = 1, dense grid (truth WR 1.63)</td>
+<td>plug-in</td>
+<td>+0.042</td>
+<td>0.967</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><strong>direct</strong></td>
+<td><strong>+0.009</strong></td>
+<td><strong>0.975</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Direct targeting converged in 100% of replicates in both cells, and
+the net benefit was unbiased and nominal for both estimators throughout.
+The pattern is the same as for the RMST: the plug-in is fine on dense
+grids; the direct method removes the target-grid sensitivity and cuts
+the residual win-ratio bias about five-fold either way. (Reproduce with
+<code>scripts/dev-targetwr-validation.R</code>.)</p>
+</div>
 <div class="section level3">
 <h3 id="a-note-on-small-trials">A note on small trials<a class="anchor" aria-label="anchor" href="#a-note-on-small-trials"></a>
 </h3>
