@@ -54,6 +54,7 @@ reference:
       - targetRMST
       - getRelativeEfficiency
       - getWinRatio
+      - targetWinRatio
       - clinicalWinRatio
   - title: Estimand framework
     contents:

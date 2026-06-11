@@ -59,6 +59,28 @@ note the consequence: a patient hospitalized **and then** dying is recorded by
 their first event (the hospitalization), so their later death is not used. When
 death after a non-fatal event matters, use the clinical win ratio below.
 
+### Directly targeted version: `targetWinRatio()`
+
+`getWinRatio()` is a *plug-in*: it evaluates the win functional on the
+pointwise-targeted risk curves, so the win integral is a Riemann sum over your
+`TargetTime` grid and the functional's own estimating equation is not solved
+exactly. `targetWinRatio()` closes both gaps — the same move `targetRMST()`
+makes for the RMST. It fluctuates **both arms'** hazards jointly, with a clever
+covariate built from the win-functional gradients over the **full event-time
+grid**, until the win- and loss-probability estimating equations are solved:
+
+```{r direct-wr, eval = FALSE}
+targetWinRatio(ConcreteEst, Horizon = 730, Intervention = c(1, 2),
+               TargetEvent = c(1, 2))
+#> Same six rows as getWinRatio(); attr(., "WRConverged") reports convergence.
+```
+
+On a dense `TargetTime` grid the two agree closely. Prefer `targetWinRatio()`
+when the target grid is sparse (the plug-in's win integral is then crude), and
+in smaller trials where the plug-in's win-odds / net-benefit intervals run
+slightly anti-conservative. Standard errors honor `Strata` like everything
+else.
+
 ## 3. Clinical (death-priority) hierarchical win ratio — **the one you usually want** (experimental)
 
 `clinicalWinRatio()` targets the win ratio cardiologists actually mean: **compare

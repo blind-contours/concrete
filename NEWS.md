@@ -1,5 +1,22 @@
 # concrete 1.1.1.9000
 
+## Directly targeted win ratio
+
+* New exported **`targetWinRatio()`**: a TMLE that fluctuates \strong{both arms'}
+  cause-specific hazards to solve the efficient-influence-function estimating
+  equations of the win and loss probabilities directly, instead of plugging
+  pointwise-targeted risk curves into the win functional (`getWinRatio()`). The
+  clever covariate is the win-gradient-weighted combination of the pointwise
+  clever covariates over the \strong{full event-time grid} -- the chain-rule
+  analogue of `targetRMST()`'s time-integrated clever covariate -- so the win
+  integral no longer depends on the `TargetTime` grid. Because the gradient
+  coefficients depend on both arms' current curves they are recomputed at every
+  fluctuation step and the arms are updated jointly. Reports the win ratio, win
+  odds, net benefit, and win/loss/tie probabilities with influence-function
+  (and, with `Strata`, design-corrected) inference. On dense target grids it
+  agrees closely with the plug-in; the gains are on sparse grids and for the
+  win odds / net benefit. Derivation: `notes/target-win-ratio.md`.
+
 ## Variance correction for stratified / covariate-adaptive randomization
 
 * `formatArguments()` gains a **`Strata`** argument naming the column(s) the

@@ -286,7 +286,11 @@ are:
 -   **Win ratio, win odds, and net benefit.** `getWinRatio()` turns the
     targeted survival curves into a covariate-adjusted, doubly-robust
     hierarchical comparison with influence-function confidence
-    intervals.
+    intervals. `targetWinRatio()` goes further and *directly targets*
+    the win and loss probabilities — fluctuating both arms’ hazards over
+    the full event-time grid until the win functional’s own estimating
+    equations are solved — which matters on sparse target grids and in
+    smaller trials.
 -   **ICH E9(R1) estimands and intercurrent events.** `makeEstimand()`
     records the five estimand attributes; `applyIntercurrentEvent()`
     encodes treatment-policy, hypothetical (via censoring/IPCW), and
