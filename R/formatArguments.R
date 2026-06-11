@@ -120,6 +120,23 @@
 #'                      censoring given those covariates (pair it with
 #'                      `getPositivityDx()` and `senseCensoring()`). No effect on
 #'                      results when omitted.
+#' @param Strata optional character (default NULL): column name(s) of the
+#'                      \strong{randomization strata} -- the variables the trial
+#'                      actually randomized within (e.g. site, disease severity)
+#'                      using permuted blocks, a stratified biased coin, or
+#'                      minimization. When supplied, all reported standard errors
+#'                      (absolute risk, RD, RR, RMST / life-years-lost, win ratio)
+#'                      are corrected for the covariate-adaptive randomization
+#'                      following Bugni--Canay--Shaikh / Ye--Shao: the iid variance
+#'                      is generically conservative under such schemes because it
+#'                      ignores the between-arm-within-stratum variance the design
+#'                      removes. The strata columns stay in the data as adjustment
+#'                      covariates (recommended; when the working models adjust for
+#'                      them the correction is approximately zero and the iid SE is
+#'                      already correct). Only supply this when randomization truly
+#'                      was stratified -- applying it under simple randomization
+#'                      understates the variance. Strata cannot contain missing
+#'                      values, and each stratum must contain both arms.
 #' @param ... ...
 #'
 #' @return a list of class "ConcreteArgs"
@@ -246,6 +263,7 @@ formatArguments <- function(DataTable,
                             HazEnsemble = FALSE,
                             CensoringTV = NULL,
                             Crossover = NULL,
+                            Strata = NULL,
                             ...)
 {
   ## Data Structure - incorporate prodlim::EventHistory.frame?
@@ -265,7 +283,8 @@ formatArguments <- function(DataTable,
                                      CrossFit = CrossFit,
                                      HazEnsemble = HazEnsemble,
                                      CensoringTV = CensoringTV,
-                                     Crossover = Crossover)
+                                     Crossover = Crossover,
+                                     Strata = Strata)
   }
 
   with(ConcreteArgs, {
@@ -296,6 +315,21 @@ formatArguments <- function(DataTable,
         stop("Crossover column '", Crossover, "' not found in the data.")
       }
     }
+    ## randomization strata (covariate-adaptive variance correction): record the
+    ## per-subject stratum labels; the columns stay in the data as adjustment
+    ## covariates (recommended -- see ?formatArguments).
+    StrataVals <- NULL
+    if (!is.null(ConcreteArgs[["Strata"]])) {
+      if (is.character(Strata) && all(Strata %in% colnames(DataTable))) {
+        sv <- DataTable[, .SD, .SDcols = Strata]
+        if (anyNA(sv))
+          stop("Randomization strata cannot contain missing values.")
+        StrataVals <- as.character(interaction(sv, drop = TRUE, sep = ":"))
+      } else if (is.null(attr(DataTable, "Strata"))) {
+        stop("Strata column(s) '", paste(Strata, collapse = ", "),
+             "' not found in the data.")
+      }
+    }
     DataTable <- formatDataTable(DT = DataTable,
                                  EventTime = EventTime,
                                  EventType = EventType,
@@ -316,6 +350,7 @@ formatArguments <- function(DataTable,
       }
       attr(DataTable, "CrossoverTime") <- xt
     }
+    if (!is.null(StrataVals)) attr(DataTable, "Strata") <- StrataVals
 
 
     # Interventions & Targets ----
@@ -356,7 +391,8 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
                              MaxUpdateIter, OneStepEps, MinNuisance,
                              Verbose, GComp, ReturnModels, ID, RenameCovs, UpdateMethod,
                              EICStopRule, EICStopAbsTol, CrossFit = FALSE,
-                             HazEnsemble = FALSE, CensoringTV = NULL, Crossover = NULL) {
+                             HazEnsemble = FALSE, CensoringTV = NULL, Crossover = NULL,
+                             Strata = NULL) {
   ConcreteArgs <- new.env()
   with(ConcreteArgs, {
     DataTable <- DataTable
@@ -383,6 +419,7 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
     HazEnsemble <- HazEnsemble
     CensoringTV <- CensoringTV
     Crossover <- Crossover
+    Strata <- Strata
   })
   class(ConcreteArgs) <- union("ConcreteArgs", class(ConcreteArgs))
   return(ConcreteArgs)
@@ -412,8 +449,50 @@ formatDataTable <- function(DT, EventTime, EventType, Treatment, ID, LongTime, V
   # work on a copy so in-place ops below (ID assignment, setcolorder) never mutate
   # the caller's data.table by reference
   DT <- data.table::copy(DT)
-  if (any(is.infinite(unlist(DT)), anyNA(unlist(DT))))
-    stop("CovDataTable contains infinite or missing values; regression models may break")
+  ## required columns must be complete; baseline covariates may carry NAs, which
+  ## are imputed (median / mode) with an added <col>_missing indicator. Imputing
+  ## pre-randomization covariates this way does not bias randomized comparisons
+  ## (covariate adjustment only needs *a* function of baseline data) and is the
+  ## handling endorsed by the FDA covariate-adjustment guidance.
+  ReqCols <- intersect(unique(c(EventTime, EventType, Treatment,
+                                if (is.character(ID)) ID)), colnames(DT))
+  reqVals <- unlist(DT[, .SD, .SDcols = ReqCols], use.names = FALSE)
+  if (anyNA(reqVals) || any(is.infinite(reqVals)))
+    stop("The EventTime, EventType, Treatment, and ID columns must be complete: ",
+         "no missing or infinite values.")
+  CovCols <- setdiff(colnames(DT), ReqCols)
+  for (j in CovCols) {
+    if (is.numeric(DT[[j]]) && any(is.infinite(DT[[j]])))
+      stop("Covariate '", j, "' contains infinite values; regression models may break.")
+  }
+  naCov <- CovCols[vapply(CovCols, function(j) anyNA(DT[[j]]), logical(1))]
+  if (length(naCov)) {
+    naCount <- integer(length(naCov)); names(naCount) <- naCov
+    for (j in naCov) {
+      v <- DT[[j]]
+      miss <- is.na(v)
+      naCount[j] <- sum(miss)
+      if (all(miss))
+        stop("Covariate '", j, "' is entirely missing; drop it before calling ",
+             "formatArguments().")
+      flag <- paste0(j, "_missing")
+      if (flag %in% colnames(DT))
+        stop("Cannot create the missingness indicator '", flag,
+             "': a column with that name already exists.")
+      data.table::set(DT, j = flag, value = as.integer(miss))
+      fill <- if (is.numeric(v)) {
+        stats::median(v, na.rm = TRUE)
+      } else {
+        tt <- table(as.character(v))
+        names(tt)[which.max(tt)]                      # modal category
+      }
+      if (is.logical(v)) fill <- as.logical(fill)
+      data.table::set(DT, i = which(miss), j = j, value = fill)
+    }
+    message("Missing baseline covariate values imputed (numeric: median, ",
+            "categorical: mode) with missingness indicator(s) added: ",
+            paste0(naCov, " (", naCount, " NA)", collapse = ", "), "\n")
+  }
 
   checkEventTime(EventTime = EventTime, DataTable = DT)
   checkEventType(EventType = EventType, DataTable = DT)

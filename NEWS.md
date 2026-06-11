@@ -1,5 +1,67 @@
 # concrete 1.1.1.9000
 
+## Variance correction for stratified / covariate-adaptive randomization
+
+* `formatArguments()` gains a **`Strata`** argument naming the column(s) the
+  trial actually randomized within (site, disease severity, ...). When supplied,
+  **every** reported standard error --- absolute risk, risk difference and ratio,
+  RMST / life-years-lost (both `getRMST()` and `targetRMST()`), and the win
+  ratio / win odds / net benefit --- is corrected for covariate-adaptive
+  randomization following Bugni--Canay--Shaikh / Ye--Shao: under permuted blocks
+  or a stratified biased coin the usual iid influence-function variance is
+  generically conservative, and ICH E9 / the FDA covariate-adjustment guidance
+  ask the analysis to reflect the randomization scheme. The strata columns stay
+  in the data as adjustment covariates; when the working models adjust for them
+  the correction is approximately zero. Degenerate strata (fewer than 2 subjects
+  in an arm) warn and fall back to the conservative iid SEs. Point estimates are
+  unchanged. Validated by simulation (150 reps/cell, permuted blocks within 4
+  prognostic strata): the correction shrinks SEs when the stratum is unadjusted,
+  agrees with the iid SE to 4 decimals when it is adjusted, and never went
+  anti-conservative (`scripts/dev-strata-validation.R`,
+  `scripts/dev-strata-control.R`).
+
+## Missing baseline covariates are handled
+
+* `formatArguments()` previously stopped on any `NA` in the data. Baseline
+  covariates with missing values are now **imputed** (numeric: median,
+  categorical: mode) with a `<column>_missing` indicator added per affected
+  column --- the handling endorsed by the FDA covariate-adjustment guidance for
+  pre-randomization covariates. The event-time, event-type, treatment, and ID
+  columns must still be complete.
+
+## Treatment switching (crossover) and the hypothetical no-switching estimand
+
+* `formatArguments()` gains a **`Crossover`** argument naming a per-subject
+  switch-time column (`NA`/`Inf` = never switched). Each switcher's outcome is
+  re-censored at the switch time and a **separate crossover hazard** is fit and
+  multiplied into the IPCW alongside dropout (`1 / (S_dropout * S_crossover)`),
+  targeting the hypothetical "no-switching" (per-protocol-type) estimand instead
+  of naive per-protocol censoring. The crossover hazard inherits the censoring
+  model's covariates, including `CensoringTV`.
+* `senseCensoring()` gains **`mechanism = c("all", "dropout", "crossover")`** so
+  the ICH E9(R1) tipping-point analysis can probe the dropout (MAR) and
+  switching (no-switching counterfactual) assumptions individually or jointly
+  --- each intercurrent-event assumption gets its own tipping point.
+
+## Positivity / effective-sample-size diagnostics
+
+* New exported **`getPositivityDx()`**: per-arm effective sample size (overall
+  and worst-time), maximum inverse weight, minimum observation probability, and
+  the share of weights pinned at the truncation bound, with a `CAUTION` flag ---
+  surfacing when an IPCW estimand (especially the hypothetical no-switching one)
+  rests on heavy extrapolation.
+
+## New validation evidence
+
+* **Null (type-I) simulation for the core absolute-risk TMLE** (160 reps,
+  n = 500/arm, two competing events + censoring, no treatment effect): type-I
+  error 0.050 at alpha = 0.05, risk-difference coverage at zero 0.950, SE
+  calibration ratio 0.98 (`scripts/dev-null-typeI.R`).
+* Crossover estimand construction checked against oracle IPCW weights
+  (estimated ~ oracle) and a g-comp-vs-TMLE cut (TMLE removes ~half the g-comp
+  bias); residual heavy-crossover bias is at-risk depletion that
+  `getPositivityDx()` is designed to flag.
+
 ## Time-varying covariates in the censoring model [experimental]
 
 * **Threaded through the core.** `formatArguments()` gains an optional `CensoringTV`

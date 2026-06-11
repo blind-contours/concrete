@@ -65,7 +65,9 @@
 #'
 #' @return a `data.table` of class `"ConcreteOut"` with the win ratio, win odds,
 #'   net benefit, and the win/loss/tie probabilities, each with a CI and (for the
-#'   comparative statistics) a p-value against the null of no difference.
+#'   comparative statistics) a p-value against the null of no difference. If the
+#'   fit was built with `Strata` (see [formatArguments()]), the standard errors
+#'   are corrected for the stratified / covariate-adaptive randomization design.
 #'
 #' @seealso [getRMST()], [getOutput()]
 #' @export getWinRatio
@@ -158,7 +160,14 @@ getWinRatio <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
   Dtie <- -(Dwin + Dloss)
 
   z <- stats::qnorm(1 - Signif / 2)
-  se <- function(d) sqrt(mean(d^2) / n)
+  ## covariate-adaptive randomization: strata-corrected SEs when available; the
+  ## IC matrices are in sorted-ID column order (dcast), matching idsSorted.
+  StrataDT <- attr(ConcreteEst, "StrataDT")
+  idsSorted <- sort(unique(ICdt[["ID"]]))
+  se <- function(d) {
+    seStrat <- .strataSE(d, idsSorted, StrataDT)
+    if (is.null(seStrat)) sqrt(mean(d^2) / n) else seStrat
+  }
   ratioRow <- function(label, num, den, Dnum, Dden) {
     est <- num / den
     Dlog <- Dnum / num - Dden / den            # influence function of log(num/den)

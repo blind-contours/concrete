@@ -124,6 +124,25 @@ doConCRTmle <- function(DataTable, TargetTime, TargetEvent, Regime, CVFolds, Mod
     attr(Estimates, "GComp") <- GComp
     attr(Estimates, "EICStopRule") <- EICStopRule
     attr(Estimates, "EICStopAbsTol") <- EICStopAbsTol
+    ## randomization strata: stash a per-subject (ID, arm, stratum) lookup so all
+    ## downstream SEs (risk/RD/RR, RMST, win ratio) can apply the strong-balance
+    ## covariate-adaptive variance correction (see notes/strata-variance.md).
+    StrataVals <- attr(DataTable, "Strata")
+    if (!is.null(StrataVals)) {
+        StrataDT <- data.table::data.table(
+            ID = DataTable[[attr(DataTable, "ID")]],
+            A = DataTable[[attr(DataTable, "Treatment")]],
+            S = as.character(StrataVals))
+        cellN <- table(StrataDT[["A"]] > 0, StrataDT[["S"]])
+        if (nrow(cellN) < 2L || any(cellN < 2L)) {
+            warning("Some randomization strata have fewer than 2 subjects in an ",
+                    "arm; the covariate-adaptive variance correction is skipped ",
+                    "and iid standard errors are reported. Consider pooling ",
+                    "small strata.", call. = FALSE)
+        } else {
+            attr(Estimates, "StrataDT") <- StrataDT
+        }
+    }
     class(Estimates) <- union("ConcreteEst", class(Estimates))
     return(Estimates)
 }
