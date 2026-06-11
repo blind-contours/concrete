@@ -152,6 +152,27 @@ monotonically.
 knitr::include_graphics("figures/schematic-py_iteration_trace.png")
 ```
 
+### Direct targeting of derived functionals
+
+The loop above targets the absolute risks at the chosen target times. Estimands
+*derived* from the risk curves — the RMST (a time-integral) and the win ratio
+(a bilinear functional of the two arms' curves) — can be computed by plugging
+in those targeted curves, but the plug-in inherits the target-time grid (a
+trapezoid or Riemann sum over a few points) and never solves the derived
+functional's own estimating equation.
+
+`targetRMST()` and `targetWinRatio()` instead run the same fluctuation
+machinery with the **derived functional's clever covariate**: by the chain
+rule, it is the gradient-weighted combination of the pointwise clever
+covariates over the *full* event-time grid — integral weights \((\tau - s)\)
+for the RMST, the win-functional's exact discrete gradients for the win ratio
+(which depend on both arms' current curves, so they are recomputed each step
+and both arms fluctuate jointly). The loop stops when the functional's own
+\(\mathbb{P}_n D^*\) is solved. In simulation this removes the grid sensitivity
+and cuts the residual bias several-fold for both estimands; see the
+[RMST methods comparison](rmst-methods-comparison.html) and the
+[win ratio](win-ratio.html) articles for the numbers.
+
 ## Step 3: when to stop
 
 The loop stops when every targeted component has a small enough PnEIC. The
