@@ -96,6 +96,17 @@ targetRMST <- function(ConcreteEst, Horizon = NULL, Intervention = seq_along(Con
   n <- length(T.tilde)
   haveRMST <- setequal(TargetEvent, AllEvents)
 
+  ## covariate-adaptive randomization: the ICs below are in data row order and
+  ## keyed by row index, so re-key the strata lookup positionally before use.
+  StrataDT <- attr(ConcreteEst, "StrataDT")
+  if (!is.null(StrataDT))
+    StrataDT <- data.table::data.table(ID = seq_len(n), A = StrataDT[["A"]],
+                                       S = StrataDT[["S"]])
+  seIF <- function(ic) {
+    seStrat <- .strataSE(ic, seq_len(n), StrataDT)
+    if (is.null(seStrat)) sqrt(mean(ic^2) / n) else seStrat
+  }
+
   ## --- assemble per-arm LYL (+ event-free RMST) point estimates and ICs ----
   perArmList <- list()
   icList <- list()
@@ -108,7 +119,7 @@ targetRMST <- function(ConcreteEst, Horizon = NULL, Intervention = seq_along(Con
       perArmList[[length(perArmList) + 1L]] <- data.table::data.table(
         Intervention = a, Estimand = "Life Years Lost", Estimator = "tmle",
         Event = as.numeric(jj), Time = Horizon,
-        `Pt Est` = LYLday[[jj]], se = sqrt(mean(ICday[[jj]]^2) / n))
+        `Pt Est` = LYLday[[jj]], se = seIF(ICday[[jj]]))
       icList[[length(icList) + 1L]] <- data.table::data.table(
         Intervention = a, ID = seq_len(n), Time = Horizon,
         Event = as.numeric(jj), IC = ICday[[jj]])
@@ -119,13 +130,14 @@ targetRMST <- function(ConcreteEst, Horizon = NULL, Intervention = seq_along(Con
       perArmList[[length(perArmList) + 1L]] <- data.table::data.table(
         Intervention = a, Estimand = "RMST", Estimator = "tmle",
         Event = -1, Time = Horizon,
-        `Pt Est` = rmstEst, se = sqrt(mean(rmstIC^2) / n))
+        `Pt Est` = rmstEst, se = seIF(rmstIC))
       icList[[length(icList) + 1L]] <- data.table::data.table(
         Intervention = a, ID = seq_len(n), Time = Horizon, Event = -1, IC = rmstIC)
     }
   }
   perArm <- data.table::rbindlist(perArmList)
   data.table::setattr(perArm, "IC", data.table::rbindlist(icList))
+  data.table::setattr(perArm, "StrataDT", StrataDT)   # row-index keyed; used by getRD
 
   Output <- data.table::copy(perArm)
   if (length(Intervention) >= 2) {

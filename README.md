@@ -315,6 +315,19 @@ are:
     effective sample size, maximum weight, and truncation share, flagging
     when an IPCW estimand (especially the hypothetical no-switching one)
     rests on heavy extrapolation.
+-   **Stratified-randomization variance correction.** Pass `Strata` (the
+    columns the trial actually randomized within — site, severity) and
+    every reported standard error (risk, RD/RR, RMST, win ratio) is
+    corrected for covariate-adaptive randomization
+    (Bugni–Canay–Shaikh / Ye–Shao): under permuted blocks or a stratified
+    biased coin the usual iid variance is conservative, and ICH E9 / the
+    FDA covariate-adjustment guidance ask the analysis to reflect the
+    randomization.
+-   **Missing baseline covariates handled.** NA baseline covariates are
+    imputed (median/mode) with missingness indicators added automatically
+    — the handling the FDA guidance endorses for pre-randomization
+    covariates — instead of refusing to run. Outcome, treatment, and ID
+    columns must still be complete.
 -   **Adjustment efficiency.** `getRelativeEfficiency()` reports the
     variance ratio of the covariate-adjusted estimator versus the
     unadjusted one.

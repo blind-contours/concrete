@@ -147,7 +147,7 @@ getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_alon
 }
 
 getRisk <- function(ConcreteEst, TargetTime, TargetEvent, GComp) {
-  Event <- Time <- seEIC <- Estimand <- NULL
+  Event <- Time <- seEIC <- Estimand <- Estimator <- se <- seStrat <- NULL
   risk <- lapply(seq_along(ConcreteEst), function(a) {
     est.a <- ConcreteEst[[a]]
     risk.a <- do.call(rbind, lapply(as.character(TargetEvent), function(j) {
@@ -174,18 +174,39 @@ getRisk <- function(ConcreteEst, TargetTime, TargetEvent, GComp) {
   setcolorder(Risk, c("Intervention", "Estimand", "Estimator", "Event", "Time", "Pt Est", "se"))
   attr(Risk, "IC") <- do.call(rbind, lapply(seq_along(ConcreteEst), function(a) {
     cbind("Intervention" = names(ConcreteEst)[a], ConcreteEst[[a]][["IC"]])}))
+  ## covariate-adaptive randomization: correct the per-arm SEs from the stored
+  ## influence values and pass the lookup on for the RD / RR contrasts.
+  StrataDT <- attr(ConcreteEst, "StrataDT")
+  if (!is.null(StrataDT)) {
+    IC <- ID <- NULL
+    icAll <- data.table::as.data.table(attr(Risk, "IC"))
+    seAdj <- icAll[, list("seStrat" = .strataSE(IC, ID, StrataDT)),
+                   by = c("Intervention", "Time", "Event")]
+    icAttr <- attr(Risk, "IC")
+    Risk <- merge(Risk, seAdj, by = c("Intervention", "Time", "Event"), all.x = TRUE)
+    Risk[Estimator == "tmle" & !is.na(seStrat), se := seStrat]
+    Risk[, "seStrat" := NULL]
+    setcolorder(Risk, c("Intervention", "Estimand", "Estimator", "Event", "Time", "Pt Est", "se"))
+    attr(Risk, "IC") <- icAttr
+    attr(Risk, "StrataDT") <- StrataDT
+  }
   return(Risk)
 }
 
 getRD <- function(Risks, A1, A0, TargetTime, TargetEvent, GComp) {
   IC <- ID <- `Pt Est` <- se <- Intervention <- Estimand <- NULL
-  RD <- merge(Risks[, list("Pt Est" = `Pt Est`[Intervention == A1] - `Pt Est`[Intervention == A0]), 
-                    by = c("Estimator", "Event", "Time")], 
-              attr(Risks, "IC")[, list('Estimator' = "tmle", 
-                                       "se" = sqrt(mean((IC[Intervention == A1] - 
-                                                           IC[Intervention == A0])^2) / 
-                                                     length(unique(ID)))), 
-                                by = c("Event", "Time")], 
+  StrataDT <- attr(Risks, "StrataDT")
+  icAll <- data.table::as.data.table(attr(Risks, "IC"))
+  data.table::setorder(icAll, Event, Time, Intervention, ID)
+  RD <- merge(Risks[, list("Pt Est" = `Pt Est`[Intervention == A1] - `Pt Est`[Intervention == A0]),
+                    by = c("Estimator", "Event", "Time")],
+              icAll[, {
+                d <- IC[Intervention == A1] - IC[Intervention == A0]   # ID-aligned by the setorder
+                ids <- ID[Intervention == A1]
+                seStrat <- .strataSE(d, ids, StrataDT)
+                list("Estimator" = "tmle",
+                     "se" = if (is.null(seStrat)) sqrt(mean(d^2) / length(d)) else seStrat)
+              }, by = c("Event", "Time")],
               all.x = TRUE)
   # RD <- Risks[, list("Pt Est" = `Pt Est`[Intervention == A1] - `Pt Est`[Intervention == A0], 
   #                    se = sqrt(se[Intervention == A1]^2 + se[Intervention == A0]^2)), 
@@ -198,17 +219,23 @@ getRD <- function(Risks, A1, A0, TargetTime, TargetEvent, GComp) {
 
 getRR <- function(Risks, A1, A0, TargetTime, TargetEvent, GComp) {
   Time <- Event <- Estimator <- IC <- ID <- `Pt Est` <- se <- Intervention <- Estimand <- NULL
-  RR <- Risks[, list("Pt Est" = `Pt Est`[Intervention == A1] / `Pt Est`[Intervention == A0]), 
+  StrataDT <- attr(Risks, "StrataDT")
+  icAll <- data.table::as.data.table(attr(Risks, "IC"))
+  data.table::setorder(icAll, Event, Time, Intervention, ID)
+  RR <- Risks[, list("Pt Est" = `Pt Est`[Intervention == A1] / `Pt Est`[Intervention == A0]),
               by = c("Estimator", "Event", "Time")]
   for (time in TargetTime) {
     for (event in TargetEvent) {
       R1 <- Risks[Time == time & Event == event & Estimator == "tmle" & Intervention == A1, `Pt Est`]
       R0 <- Risks[Time == time & Event == event & Estimator == "tmle" & Intervention == A0, `Pt Est`]
-      RR[Time == time & Event == event & Estimator == "tmle", 
-         se := attr(Risks, "IC")[Time == time & Event == event, 
-                                  sqrt(mean((IC[Intervention == A1] / R0 - 
-                                               IC[Intervention == A0] * R1 / R0^2)^2) / 
-                                         length(unique(ID)))]]
+      RR[Time == time & Event == event & Estimator == "tmle",
+         se := icAll[Time == time & Event == event, {
+           d <- IC[Intervention == A1] / R0 -
+             IC[Intervention == A0] * R1 / R0^2                # ID-aligned by the setorder
+           ids <- ID[Intervention == A1]
+           seStrat <- .strataSE(d, ids, StrataDT)
+           if (is.null(seStrat)) sqrt(mean(d^2) / length(d)) else seStrat
+         }]]
     }
   }
   # RR <- Risks[, list("Pt Est" = `Pt Est`[Intervention == A1] / `Pt Est`[Intervention == A0], 

@@ -105,11 +105,17 @@ getRMST <- function(ConcreteEst, Horizon = NULL, Intervention = seq_along(Concre
   data.table::setorder(lylIC, Event, Intervention, ID)
   lylIC[, Time := Horizon]
 
-  lylSe <- lylIC[, list("se" = sqrt(mean(IC^2) / n)), by = c("Intervention", "Event")]
+  ## covariate-adaptive randomization: strata-corrected SEs when available
+  StrataDT <- attr(ConcreteEst, "StrataDT")
+  lylSe <- lylIC[, {
+    seStrat <- .strataSE(IC, ID, StrataDT)
+    list("se" = if (is.null(seStrat)) sqrt(mean(IC^2) / n) else seStrat)
+  }, by = c("Intervention", "Event")]
   perArm <- merge(lyl, lylSe, by = c("Intervention", "Event"))
   perArm[, `:=`(Estimator = "tmle", Time = Horizon)]
   perArm[, Estimand := data.table::fifelse(Event == -1, "RMST", "Life Years Lost")]
   data.table::setattr(perArm, "IC", lylIC)
+  data.table::setattr(perArm, "StrataDT", StrataDT)
 
   Output <- data.table::copy(perArm)
 
