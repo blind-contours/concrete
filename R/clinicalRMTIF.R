@@ -21,24 +21,29 @@
 #' level \eqn{r} at \eqn{t}.
 #'
 #' @inheritParams clinicalWinRatio
-#' @param nBoot integer (default 0): if positive, a stratified nonparametric
-#'   bootstrap with `nBoot` resamples is used for the standard error and
-#'   confidence interval (correct but computationally heavy --- each resample
-#'   refits the transition hazards). With `nBoot = 0` only the point estimate and
-#'   its favor/against decomposition are returned (`se`/CI are `NA`); see Details.
+#' @param nBoot integer (default 0): inference method. With `nBoot = 0` (default)
+#'   the **analytic adjoint-value efficient influence function** is used for the
+#'   net RMT-IF standard error (fast). If positive, a stratified nonparametric
+#'   bootstrap with `nBoot` resamples is used instead, which also gives SEs for
+#'   the time-in-favor / time-against decomposition (correct but heavy --- each
+#'   resample refits the transition hazards).
 #'
 #' @details
-#' \strong{Inference.} The analytic adjoint-value efficient influence function for
-#' this estimand (the time integral of a bilinear functional of the multistate
-#' occupancy) is under development and validation; until it lands, set `nBoot`
-#' for resampling-based inference, or use [getRMTIF()] (the first-event version,
-#' which has closed-form influence-function inference and reduces exactly to the
-#' RMST difference for a single event). The point estimate here is exact and is
-#' validated against a brute-force pairwise ground truth.
+#' \strong{Inference.} The net RMT-IF is the time integral of a bilinear
+#' functional of the two arms' multistate level-occupancy curves. Its efficient
+#' influence function is obtained by the chain rule: the per-arm occupancy
+#' influence functions (a reward-accumulation adjoint over the multistate process,
+#' with the death state absorbing) weighted by the gradient coefficients
+#' \eqn{c^1_r = P(\text{control worse than } r) - P(\text{control better than }
+#' r)} and the mirror for the control arm. This reuses the same adjoint-value
+#' machinery, IPCW correction, and cross-fitting as [clinicalWinRatio()]. The
+#' point estimate is exact and validated against a brute-force pairwise ground
+#' truth; the analytic SE is validated against the bootstrap and against
+#' empirical coverage. SEs for the favor/against decomposition require `nBoot`.
 #'
-#' @return a `data.table` of class `"ConcreteOut"` with the net `RMT-IF`, the
-#'   time in favor, and the time against; with `nBoot > 0` each carries a
-#'   bootstrap SE and CI.
+#' @return a `data.table` of class `"ConcreteOut"` with the net `RMT-IF` (with an
+#'   influence-function SE, CI and p-value), the time in favor, and the time
+#'   against.
 #'
 #' @seealso [getRMTIF()] (first-event version with closed-form inference),
 #'   [clinicalWinRatio()].
@@ -76,52 +81,63 @@ clinicalRMTIF <- function(data, arm, illness.time, terminal.time, terminal.statu
     censoring.tv <- as.data.frame(censoring.tv)
     tvMats <- .tvLOCF(data[[id]], censoring.tv, id, "time", grid[-length(grid)])
   }
-  ## marginal favorability-level occupancy (M+1 x (K+1)) for an arm's rows
-  levelOcc <- function(rows) {
+  wts <- c(diff(grid) / 2, 0) + c(0, diff(grid) / 2)            # trapezoid weights on M+1 nodes
+  ## fit one arm: returns the engine setup + its marginal level occupancy
+  fitArm <- function(rows) {
     D <- parseArm(rows)
     tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[rows, , drop = FALSE])
     nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA)
-    P <- eng$occupancy(nu$rmat)
-    L <- matrix(0, eng$M + 1L, K + 1L)
-    for (s in eng$ALIVE) L[, eng$stateRank(s) + 1L] <-
-      L[, eng$stateRank(s) + 1L] + rowMeans(P[[as.character(s)]])
-    L[, K + 1L] <- 1 - rowSums(L[, seq_len(K), drop = FALSE])   # dead level
-    L
+    arm <- eng$armSetup(D, nu$rmat, nu$Ginv)
+    list(arm = arm, L = eng$levelOcc(nu$rmat))
   }
-  ## RMT-IF point estimate from two arms' level-occupancy matrices
-  rmtifFrom <- function(Lt, Lc) {
-    wfun <- function(X, Y) {                                    # int (X better than Y)
-      m <- nrow(X); w <- numeric(m)
-      for (jr in seq_len(ncol(X))) {                            # level r (1-indexed)
-        above <- if (jr < ncol(Y)) rowSums(Y[, (jr + 1L):ncol(Y), drop = FALSE]) else numeric(m)
-        w <- w + X[, jr] * above
-      }
-      w
-    }
-    wts <- c(diff(grid) / 2, 0) + c(0, diff(grid) / 2)          # trapezoid weights on nodes
-    favor <- wfun(Lt, Lc); against <- wfun(Lc, Lt)
-    c(rmtif = sum(wts * (favor - against)),
-      tFavor = sum(wts * favor), tAgainst = sum(wts * against))
+  ## int_0^tau (X better than Y) per node, from two level-occupancy matrices
+  wcurve <- function(X, Y) {
+    m <- nrow(X); w <- numeric(m)
+    for (jr in seq_len(ncol(X)))
+      w <- w + X[, jr] * (if (jr < ncol(Y)) rowSums(Y[, (jr + 1L):ncol(Y), drop = FALSE]) else 0)
+    w
   }
+  T1 <- fitArm(which(A == 1)); T0 <- fitArm(which(A == 0)); LX <- T1$L; LY <- T0$L
+  favor <- wcurve(LX, LY); against <- wcurve(LY, LX)
+  est <- c(rmtif = sum(wts * (favor - against)),
+           tFavor = sum(wts * favor), tAgainst = sum(wts * against))
 
-  est <- rmtifFrom(levelOcc(which(A == 1)), levelOcc(which(A == 0)))
+  ## --- chain-rule gradient coefficients d/d(pi_r) of favor (int w) and against (int l) ---
+  better <- function(L, r) if (r > 1) rowSums(L[, seq_len(r - 1), drop = FALSE]) else numeric(nrow(L))
+  worse  <- function(L, r) if (r < ncol(L)) rowSums(L[, (r + 1):ncol(L), drop = FALSE]) else numeric(nrow(L))
+  cFavX <- sapply(seq_len(K + 1L), function(r) worse(LY, r))    # d(favor)/d(piX_r) = P(Y worse than r)
+  cFavY <- sapply(seq_len(K + 1L), function(r) better(LX, r))   # d(favor)/d(piY_r) = P(X better than r)
+  cAgnX <- sapply(seq_len(K + 1L), function(r) better(LY, r))   # d(against)/d(piX_r)
+  cAgnY <- sapply(seq_len(K + 1L), function(r) worse(LX, r))    # d(against)/d(piY_r)
 
-  ## optional stratified bootstrap inference
-  seCI <- function(point) c(se = NA_real_, lo = NA_real_, hi = NA_real_)
+  Ntot <- T1$arm$n + T0$arm$n; piT <- T1$arm$n / Ntot; piC <- T0$arm$n / Ntot
+  z <- stats::qnorm(1 - Signif / 2)
+  seVec <- c(rmtif = NA_real_, tFavor = NA_real_, tAgainst = NA_real_)
   if (nBoot > 0L) {
     i1 <- which(A == 1); i0 <- which(A == 0)
     boots <- vapply(seq_len(nBoot), function(b) {
-      rmtifFrom(levelOcc(sample(i1, replace = TRUE)),
-                levelOcc(sample(i0, replace = TRUE)))
+      b1 <- fitArm(sample(i1, replace = TRUE)); b0 <- fitArm(sample(i0, replace = TRUE))
+      fv <- wcurve(b1$L, b0$L); ag <- wcurve(b0$L, b1$L)
+      c(sum(wts*(fv-ag)), sum(wts*fv), sum(wts*ag))
     }, numeric(3))
-    z <- stats::qnorm(1 - Signif / 2)
-    seCI <- function(nm) { s <- stats::sd(boots[nm, ]); c(se = s, lo = est[nm] - z*s, hi = est[nm] + z*s) }
+    seVec <- c(rmtif = stats::sd(boots[1, ]), tFavor = stats::sd(boots[2, ]), tAgainst = stats::sd(boots[3, ]))
+  } else {
+    ## per-arm influence functions of favor / against (net = favor - against)
+    DfavX <- eng$rmtifArmIF(T1$arm, cFavX, wts); DfavY <- eng$rmtifArmIF(T0$arm, cFavY, wts)
+    DagnX <- eng$rmtifArmIF(T1$arm, cAgnX, wts); DagnY <- eng$rmtifArmIF(T0$arm, cAgnY, wts)
+    seArm <- function(DXa, DYa) sqrt((sum(((1/piT)*DXa)^2) + sum(((1/piC)*DYa)^2)) / Ntot^2)
+    est["tFavor"]   <- est["tFavor"]   + mean(DfavX) + mean(DfavY)        # one-step
+    est["tAgainst"] <- est["tAgainst"] + mean(DagnX) + mean(DagnY)
+    est["rmtif"]    <- est["tFavor"] - est["tAgainst"]                     # identity preserved
+    seVec <- c(rmtif = seArm(DfavX - DagnX, DfavY - DagnY),
+               tFavor = seArm(DfavX, DfavY), tAgainst = seArm(DagnX, DagnY))
   }
-  z <- stats::qnorm(1 - Signif / 2)
   mkrow <- function(lab, nm) {
-    ci <- seCI(nm)
-    data.table::data.table(Estimand = lab, `Pt Est` = unname(est[nm]), se = unname(ci["se"]),
-      `CI Low` = unname(ci["lo"]), `CI Hi` = unname(ci["hi"]), pValue = NA_real_)
+    s <- unname(seVec[nm]); e <- unname(est[nm])
+    data.table::data.table(Estimand = lab, `Pt Est` = e, se = s,
+      `CI Low` = if (is.na(s)) NA_real_ else e - z * s,
+      `CI Hi`  = if (is.na(s)) NA_real_ else e + z * s,
+      pValue   = if (is.na(s) || lab != "RMT-IF") NA_real_ else 2 * stats::pnorm(-abs(e / s)))
   }
   Output <- data.table::rbindlist(list(
     mkrow("RMT-IF", "rmtif"), mkrow("Time in favor", "tFavor"), mkrow("Time against", "tAgainst")))

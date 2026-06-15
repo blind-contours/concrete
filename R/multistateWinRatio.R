@@ -230,6 +230,48 @@
     list(rmat = rmat, YN = YN, Ginv = Ginv, n = nrow(D),
          q = lapply(eng, function(t) rowMeans(t$q)), m = lapply(eng, function(t) mean(t$m)))
   }
+
+  ## ---- RMT-IF: adjoint-value influence function for one arm ----
+  ## marginal level-occupancy (M+1) x (K+1): cols = favorability level 0..K (K=dead)
+  levelOcc <- function(rmat) {
+    P <- occupancy(rmat); L <- matrix(0, M + 1L, K + 1L)
+    for (s in ALIVE) L[, stateRank(s) + 1L] <- L[, stateRank(s) + 1L] + rowMeans(P[[as.character(s)]])
+    L[, K + 1L] <- 1 - rowSums(L[, seq_len(K), drop = FALSE]); L
+  }
+  ## per-subject IF of RMT-IF's accumulated reward for one arm. `cMat` is the
+  ## (M+1) x (K+1) matrix of marginal level coefficients c_r(t_j); `wts` the node
+  ## trapezoid weights. The reward for being in a state of level r at node j is
+  ## wts[j]*c_r(j); death is absorbing with level K.
+  rmtifArmIF <- function(arm, cMat, wts) {
+    rmat <- arm$rmat; YN <- arm$YN; Ginv <- arm$Ginv; n <- arm$n
+    Psi <- stats::setNames(lapply(ALIVE, function(s) matrix(0, M + 1L, n)), as.character(ALIVE))
+    Pdead <- matrix(0, M + 1L, n)
+    for (s in ALIVE) Psi[[as.character(s)]][M + 1L, ] <- wts[M + 1L] * cMat[M + 1L, stateRank(s) + 1L]
+    Pdead[M + 1L, ] <- wts[M + 1L] * cMat[M + 1L, K + 1L]
+    for (j in M:1) {
+      Pdead[j, ] <- wts[j] * cMat[j, K + 1L] + Pdead[j + 1L, ]      # dead absorbing
+      for (s in ALIVE) {
+        Lam <- totRow(rmat, s, j); stay <- exp(-Lam)
+        val <- stay * Psi[[as.character(s)]][j + 1L, ]
+        for (tr in outTrans(s)) {
+          mv <- (getRow(rmat, s, tr$ev, j) / Lam) * (1 - stay)
+          nextV <- if (tr$ev == "D") Pdead[j + 1L, ] else Psi[[as.character(tr$to)]][j + 1L, ]
+          val <- val + mv * nextV
+        }
+        Psi[[as.character(s)]][j, ] <- wts[j] * cMat[j, stateRank(s) + 1L] + val
+      }
+    }
+    gi <- Psi[["0"]][1L, ]; IF <- numeric(n)
+    for (s in ALIVE) { Vs <- Psi[[as.character(s)]][-1L, , drop = FALSE]
+      for (tr in outTrans(s)) {
+        Vto <- if (tr$ev == "D") Pdead[-1L, , drop = FALSE] else Psi[[as.character(tr$to)]][-1L, , drop = FALSE]
+        clev <- t(Vto - Vs)
+        dM <- YN$Nev[[paste0(s, "|", tr$ev)]] - YN$Y[[as.character(s)]] * t(rmat[[paste0(s, "|", tr$ev)]])
+        IF <- IF + rowSums(clev * dM * Ginv)
+      }
+    }
+    (gi - mean(gi)) + IF
+  }
   DmIF <- function(arm, k) {
     ti <- TIERS[[k]]; if (ti$self == "D") return(numeric(arm$n))
     states <- tiedStates(ti$higher); V <- survKilled(arm$rmat, states, 1); gi <- V[["0"]][1L, ]

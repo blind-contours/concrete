@@ -17,7 +17,9 @@ test_that("clinicalRMTIF point estimate runs and decomposes", {
   agn <- o[Estimand == "Time against", `Pt Est`]
   expect_equal(net, fav - agn, tolerance = 1e-8)
   expect_true(fav > 0 && agn > 0)                 # both arms spend time in each role
-  expect_true(is.na(o[Estimand == "RMT-IF", se]))  # no SE without nBoot
+  ## analytic influence-function SEs (default) for all three rows, CIs ordered
+  expect_true(all(is.finite(o$se) & o$se > 0))
+  expect_true(all(o$`CI Low` < o$`CI Hi`))
   expect_identical(attr(o, "Tiers"), 2L)
 })
 

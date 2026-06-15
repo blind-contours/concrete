@@ -73,16 +73,17 @@ censoring model (never the outcome hazards), so the marginal/ITT estimand is
 preserved (they are post-treatment mediators). No effect on the result when
 omitted.}
 
-\item{nBoot}{integer (default 0): if positive, a stratified nonparametric
-bootstrap with \code{nBoot} resamples is used for the standard error and
-confidence interval (correct but computationally heavy --- each resample
-refits the transition hazards). With \code{nBoot = 0} only the point estimate and
-its favor/against decomposition are returned (\code{se}/CI are \code{NA}); see Details.}
+\item{nBoot}{integer (default 0): inference method. With \code{nBoot = 0} (default)
+the \strong{analytic adjoint-value efficient influence function} is used for the
+net RMT-IF standard error (fast). If positive, a stratified nonparametric
+bootstrap with \code{nBoot} resamples is used instead, which also gives SEs for
+the time-in-favor / time-against decomposition (correct but heavy --- each
+resample refits the transition hazards).}
 }
 \value{
-a \code{data.table} of class \code{"ConcreteOut"} with the net \code{RMT-IF}, the
-time in favor, and the time against; with \code{nBoot > 0} each carries a
-bootstrap SE and CI.
+a \code{data.table} of class \code{"ConcreteOut"} with the net \code{RMT-IF} (with an
+influence-function SE, CI and p-value), the time in favor, and the time
+against.
 }
 \description{
 The death-priority (multistate) version of the restricted mean time in favor of
@@ -105,13 +106,17 @@ with \eqn{\pi^a_r(t)} the probability that arm \eqn{a} occupies favorability
 level \eqn{r} at \eqn{t}.
 }
 \details{
-\strong{Inference.} The analytic adjoint-value efficient influence function for
-this estimand (the time integral of a bilinear functional of the multistate
-occupancy) is under development and validation; until it lands, set \code{nBoot}
-for resampling-based inference, or use \code{\link[=getRMTIF]{getRMTIF()}} (the first-event version,
-which has closed-form influence-function inference and reduces exactly to the
-RMST difference for a single event). The point estimate here is exact and is
-validated against a brute-force pairwise ground truth.
+\strong{Inference.} The net RMT-IF is the time integral of a bilinear
+functional of the two arms' multistate level-occupancy curves. Its efficient
+influence function is obtained by the chain rule: the per-arm occupancy
+influence functions (a reward-accumulation adjoint over the multistate process,
+with the death state absorbing) weighted by the gradient coefficients
+\eqn{c^1_r = P(\text{control worse than } r) - P(\text{control better than }
+r)} and the mirror for the control arm. This reuses the same adjoint-value
+machinery, IPCW correction, and cross-fitting as \code{\link[=clinicalWinRatio]{clinicalWinRatio()}}. The
+point estimate is exact and validated against a brute-force pairwise ground
+truth; the analytic SE is validated against the bootstrap and against
+empirical coverage. SEs for the favor/against decomposition require \code{nBoot}.
 }
 \seealso{
 \code{\link[=getRMTIF]{getRMTIF()}} (first-event version with closed-form inference),
