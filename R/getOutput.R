@@ -143,7 +143,35 @@ getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_alon
   attr(Output,"Estimand") <- EstimandType
   attr(Output,"GComp") <- GComp
   attr(Output,"Simultaneous") <- Simultaneous
-  attr(Output,"Signif") <- Signif 
+  attr(Output,"Signif") <- Signif
+  ## per-subject influence functions for getSimultaneousFamily(): risk differences
+  ## (the comparative target) and per-arm absolute risks, keyed by subject ID.
+  Time <- Event <- Estimand <- Estimator <- IC <- ID <- IC1 <- IC0 <- NULL
+  icAll <- data.table::as.data.table(attr(Risks, "IC"))
+  parts <- list()
+  if (any(grepl("RD", EstimandType))) {
+    A1 <- names(ConcreteEst)[Intervention[1]]; A0 <- names(ConcreteEst)[Intervention[2]]
+    ivn <- paste0("[", A1, "] - [", A0, "]")
+    m <- merge(icAll[icAll[["Intervention"]] == A1, list(ID, Time, Event, IC1 = IC)],
+               icAll[icAll[["Intervention"]] == A0, list(ID, Time, Event, IC0 = IC)],
+               by = c("ID", "Time", "Event"))
+    m[, "dic" := IC1 - IC0]
+    OutDT <- as.data.table(Output)
+    for (e in sort(unique(m[["Event"]]))) for (tt in sort(unique(m[["Time"]]))) {
+      mm <- m[Event == e & Time == tt][order(ID)]
+      row <- OutDT[OutDT[["Estimand"]] == "Risk Diff" & OutDT[["Estimator"]] == "tmle" &
+                     OutDT[["Event"]] == e & OutDT[["Time"]] == tt]
+      if (!nrow(row) || !nrow(mm)) next
+      parts[[length(parts) + 1L]] <- list(
+        key = paste0("RD e", e, " t", tt), Estimand = "Risk Diff", Event = e, Time = tt,
+        Intervention = ivn, est = row[["Pt Est"]][1], se = row[["se"]][1],
+        scale = "identity", ic = mm[["dic"]])
+    }
+  }
+  if (length(parts)) {
+    famIds <- sort(unique(icAll[["ID"]]))
+    Output <- .attachFamily(Output, famIds, parts)
+  }
   class(Output) <- union("ConcreteOut", class(Output))
   return(Output)
 }

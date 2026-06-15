@@ -121,6 +121,10 @@ doConCRTmle <- function(DataTable, TargetTime, TargetEvent, Regime, CVFolds, Mod
     attr(Estimates, "T.tilde") <- DataTable[[attr(DataTable, "EventTime")]]
     attr(Estimates, "TargetEvent") <- TargetEvent
     attr(Estimates, "Delta") <- DataTable[[attr(DataTable, "EventType")]]
+    ## per-subject IDs in data-row order, so the row-order influence functions of
+    ## targetRMST() / targetWinRatio() can be keyed back to the subject ID and
+    ## stacked across estimands by getSimultaneousFamily().
+    attr(Estimates, "ID") <- DataTable[[attr(DataTable, "ID")]]
     attr(Estimates, "GComp") <- GComp
     attr(Estimates, "EICStopRule") <- EICStopRule
     attr(Estimates, "EICStopAbsTol") <- EICStopAbsTol
