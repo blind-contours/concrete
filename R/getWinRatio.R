@@ -203,6 +203,19 @@ getWinRatio <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
   attr(Output, "Priority") <- TargetEvent
   attr(Output, "Simultaneous") <- FALSE
   attr(Output, "GComp") <- FALSE
+  ## per-subject influence functions for getSimultaneousFamily() (ratios on the
+  ## log scale, so se is the log-scale se and ic the log-scale IF).
+  DlogWR <- Dwin / Pwin - Dloss / Ploss
+  DlogWO <- (Dwin + Dtie / 2) / (Pwin + Ptie / 2) - (Dloss + Dtie / 2) / (Ploss + Ptie / 2)
+  iv <- paste0("[", A1, "] vs [", A0, "]")
+  Output <- .attachFamily(Output, idsSorted, list(
+    list(key = "Win Ratio", Estimand = "Win Ratio", Event = EventLab, Time = Horizon,
+         Intervention = iv, est = Pwin / Ploss, se = se(DlogWR), scale = "log", ic = DlogWR),
+    list(key = "Win Odds", Estimand = "Win Odds", Event = EventLab, Time = Horizon,
+         Intervention = iv, est = (Pwin + Ptie / 2) / (Ploss + Ptie / 2),
+         se = se(DlogWO), scale = "log", ic = DlogWO),
+    list(key = "Net Benefit", Estimand = "Net Benefit", Event = EventLab, Time = Horizon,
+         Intervention = iv, est = nb, se = se(Dnb), scale = "identity", ic = Dnb)))
   class(Output) <- union("ConcreteOut", class(Output))
   Output[]
 }

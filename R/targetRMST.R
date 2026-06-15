@@ -164,6 +164,29 @@ targetRMST <- function(ConcreteEst, Horizon = NULL, Intervention = seq_along(Con
   attr(Output, "RMSTSteps") <- vapply(armResults, function(x) x$steps, numeric(1))
   attr(Output, "Simultaneous") <- FALSE
   attr(Output, "GComp") <- FALSE
+  ## per-subject influence functions of the contrasts for getSimultaneousFamily();
+  ## icList is keyed by data-row index, mapped back to subject IDs on the fit.
+  if (length(Intervention) >= 2) {
+    A1n <- names(ConcreteEst)[Intervention[1]]; A0n <- names(ConcreteEst)[Intervention[2]]
+    ivn <- paste0("[", A1n, "] - [", A0n, "]")
+    origID <- attr(ConcreteEst, "ID"); if (is.null(origID)) origID <- seq_len(n)
+    icDT <- data.table::rbindlist(icList)
+    Estimand <- Event <- Estimator <- IC <- ID <- NULL
+    m <- merge(icDT[Intervention == A1n, list(ID, Event, IC1 = IC)],
+               icDT[Intervention == A0n, list(ID, Event, IC0 = IC)],
+               by = c("ID", "Event"))
+    m[, "dic" := IC1 - IC0]
+    parts <- lapply(sort(unique(m[["Event"]])), function(e) {
+      mm <- m[Event == e][order(ID)]
+      lab <- if (e == -1) "RMST Diff" else "LYL Diff"
+      row <- as.data.table(Output)[Estimand == lab & Event == e]
+      list(key = paste0(lab, " (event ", e, ")"), Estimand = lab, Event = e,
+           Time = Horizon, Intervention = ivn,
+           est = row[["Pt Est"]][1], se = row[["se"]][1], scale = "identity",
+           ic = mm[["dic"]])
+    })
+    Output <- .attachFamily(Output, origID[sort(unique(m[["ID"]]))], parts)
+  }
   class(Output) <- union("ConcreteOut", class(Output))
   Output
 }
