@@ -57,6 +57,7 @@ reference:
       - targetWinRatio
       - clinicalWinRatio
       - getRMTIF
+      - clinicalRMTIF
       - getSimultaneousFamily
   - title: Estimand framework
     contents:
