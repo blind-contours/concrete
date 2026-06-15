@@ -2,6 +2,26 @@
 
 ## concrete 1.1.1.9000
 
+### Joint simultaneous inference across the estimand family
+
+- New exported
+  **[`getSimultaneousFamily()`](https://blind-contours.github.io/concrete/reference/getSimultaneousFamily.md)**:
+  family-wise simultaneous confidence bands across an arbitrary set of
+  `concrete` estimands computed from the same fit — e.g. a risk
+  difference at several horizons together with the RMST difference and
+  the win ratio. It stacks the per-subject efficient influence functions
+  the estimators already produce into one influence matrix, estimates
+  their joint correlation, and takes the simultaneous critical value
+  from a Gaussian-multiplier bootstrap (`max_j |Z_j|`), so the bands
+  control the family-wise error without the conservativeness of a
+  Bonferroni correction (the estimands are strongly correlated, being
+  functions of the same targeted curves). Ratio estimands are handled on
+  the log scale; the bands inherit the covariate adjustment, censoring
+  correction, cross-fitting, and stratified-randomization variance
+  correction of the inputs. Every estimator (`getOutput`, `getRMST`,
+  `targetRMST`, `getWinRatio`, `targetWinRatio`) now attaches the
+  per-subject influence functions needed to feed it.
+
 ### Directly targeted win ratio
 
 - New exported

@@ -31,6 +31,8 @@
   : Directly targeted win ratio, win odds, and net benefit
 - [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
   : Hierarchical (death-priority) clinical win ratio (experimental)
+- [`getSimultaneousFamily()`](https://blind-contours.github.io/concrete/reference/getSimultaneousFamily.md)
+  : Joint simultaneous inference across a family of estimands
 
 ## Estimand framework
 
