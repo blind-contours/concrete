@@ -14,6 +14,7 @@
 <url><loc>https://blind-contours.github.io/concrete/authors.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/index.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/news/index.html</loc></url>
+<url><loc>https://blind-contours.github.io/concrete/reference/clinicalRMTIF.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/reference/clinicalWinRatio.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/reference/concrete-package.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/reference/doConcrete.html</loc></url>
@@ -22,6 +23,7 @@
 <url><loc>https://blind-contours.github.io/concrete/reference/getOutput.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/reference/getPositivityDx.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/reference/getRMST.html</loc></url>
+<url><loc>https://blind-contours.github.io/concrete/reference/getRMTIF.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/reference/getRelativeEfficiency.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/reference/getSimultaneousFamily.html</loc></url>
 <url><loc>https://blind-contours.github.io/concrete/reference/getTmleDiagnostics.html</loc></url>
