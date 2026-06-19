@@ -45,7 +45,8 @@ clinicalPSNB(
   SL.library = c("SL.mean", "SL.glm"),
   Signif = 0.05,
   id = NULL,
-  censoring.tv = NULL
+  censoring.tv = NULL,
+  pro = NULL
 )
 ```
 
@@ -84,9 +85,10 @@ clinicalPSNB(
 - charter:
 
   the priority charter: a numeric vector of length \\K\\ (the number of
-  layers, layer 1 = death), giving the weight on each layer (rescaled to
-  sum to 1). The special value `"reach"` uses the realized reach
-  weights, which reproduces the standard net benefit and win ratio
+  layers, layer 1 = death, followed by any non-fatal event tiers and
+  then any bottom `pro` tiers in order), giving the weight on each layer
+  (rescaled to sum to 1). The special value `"reach"` uses the realized
+  reach weights, which reproduces the standard net benefit and win ratio
   (useful as a reference / sanity check). The charter must be
   **prespecified**: it is part of the estimand, not a tuning parameter.
 
@@ -138,6 +140,23 @@ clinicalPSNB(
   censoring model (never the outcome hazards), so the marginal/ITT
   estimand is preserved (they are post-treatment mediators). No effect
   on the result when omitted.
+
+- pro:
+
+  optional continuous / ordinal patient-reported-outcome (PRO) tier(s)
+  appended at the **bottom** of the hierarchy (below all hard-event
+  tiers), the clinical norm for soft markers. A single spec (a named
+  `list`) or a `list` of specs, each with: `marker` (column of the
+  landmark value, `NA` if not measured), `landmark` (measurement time;
+  default = horizon), `margin` (the win margin \\\delta\\; default 0),
+  `direction` (`"higher.better"` (default) or `"lower.better"`), `type`
+  (`"continuous"` (default) or `"ordinal"`), `n.grid` (cutpoint
+  resolution for continuous markers; default 80), and optional `label`.
+  A pair reaches a PRO tier iff tied on all higher tiers (both
+  event-free and alive at the horizon); within reach the markers are
+  compared with margin \\\delta\\. The marker distribution is
+  **reach-weighted** standardized and landmark-missingness is
+  IPCW-corrected; see Details and `clinicalPSNB()`.
 
 ## Value
 

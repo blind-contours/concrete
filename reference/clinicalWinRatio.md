@@ -28,8 +28,10 @@ event columns (below) rather than the standard
 [`formatArguments()`](https://blind-contours.github.io/concrete/reference/formatArguments.md)
 pipeline, and assumes non-recurrent events, conditionally-independent
 censoring (CAR), and a Markov model. Recurrent-event tiers (repeated
-hospitalizations) and continuous/ordinal tiers (e.g.\\ KCCQ) are not yet
-supported.
+hospitalizations) are not yet supported. **Continuous / ordinal
+patient-reported-outcome (PRO) tiers** (e.g.\\ KCCQ, NYHA, 6-minute
+walk) measured at a landmark *are* supported as bottom tiers via the
+`pro` argument — see Details.
 
 ## Usage
 
@@ -47,7 +49,8 @@ clinicalWinRatio(
   SL.library = c("SL.mean", "SL.glm"),
   Signif = 0.05,
   id = NULL,
-  censoring.tv = NULL
+  censoring.tv = NULL,
+  pro = NULL
 )
 ```
 
@@ -132,12 +135,46 @@ clinicalWinRatio(
   estimand is preserved (they are post-treatment mediators). No effect
   on the result when omitted.
 
+- pro:
+
+  optional continuous / ordinal patient-reported-outcome (PRO) tier(s)
+  appended at the **bottom** of the hierarchy (below all hard-event
+  tiers), the clinical norm for soft markers. A single spec (a named
+  `list`) or a `list` of specs, each with: `marker` (column of the
+  landmark value, `NA` if not measured), `landmark` (measurement time;
+  default = horizon), `margin` (the win margin \\\delta\\; default 0),
+  `direction` (`"higher.better"` (default) or `"lower.better"`), `type`
+  (`"continuous"` (default) or `"ordinal"`), `n.grid` (cutpoint
+  resolution for continuous markers; default 80), and optional `label`.
+  A pair reaches a PRO tier iff tied on all higher tiers (both
+  event-free and alive at the horizon); within reach the markers are
+  compared with margin \\\delta\\. The marker distribution is
+  **reach-weighted** standardized and landmark-missingness is
+  IPCW-corrected; see Details and
+  [`clinicalPSNB()`](https://blind-contours.github.io/concrete/reference/clinicalPSNB.md).
+
 ## Value
 
 a `data.table` of class `"ConcreteOut"` with the win ratio, win odds,
 net benefit, and the win/loss/tie probabilities, each with an
 influence-function standard error, confidence interval, and (for the
 comparative statistics) a p-value against the null of no difference.
+
+## Details
+
+**PRO tiers (experimental).** A continuous/ordinal marker measured at a
+landmark is compared among pairs that reach the tier (tied on all
+higher, hard-event tiers). Because the marker is defined only among
+reachers, the standardized CDF is reach-weighted, \\G_a^R(y) =
+E\[\rho_a(W)Q_a(y\|W)\] / E\[\rho_a(W)\]\\ with \\\rho_a(W)\\ the
+engine's state-0 (event-free, alive) occupancy at the horizon and
+\\Q_a\\ the conditional marker CDF (IPCW-weighted binary-threshold Super
+Learner for landmark missingness). Inference is by the analytic
+influence function (reach via the occupancy adjoint, marker via the IPCW
+residual). **Working assumption**: the landmark marker is conditionally
+independent of the post-landmark event process given \\(W,\text{arm})\\.
+PRO tiers must sit below the hard-event tiers; one ranked above a hard
+event is not yet supported.
 
 ## Small-sample behavior
 
