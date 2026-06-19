@@ -21,7 +21,7 @@
   for (s in ALIVE) { structTrans <- c(structTrans, paste0(s, "|D"))
     for (e in NF) if (bitwAnd(s, EVB[[e]]) == 0L) structTrans <- c(structTrans, paste0(s, "|", e)) }
   TIERS <- c(list(list(self = "D", higher = character(0), lower = NF)),
-             lapply(2:K, function(k) list(self = NF[k - 1L],
+             lapply(seq_len(K - 1L) + 1L, function(k) list(self = NF[k - 1L],
                higher = NF[seq_len(k - 2L)], lower = if (k < K) NF[k:(K - 1L)] else character(0))))
   selfBit <- function(ev) if (ev == "D") -1L else EVB[[ev]]
   inSet   <- function(s, set) s %in% set
@@ -377,13 +377,20 @@
 #' Assemble the win ratio / win odds / net benefit table with IF inference.
 #' @keywords internal
 #' @noRd
-.msWinRatioOut <- function(eng, trt, ctl, Signif) {
+.msWinRatioOut <- function(eng, trt, ctl, Signif, pro = NULL) {
   base <- eng$assembleWR(eng$armTiers(trt$rmat), eng$armTiers(ctl$rmat))
   win <- eng$assembleDP(trt, ctl); los <- eng$assembleDP(ctl, trt)
   DPwin_T <- win$winnerIF; DPwin_C <- win$loserIF; DPloss_C <- los$winnerIF; DPloss_T <- los$loserIF
+  Pwin_pro <- 0; Ploss_pro <- 0
+  if (!is.null(pro)) {                                                # append bottom PRO tiers
+    sumIF <- function(L) if (length(L)) Reduce(`+`, L) else 0
+    Pwin_pro  <- sum(pro$winP);  Ploss_pro  <- sum(pro$losP)
+    DPwin_T  <- DPwin_T  + sumIF(pro$winIFwin); DPwin_C  <- DPwin_C  + sumIF(pro$winIFlos)
+    DPloss_C <- DPloss_C + sumIF(pro$losIFwin); DPloss_T <- DPloss_T + sumIF(pro$losIFlos)
+  }
   Ntot <- trt$n + ctl$n; piT <- trt$n / Ntot; piC <- ctl$n / Ntot; z <- stats::qnorm(1 - Signif / 2)
-  Pwin  <- unname(base["Pwin"]  + mean(DPwin_T)  + mean(DPwin_C))     # one-step
-  Ploss <- unname(base["Ploss"] + mean(DPloss_T) + mean(DPloss_C))
+  Pwin  <- unname(base["Pwin"]  + Pwin_pro  + mean(DPwin_T)  + mean(DPwin_C))     # one-step
+  Ploss <- unname(base["Ploss"] + Ploss_pro + mean(DPloss_T) + mean(DPloss_C))
   Ptie  <- max(0, 1 - Pwin - Ploss)
   seGrad <- function(gw, gl) {
     Dt <- (1 / piT) * (gw * DPwin_T + gl * DPloss_T); Dc <- (1 / piC) * (gw * DPwin_C + gl * DPloss_C)

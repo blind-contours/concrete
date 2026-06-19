@@ -27,8 +27,10 @@
 #'
 #' @inheritParams clinicalWinRatio
 #' @param charter the priority charter: a numeric vector of length \eqn{K} (the
-#'   number of layers, layer 1 = death), giving the weight on each layer (rescaled
-#'   to sum to 1). The special value `"reach"` uses the realized reach weights,
+#'   number of layers, layer 1 = death, followed by any non-fatal event tiers and
+#'   then any bottom `pro` tiers in order), giving the weight on each layer
+#'   (rescaled to sum to 1). The special value `"reach"` uses the realized reach
+#'   weights,
 #'   which reproduces the standard net benefit and win ratio (useful as a
 #'   reference / sanity check). The charter must be \strong{prespecified}: it is
 #'   part of the estimand, not a tuning parameter.
@@ -45,7 +47,7 @@
 clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status,
                          covariates, charter, horizon = NULL, n.grid = 60L, n.folds = 5L,
                          SL.library = c("SL.mean", "SL.glm"), Signif = 0.05,
-                         id = NULL, censoring.tv = NULL) {
+                         id = NULL, censoring.tv = NULL, pro = NULL) {
   data <- as.data.frame(data)
   illness.time <- as.character(illness.time)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
@@ -55,7 +57,9 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   term <- data[[terminal.time]]; delta <- data[[terminal.status]]
   if (!all(delta %in% c(0, 1))) stop("terminal.status must be coded 0/1 (1 = death).")
   if (is.null(horizon)) horizon <- max(term[is.finite(term)])
-  K <- 1L + length(illness.time)
+  Kev <- 1L + length(illness.time)                     # number of hard-event tiers
+  pros <- .proNormalize(pro, data, horizon)            # bottom PRO tiers (or NULL)
+  K <- Kev + length(pros)                              # total tiers (charter length)
   useReach <- is.character(charter) && identical(charter[1], "reach")
   if (!useReach) {
     if (!is.numeric(charter) || length(charter) != K)
@@ -66,14 +70,17 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
     alpha <- charter / sum(charter)
   }
   grid <- seq(0, horizon, length.out = as.integer(n.grid) + 1L)
-  eng <- .msEngine(K, grid)
+  eng <- .msEngine(Kev, grid)                          # engine spans the hard-event tiers
+  proCols <- unique(vapply(pros, function(s) s$marker, character(1)))
 
   parseArm <- function(rows) {
     D <- data[rows, covariates, drop = FALSE]
     D$tD <- ifelse(delta[rows] == 1, term[rows], Inf)
     for (ei in seq_along(illness.time)) {
       ti <- data[[illness.time[ei]]][rows]; ti[is.na(ti)] <- Inf; D[[paste0("t", ei)]] <- ti }
-    D$C <- ifelse(delta[rows] == 0, term[rows], Inf); D
+    D$C <- ifelse(delta[rows] == 0, term[rows], Inf)
+    for (mc in proCols) D[[mc]] <- data[[mc]][rows]    # carry PRO markers through
+    D
   }
   tvMats <- NULL
   if (!is.null(censoring.tv)) {
@@ -85,18 +92,28 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
     D <- parseArm(rows)
     tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[rows, , drop = FALSE])
     nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA)
-    eng$armSetup(D, nu$rmat, nu$Ginv)
+    list(arm = eng$armSetup(D, nu$rmat, nu$Ginv), D = D)
   }
-  trt <- fitArm(which(A == 1)); ctl <- fitArm(which(A == 0))
+  fT <- fitArm(which(A == 1)); fC <- fitArm(which(A == 0))
+  trt <- fT$arm; ctl <- fC$arm
   nT <- trt$n; nC <- ctl$n; Ntot <- nT + nC; piT <- nT / Ntot; piC <- nC / Ntot
   z <- stats::qnorm(1 - Signif / 2)
 
-  ## per-tier win/loss components + per-arm influence functions
+  ## per-tier win/loss components + per-arm influence functions (hard-event tiers)
   winT <- eng$tierComponents(trt, ctl)   # W^{(k)}: IFwin over treated, IFlos over control
   losT <- eng$tierComponents(ctl, trt)   # L^{(k)}: IFwin over control, IFlos over treated
   Wk <- winT$P; Lk <- losT$P
   DWk_T <- winT$IFwin; DWk_C <- winT$IFlos        # treated / control IFs of W^{(k)}
   DLk_C <- losT$IFwin; DLk_T <- losT$IFlos        # control / treated IFs of L^{(k)}
+  ## append bottom PRO tiers (reach-weighted marker comparison)
+  proLab <- character(0)
+  if (!is.null(pros)) {
+    pc <- .proComponents(eng, pros, fT$D, fC$D, trt, ctl, covariates, SL.library, n.folds)
+    Wk <- c(Wk, pc$winP); Lk <- c(Lk, pc$losP)
+    DWk_T <- c(DWk_T, pc$winIFwin); DWk_C <- c(DWk_C, pc$winIFlos)
+    DLk_C <- c(DLk_C, pc$losIFwin); DLk_T <- c(DLk_T, pc$losIFlos)
+    proLab <- pc$labels
+  }
 
   ## reach, stage-conditional w/l, and their influence functions (delta method)
   zT <- numeric(nT); zC <- numeric(nC)
@@ -138,7 +155,7 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
       `CI Low` = psnb - z*sePsnb, `CI Hi` = psnb + z*sePsnb, pValue = 2*stats::pnorm(-abs(psnb/sePsnb))),
     data.table::data.table(Estimand = "PSWR", `Pt Est` = pswr, se = pswr*slwr,
       `CI Low` = pswr*exp(-z*slwr), `CI Hi` = pswr*exp(z*slwr), pValue = 2*stats::pnorm(-abs(log(pswr)/slwr))))
-  tierLab <- c("D", eng$NF)
+  tierLab <- c("D", eng$NF, proLab)
   for (k in seq_len(K)) {
     se_dk <- seGrad(IFw_T[[k]] - IFl_T[[k]], IFw_C[[k]] - IFl_C[[k]])
     rows[[length(rows)+1L]] <- data.table::data.table(
