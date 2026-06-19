@@ -8,7 +8,7 @@ Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1",
            VECLIB_MAXIMUM_THREADS = "1", MKL_NUM_THREADS = "1")
 suppressWarnings(suppressMessages({ devtools::load_all(".", quiet = TRUE); library(data.table) }))
 data.table::setDTthreads(1L)
-MC <- 1L; B <- 40L; n <- 800L; tau <- 4; tauL <- 1; delta <- 5
+MC <- 1L; B <- 40L; n <- 800L; tau <- 4; tauL <- 4; delta <- 5   # final-visit PRO (landmark = horizon)
 alpha <- c(0.5, 0.5)                                   # charter: death 0.5, KCCQ 0.5
 bD <- function(W,A) 0.12*exp(0.3*W - 0.6*A)
 muY <- function(W,A) 58 + 6*W + 7*A; sdY <- 14
@@ -40,7 +40,7 @@ proSpec <- list(marker="kccq", landmark=tauL, margin=delta, direction="higher.be
 simOne <- function(seed) {
   set.seed(seed); A<-rep(0:1,each=n); W<-rnorm(2*n)
   tD<-rexp(2*n,bD(W,A)); C<-rexp(2*n,0.04); obst<-pmin(tD,C,tau)
-  aliveL <- tD>tauL & C>tauL
+  aliveL <- tD>tauL & C>=tauL
   kccq <- ifelse(aliveL & runif(2*n)<piObs(W), muY(W,A)+rnorm(2*n,0,sdY), NA)
   dat<-data.frame(arm=A, t_term=obst, died=as.integer(tD<=pmin(C,tau)),
                   W=W, W2=rnorm(2*n), kccq=kccq)

@@ -1,25 +1,27 @@
 # concrete 1.1.1.9000
 
-## Continuous / ordinal PRO tiers for the win statistics
+## Continuous / ordinal PRO tiers for the win statistics (TRISCEND II-style)
 
 * `clinicalWinRatio()` and `clinicalPSNB()` gain a **`pro`** argument: continuous
   or ordinal patient-reported-outcome tiers (e.g. KCCQ, NYHA, 6-minute walk)
-  measured at a landmark, appended at the **bottom** of the hierarchy (the
-  clinical norm for soft markers; multiple PRO tiers may be stacked). A pair
-  reaches a PRO tier iff tied on every higher, hard-event tier (both event-free
-  and alive at the horizon); within reach the markers are compared with a win
-  margin `delta` and a direction (`higher.better` / `lower.better`). The marker
-  distribution is **reach-weighted standardized**, `G_a^R(y) = E[rho_a(W)
-  Q_a(y|W)] / E[rho_a(W)]` --- not a naive marginal --- with `rho_a(W)` the
-  engine's event-free-alive (state-0) occupancy and `Q_a` an IPCW-weighted
-  binary-threshold Super Learner conditional CDF (corrects landmark
-  missingness). Inference is the analytic influence function (reach via the
-  occupancy adjoint, marker via the IPCW residual). Validated end-to-end against
-  a brute-force pairwise truth (reach unbiased; PSNB essentially unbiased;
-  coverage approaching nominal as n grows, with the usual win-ratio small-sample
-  anti-conservatism). Experimental; assumes the landmark marker is conditionally
-  independent of the post-landmark event process given baseline covariates and
-  arm. A PRO ranked *above* a hard event is not yet supported.
+  measured at the final visit, appended at the **bottom** of the hierarchy (the
+  clinical norm for soft markers; multiple PRO tiers may be stacked in priority
+  order). This reproduces the **TRISCEND II** primary endpoint (Hahn et al., NEJM
+  2025): `death > RV-assist/transplant > tricuspid reintervention > HF
+  hospitalization > KCCQ >= 10 > NYHA >= 1 class > 6-min walk >= 30 m`.
+* A pair reaches the PRO block iff tied on every hard-event tier (both event-free
+  and alive at the horizon); within reach the PRO tiers are compared
+  **sequentially**, each with a win margin `delta` and a direction
+  (`higher.better` / `lower.better`). The block is estimated by a **reach-weighted,
+  IPCW-corrected two-sample generalized pairwise comparison** on the joint marker
+  vectors (pairs restricted to reachers; missing final visits inverse-probability
+  weighted), so the markers may be arbitrarily correlated and the sequential
+  tie-passing among PRO tiers is exact. Inference is the two-sample U-statistic
+  (Hajek) influence function; hard-event tiers above keep the engine's
+  covariate-adjusted, doubly-robust influence-function inference. Validated
+  end-to-end against a brute-force pairwise win-ratio truth over the full 7-tier
+  hierarchy. Experimental; the PRO landmark must equal the horizon (final-visit
+  design), and a PRO ranked *above* a hard event is not supported.
 * The multistate engine now supports a **death-only** hard-event hierarchy
   (`Kev = 1`), e.g. `death > KCCQ` with no non-fatal event tier.
 
