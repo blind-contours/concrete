@@ -18,7 +18,8 @@ clinicalPSNB(
   SL.library = c("SL.mean", "SL.glm"),
   Signif = 0.05,
   id = NULL,
-  censoring.tv = NULL
+  censoring.tv = NULL,
+  pro = NULL
 )
 }
 \arguments{
@@ -41,8 +42,10 @@ or of censoring, whichever came first).}
 \item{covariates}{character vector: baseline covariate column names.}
 
 \item{charter}{the priority charter: a numeric vector of length \eqn{K} (the
-number of layers, layer 1 = death), giving the weight on each layer (rescaled
-to sum to 1). The special value \code{"reach"} uses the realized reach weights,
+number of layers, layer 1 = death, followed by any non-fatal event tiers and
+then any bottom \code{pro} tiers in order), giving the weight on each layer
+(rescaled to sum to 1). The special value \code{"reach"} uses the realized reach
+weights,
 which reproduces the standard net benefit and win ratio (useful as a
 reference / sanity check). The charter must be \strong{prespecified}: it is
 part of the estimand, not a tuning parameter.}
@@ -79,6 +82,19 @@ bias when dropout is driven by these measurements. They enter \strong{only} the
 censoring model (never the outcome hazards), so the marginal/ITT estimand is
 preserved (they are post-treatment mediators). No effect on the result when
 omitted.}
+
+\item{pro}{optional continuous / ordinal patient-reported-outcome (PRO) tier(s)
+appended at the \strong{bottom} of the hierarchy (below all hard-event tiers),
+the clinical norm for soft markers. A single spec (a named \code{list}) or a \code{list}
+of specs, each with: \code{marker} (column of the landmark value, \code{NA} if not
+measured), \code{landmark} (measurement time; default = horizon), \code{margin} (the win
+margin \eqn{\delta}; default 0), \code{direction} (\code{"higher.better"} (default) or
+\code{"lower.better"}), \code{type} (\code{"continuous"} (default) or \code{"ordinal"}), \code{n.grid}
+(cutpoint resolution for continuous markers; default 80), and optional \code{label}.
+A pair reaches a PRO tier iff tied on all higher tiers (both event-free and
+alive at the horizon); within reach the markers are compared with margin
+\eqn{\delta}. The marker distribution is \strong{reach-weighted} standardized
+and landmark-missingness is IPCW-corrected; see Details and \code{\link[=clinicalPSNB]{clinicalPSNB()}}.}
 }
 \value{
 a \code{data.table} of class \code{"ConcreteOut"} with \code{PSNB} and \code{PSWR} (each

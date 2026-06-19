@@ -17,7 +17,8 @@ clinicalWinRatio(
   SL.library = c("SL.mean", "SL.glm"),
   Signif = 0.05,
   id = NULL,
-  censoring.tv = NULL
+  censoring.tv = NULL,
+  pro = NULL
 )
 }
 \arguments{
@@ -71,6 +72,19 @@ bias when dropout is driven by these measurements. They enter \strong{only} the
 censoring model (never the outcome hazards), so the marginal/ITT estimand is
 preserved (they are post-treatment mediators). No effect on the result when
 omitted.}
+
+\item{pro}{optional continuous / ordinal patient-reported-outcome (PRO) tier(s)
+appended at the \strong{bottom} of the hierarchy (below all hard-event tiers),
+the clinical norm for soft markers. A single spec (a named \code{list}) or a \code{list}
+of specs, each with: \code{marker} (column of the landmark value, \code{NA} if not
+measured), \code{landmark} (measurement time; default = horizon), \code{margin} (the win
+margin \eqn{\delta}; default 0), \code{direction} (\code{"higher.better"} (default) or
+\code{"lower.better"}), \code{type} (\code{"continuous"} (default) or \code{"ordinal"}), \code{n.grid}
+(cutpoint resolution for continuous markers; default 80), and optional \code{label}.
+A pair reaches a PRO tier iff tied on all higher tiers (both event-free and
+alive at the horizon); within reach the markers are compared with margin
+\eqn{\delta}. The marker distribution is \strong{reach-weighted} standardized
+and landmark-missingness is IPCW-corrected; see Details and \code{\link[=clinicalPSNB]{clinicalPSNB()}}.}
 }
 \value{
 a \code{data.table} of class \code{"ConcreteOut"} with the win ratio, win odds,
@@ -103,8 +117,24 @@ article and \verb{scripts/genwr-*.R}.
 It is marked experimental because it currently takes its own per-subject event
 columns (below) rather than the standard \code{\link[=formatArguments]{formatArguments()}} pipeline, and
 assumes non-recurrent events, conditionally-independent censoring (CAR), and a
-Markov model. Recurrent-event tiers (repeated hospitalizations) and
-continuous/ordinal tiers (e.g.\ KCCQ) are not yet supported.
+Markov model. Recurrent-event tiers (repeated hospitalizations) are not yet
+supported. \strong{Continuous / ordinal patient-reported-outcome (PRO) tiers}
+(e.g.\ KCCQ, NYHA, 6-minute walk) measured at a landmark \emph{are} supported as
+bottom tiers via the \code{pro} argument --- see Details.
+}
+\details{
+\strong{PRO tiers (experimental).} A continuous/ordinal marker measured at a
+landmark is compared among pairs that reach the tier (tied on all higher,
+hard-event tiers). Because the marker is defined only among reachers, the
+standardized CDF is reach-weighted, \eqn{G_a^R(y) = E[\rho_a(W)Q_a(y|W)] /
+E[\rho_a(W)]} with \eqn{\rho_a(W)} the engine's state-0 (event-free, alive)
+occupancy at the horizon and \eqn{Q_a} the conditional marker CDF (IPCW-weighted
+binary-threshold Super Learner for landmark missingness). Inference is by the
+analytic influence function (reach via the occupancy adjoint, marker via the
+IPCW residual). \strong{Working assumption}: the landmark marker is conditionally
+independent of the post-landmark event process given \eqn{(W,\text{arm})}. PRO
+tiers must sit below the hard-event tiers; one ranked above a hard event is not
+yet supported.
 }
 \section{Small-sample behavior}{
 
