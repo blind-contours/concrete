@@ -2,6 +2,51 @@
 
 ## concrete 1.1.1.9000
 
+### Restricted mean time in favor of treatment (RMT-IF)
+
+- New exported
+  **[`getRMTIF()`](https://blind-contours.github.io/concrete/reference/getRMTIF.md)**
+  (first-event / competing risks) and
+  **[`clinicalRMTIF()`](https://blind-contours.github.io/concrete/reference/clinicalRMTIF.md)**
+  (death-priority multistate, credits death after a non-fatal event):
+  the average time over `[0, tau]` a treated patient spends in a more
+  favorable state than a control — the time-units companion to the win
+  ratio (Mao 2023).
+  [`getRMTIF()`](https://blind-contours.github.io/concrete/reference/getRMTIF.md)
+  reduces **exactly** to the RMST difference for a single event (so RMST
+  and the win statistics are two ends of one favor-time functional) and
+  has closed-form influence-function inference;
+  [`clinicalRMTIF()`](https://blind-contours.github.io/concrete/reference/clinicalRMTIF.md)
+  carries an analytic adjoint-value efficient influence function. Both
+  validated against brute-force and closed-form truth (K=2/K=3 coverage
+  0.96–0.97, calibrated SEs, unbiased under cross-fitting). Feed
+  [`getSimultaneousFamily()`](https://blind-contours.github.io/concrete/reference/getSimultaneousFamily.md).
+
+### Charter-weighted win ratio (priority-standardized net benefit)
+
+- New exported
+  **[`clinicalPSNB()`](https://blind-contours.github.io/concrete/reference/clinicalPSNB.md)**:
+  the priority-standardized net benefit (PSNB) and win ratio (PSWR).
+  Standard hierarchical win statistics aggregate the per-layer effects
+  using implicit *reach* weights (set by the outcome/censoring
+  distribution, not clinical priority), so a frequently-reached
+  low-priority layer can dominate.
+  [`clinicalPSNB()`](https://blind-contours.github.io/concrete/reference/clinicalPSNB.md)
+  lets the user supply a prespecified clinical **charter** and
+  recombines the layer-specific effects with it:
+  `PSNB = sum_k alpha_k Delta_k`,
+  `PSWR = sum_k alpha_k w_k / sum_k alpha_k l_k`. It reuses
+  [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)’s
+  validated multistate engine (which already produces the per-tier
+  components `W^(k)=r_k w_k`), divides the reach back out, and
+  recombines with the charter, propagating influence functions by the
+  delta method — giving the covariate-adjusted, doubly-robust,
+  IPCW-corrected estimator of these estimands. Reports each layer’s
+  reach and stage-conditional net benefit; `charter = "reach"`
+  reproduces the standard net benefit / win ratio. Validated against a
+  brute-force charter-weighted truth (coverage 0.967, SE ratio ~0.91 for
+  both PSNB and PSWR).
+
 ### Joint simultaneous inference across the estimand family
 
 - New exported

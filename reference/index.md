@@ -31,6 +31,8 @@
   : Directly targeted win ratio, win odds, and net benefit
 - [`clinicalWinRatio()`](https://blind-contours.github.io/concrete/reference/clinicalWinRatio.md)
   : Hierarchical (death-priority) clinical win ratio (experimental)
+- [`clinicalPSNB()`](https://blind-contours.github.io/concrete/reference/clinicalPSNB.md)
+  : Priority-standardized net benefit and win ratio (charter-weighted)
 - [`getRMTIF()`](https://blind-contours.github.io/concrete/reference/getRMTIF.md)
   : Restricted mean time in favor of treatment (first-event competing
   risks)
