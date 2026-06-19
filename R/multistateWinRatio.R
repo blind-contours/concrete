@@ -292,6 +292,23 @@
     }
     list(winnerIF = DPt_win, loserIF = DPt_los)
   }
+
+  ## ---- per-tier win components + their per-subject influence functions ----
+  ## Returns, for the comparison "win = winner beats loser at tier k":
+  ##   P  : length-K vector of tier win probabilities W^{(k)} = r_k w_k (one-step)
+  ##   IFwin/IFlos : length-K lists of per-subject IFs over the winner/loser arms.
+  ## Used by clinicalPSNB(): the standard win ratio sums these tiers; the charter
+  ## (PSNB/PSWR) divides out the reach and recombines them with weights.
+  tierComponents <- function(win, los) {
+    P <- numeric(length(TIERS)); IFwin <- vector("list", length(TIERS)); IFlos <- vector("list", length(TIERS))
+    for (k in seq_along(TIERS)) {
+      IFwin[[k]] <- sum(los$q[[k]]) * DmIF(win, k) - PhiwIF(win, k, Qbar(los$q[[k]]))
+      IFlos[[k]] <- PhiwIF(los, k, win$m[[k]] - Qlag(win$q[[k]]))
+      plugin <- sum((win$m[[k]] - Qlag(win$q[[k]])) * los$q[[k]])           # = Wtier on marginal q,m
+      P[k] <- plugin + mean(IFwin[[k]]) + mean(IFlos[[k]])                  # one-step tier component
+    }
+    list(P = P, IFwin = IFwin, IFlos = IFlos)
+  }
   environment()
 }
 
