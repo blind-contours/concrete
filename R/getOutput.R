@@ -125,8 +125,15 @@ getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_alon
                           A0 = names(ConcreteEst)[Intervention[2]], TargetTime = TargetTime, 
                           TargetEvent = TargetEvent, GComp = GComp))
   
-  Output[, `CI Low` := `Pt Est` - qnorm(1 - Signif/2)*se]
-  Output[, `CI Hi` := `Pt Est` + qnorm(1 - Signif/2)*se]
+  .z <- qnorm(1 - Signif/2)
+  Output[, `CI Low` := `Pt Est` - .z*se]
+  Output[, `CI Hi` := `Pt Est` + .z*se]
+  ## ratio estimands get a log-scale (delta-method) CI -- symmetric on the log
+  ## scale, always positive, better small-sample coverage (matches the win ratio).
+  ## se is the natural-scale SE, so se_log = se / RR.
+  Output[Estimand == "Rel Risk" & `Pt Est` > 0,
+         `:=`(`CI Low` = `Pt Est` * exp(-.z * se / `Pt Est`),
+              `CI Hi`  = `Pt Est` * exp( .z * se / `Pt Est`))]
   
   if (Simultaneous)
     Output <- getSimultaneous(ConcreteEst = ConcreteEst, Output = Output, EstimandType = EstimandType,
@@ -319,7 +326,7 @@ getSimultaneous <- function(ConcreteEst, Output, EstimandType, Intervention, Sig
   CorrEIC <- cor(subset(ICs, select = keepCol))
   n <- length(attr(ConcreteEst, "T.tilde"))
   
-  q <- apply(abs(MASS::mvrnorm(n = 1e3, mu = rep(0, nrow(CorrEIC)), Sigma = CorrEIC)), 1, max)
+  q <- apply(abs(MASS::mvrnorm(n = 1e4, mu = rep(0, nrow(CorrEIC)), Sigma = CorrEIC)), 1, max)
   q <- as.numeric(stats::quantile(q, 1 - Signif))
   se <- data.table(names = rownames(CorrEIC), SimQ = q)
   se[, c("Intervention", "Time", "Event") := tstrsplit(names, "_")]

@@ -15,11 +15,13 @@
 #'
 #' The PRO block is estimated by a \strong{reach-weighted, IPCW-corrected
 #' two-sample GPC} on the joint marker vectors: pairs are restricted to reachers,
-#' missing landmark visits are inverse-probability weighted (a per-arm logistic
-#' attendance model), and the comparison uses the actual paired marker values, so
-#' the markers may be arbitrarily correlated (no marker-independence assumption,
-#' and the sequential tie-passing among PRO tiers is exact). Influence-function
-#' inference is the two-sample U-statistic (Hajek) projection.
+#' weighted by inverse censoring survival \eqn{1/G(\tau\mid W)} (so an observed
+#' reacher stands in for everyone who would have been event-free at the horizon
+#' absent censoring) and by inverse landmark-visit-attendance probability (a per-arm
+#' logistic model), and the comparison uses the actual paired marker values, so the
+#' markers may be arbitrarily correlated (no marker-independence assumption, and the
+#' sequential tie-passing among PRO tiers is exact). Influence-function inference is
+#' the two-sample U-statistic (Hajek) projection.
 #'
 #' \strong{Scope.} The PRO block requires the landmark = the horizon (the standard
 #' final-visit QoL design, and TRISCEND II); reach is then event-free survival to
@@ -71,7 +73,7 @@
   tcols <- if (length(NF)) paste0("t", NF) else character(0)
   markers <- vapply(pros, function(s) s$marker, character(1))
 
-  armBlock <- function(Darm) {
+  armBlock <- function(Darm, armObj) {
     n <- nrow(Darm)
     reached <- Darm$tD > H & Darm$C >= H                      # event-free, alive, in follow-up at horizon
     for (tc in tcols) reached <- reached & (Darm[[tc]] > H)
@@ -86,10 +88,14 @@
             error = function(e) NULL)
       if (!is.null(fo)) pio <- as.numeric(stats::predict(fo, Cov, type = "response"))
     }
-    u <- ifelse(blockobs, 1 / pmax(pio, 0.025), 0)
+    ## inverse-censoring-survival to the horizon, 1/G(H | W): a reacher (uncensored
+    ## to H) stands in for everyone who would be event-free at H absent censoring.
+    ## The engine carries 1/G as Ginv (n x M); its last column is 1/G(H^-).
+    Gci <- armObj$Ginv[, ncol(armObj$Ginv)]
+    u <- ifelse(blockobs, Gci / pmax(pio, 0.025), 0)
     list(idx = which(blockobs), Y = Y, u = u, n = n)
   }
-  BT <- armBlock(Dtrt); BC <- armBlock(Dctl)
+  BT <- armBlock(Dtrt, trt); BC <- armBlock(Dctl, ctl)
   nT <- BT$n; nC <- BC$n; iT <- BT$idx; iC <- BC$idx
   uT <- BT$u[iT]; uC <- BC$u[iC]
   YT <- BT$Y[iT, , drop = FALSE]; YC <- BC$Y[iC, , drop = FALSE]

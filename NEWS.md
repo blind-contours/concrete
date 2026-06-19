@@ -1,5 +1,26 @@
 # concrete 1.1.1.9000
 
+## Estimator audit fixes
+
+* **PRO tiers now inverse-probability-weight pre-horizon censoring.** The PRO
+  block previously corrected only for landmark-visit non-attendance, not for
+  censoring before the horizon, so its win/loss components were attenuated
+  (~`G(tau)^2`) while the hard-tier reach was censoring-corrected --- biasing
+  `clinicalWinRatio` / `clinicalPSNB` PRO tiers toward the null under meaningful
+  censoring. Reachers are now weighted by `1/G(tau | W)` (the engine's `Ginv` at
+  the horizon). Validated: the conditional PRO net benefit is now invariant to the
+  censoring rate (0.25 across 0/18/45% pre-horizon censoring vs a drift to 0.08
+  before), and the TRISCEND II 7-tier win-ratio bias falls from −0.10 to −0.05
+  with coverage 0.967.
+* **Ratio confidence intervals (`Rel Risk`) are now on the log scale** in
+  `getOutput()` --- symmetric in log, always positive, better small-sample coverage
+  (the win ratio already did this). Point estimates, SEs and Wald p-values are
+  unchanged. Validated: null RR (=1) log-scale CI coverage 0.956. The core TMLE
+  was re-confirmed well-calibrated in the same run (RD coverage 0.950, type-I
+  0.050; per-arm risk 0.96–0.98).
+* `getOutput()` simultaneous bands use 1e4 (was 1e3) multiplier draws for a stabler
+  max-statistic quantile, matching `getSimultaneousFamily()`.
+
 ## Continuous / ordinal PRO tiers for the win statistics (TRISCEND II-style)
 
 * `clinicalWinRatio()` and `clinicalPSNB()` gain a **`pro`** argument: continuous

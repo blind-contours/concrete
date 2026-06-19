@@ -132,8 +132,9 @@ decided at the first PRO tier whose two markers differ by more than that tier's
 margin \eqn{\delta}, else it descends to the next PRO tier. The block is
 estimated by a \strong{reach-weighted, IPCW-corrected two-sample generalized
 pairwise comparison} on the joint marker vectors --- pairs restricted to
-reachers, missing visits inverse-probability weighted (a per-arm attendance
-model) --- so the markers may be arbitrarily correlated and the sequential
+reachers and inverse-probability weighted for both pre-horizon censoring
+(\eqn{1/G(\tau\mid W)}) and missing landmark visits (a per-arm attendance model)
+--- so the markers may be arbitrarily correlated and the sequential
 tie-passing among PRO tiers is exact. Inference is the two-sample U-statistic
 (Hajek) influence function; hard-event tiers above keep the engine's
 covariate-adjusted, doubly-robust influence-function inference. \strong{Scope}:
