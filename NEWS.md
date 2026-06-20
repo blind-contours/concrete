@@ -2,6 +2,15 @@
 
 ## Estimator audit fixes
 
+* **PRO block rescaled to the hard-tier residual reach (coherent hierarchy).** The
+  PRO generalized-pairwise-comparison estimates its own reach by inverse-probability
+  weighting; with extreme attendance/censoring weights at small n that empirical
+  reach can exceed the engine's residual reach `1 - sum_hard(W+L)`, pushing the
+  composite `P(win)+P(loss)` above 1. The PRO win/loss components are now rescaled by
+  `(engine residual reach) / (PRO empirical reach)`, so the whole hierarchy stays
+  coherent. In well-behaved cases the factor is ~1 (no-op). Surfaced on the real
+  TRISCEND II data (n=400, sparse hard events): `P(win)` 1.23 -> 0.80, win ratio
+  2.19 (95% CI 1.43-3.35) vs the published 2.02 (1.56-2.62).
 * **PRO tiers now inverse-probability-weight pre-horizon censoring.** The PRO
   block previously corrected only for landmark-visit non-attendance, not for
   censoring before the horizon, so its win/loss components were attenuated

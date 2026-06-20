@@ -384,9 +384,12 @@
   Pwin_pro <- 0; Ploss_pro <- 0
   if (!is.null(pro)) {                                                # append bottom PRO tiers
     sumIF <- function(L) if (length(L)) Reduce(`+`, L) else 0
-    Pwin_pro  <- sum(pro$winP);  Ploss_pro  <- sum(pro$losP)
-    DPwin_T  <- DPwin_T  + sumIF(pro$winIFwin); DPwin_C  <- DPwin_C  + sumIF(pro$winIFlos)
-    DPloss_C <- DPloss_C + sumIF(pro$losIFwin); DPloss_T <- DPloss_T + sumIF(pro$losIFlos)
+    ## rescale the PRO block to the hard-tier residual reach (coherent hierarchy)
+    rEng <- max(1e-6, unname(1 - base["Pwin"] - base["Ploss"]))
+    s <- rEng / max(pro$reachEmp, 1e-6)
+    Pwin_pro  <- s * sum(pro$winP);  Ploss_pro  <- s * sum(pro$losP)
+    DPwin_T  <- DPwin_T  + s * sumIF(pro$winIFwin); DPwin_C  <- DPwin_C  + s * sumIF(pro$winIFlos)
+    DPloss_C <- DPloss_C + s * sumIF(pro$losIFwin); DPloss_T <- DPloss_T + s * sumIF(pro$losIFlos)
   }
   Ntot <- trt$n + ctl$n; piT <- trt$n / Ntot; piC <- ctl$n / Ntot; z <- stats::qnorm(1 - Signif / 2)
   Pwin  <- unname(base["Pwin"]  + Pwin_pro  + mean(DPwin_T)  + mean(DPwin_C))     # one-step

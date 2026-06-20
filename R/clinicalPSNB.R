@@ -109,9 +109,11 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   proLab <- character(0)
   if (!is.null(pros)) {
     pc <- .proComponents(eng, pros, fT$D, fC$D, trt, ctl, covariates, SL.library, n.folds)
-    Wk <- c(Wk, pc$winP); Lk <- c(Lk, pc$losP)
-    DWk_T <- c(DWk_T, pc$winIFwin); DWk_C <- c(DWk_C, pc$winIFlos)
-    DLk_C <- c(DLk_C, pc$losIFwin); DLk_T <- c(DLk_T, pc$losIFlos)
+    ## rescale the PRO block to the hard-tier residual reach (coherent hierarchy)
+    s <- max(1e-6, 1 - sum(Wk) - sum(Lk)) / max(pc$reachEmp, 1e-6)
+    Wk <- c(Wk, s * pc$winP); Lk <- c(Lk, s * pc$losP)
+    DWk_T <- c(DWk_T, lapply(pc$winIFwin, `*`, s)); DWk_C <- c(DWk_C, lapply(pc$winIFlos, `*`, s))
+    DLk_C <- c(DLk_C, lapply(pc$losIFwin, `*`, s)); DLk_T <- c(DLk_T, lapply(pc$losIFlos, `*`, s))
     proLab <- pc$labels
   }
 

@@ -122,6 +122,12 @@
   }
   labs <- vapply(seq_len(J), function(j)
     if (!is.null(pros[[j]]$label)) pros[[j]]$label else paste0("PRO", j), character(1))
+  ## the PRO block's own (IPCW) estimate of the reach P(both reach the PRO block).
+  ## The caller rescales the block to the engine's residual reach 1 - sum_hard(W+L)
+  ## so the whole hierarchy stays coherent (sum of all tier win+loss <= 1) even when
+  ## the empirical reach is inflated by extreme attendance/censoring weights.
+  reachEmp <- (sum(BT$u) / nT) * (sum(BC$u) / nC)
   list(winP = winP, winIFwin = winIFwin, winIFlos = winIFlos,
-       losP = losP, losIFwin = losIFwin, losIFlos = losIFlos, labels = labs)
+       losP = losP, losIFwin = losIFwin, losIFlos = losIFlos, labels = labs,
+       reachEmp = reachEmp)
 }
