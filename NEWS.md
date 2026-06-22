@@ -1,5 +1,20 @@
 # concrete 1.1.1.9000
 
+## Covariate-adjusted crossover (treatment-switching) for the win ratio
+
+* `clinicalWinRatio()` and `clinicalPSNB()` gain a **`crossover`** argument (a
+  per-subject switch-time column) that turns the ITT treatment-policy win ratio
+  into the doubly-robust **hypothetical no-switching** estimand. Switchers are
+  re-censored at their switch time and a **separate covariate-adjusted crossover
+  hazard** (SuperLearner on the covariates, optionally time-varying via
+  `censoring.tv`) is combined with the dropout-censoring hazard, so the IPCW is
+  `1/(S_dropout * S_crossover)` -- mirroring the crossover handling `doConcrete()`
+  already provides for absolute risk. The censoring IPCW was already
+  covariate-adjusted; this adds the crossover mechanism. Validated to recover the
+  no-switching truth under informative switching (ITT 1.78 -> no-switching 2.42 vs
+  truth 2.45; `scripts/dev-crossover-winratio.R`). Caveat: with heavy late
+  crossover at small n the no-switching estimate is high-variance.
+
 ## Estimator audit fixes
 
 * **PRO block rescaled to the hard-tier residual reach (coherent hierarchy).** The

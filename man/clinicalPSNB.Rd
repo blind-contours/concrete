@@ -19,6 +19,7 @@ clinicalPSNB(
   Signif = 0.05,
   id = NULL,
   censoring.tv = NULL,
+  crossover = NULL,
   pro = NULL
 )
 }
@@ -83,18 +84,33 @@ censoring model (never the outcome hazards), so the marginal/ITT estimand is
 preserved (they are post-treatment mediators). No effect on the result when
 omitted.}
 
+\item{crossover}{optional character: name of a column giving each subject's
+\strong{treatment-switch time} (e.g.\ days from randomization to crossover),
+\code{NA}/\code{Inf} for those who never switched. When supplied, switchers are
+re-censored at their switch time and a \strong{separate covariate-adjusted
+crossover hazard} is fit and combined with the censoring hazard, so the IPCW
+becomes \eqn{1/(S_{\mathrm{drop}} S_{\mathrm{cross}})} --- the doubly-robust
+\strong{hypothetical no-switching} win ratio (what the contrast would be had
+no one crossed over), rather than the ITT treatment-policy estimand. Validated
+to recover the no-switching truth under informative switching
+(\code{scripts/dev-crossover-winratio.R}). Requires conditional independence of the
+switch and the outcome given the covariates; with heavy late crossover at
+small n the estimate can be high-variance.}
+
 \item{pro}{optional continuous / ordinal patient-reported-outcome (PRO) tier(s)
 appended at the \strong{bottom} of the hierarchy (below all hard-event tiers),
 the clinical norm for soft markers. A single spec (a named \code{list}) or a \code{list}
-of specs, each with: \code{marker} (column of the landmark value, \code{NA} if not
-measured), \code{landmark} (measurement time; default = horizon), \code{margin} (the win
-margin \eqn{\delta}; default 0), \code{direction} (\code{"higher.better"} (default) or
-\code{"lower.better"}), \code{type} (\code{"continuous"} (default) or \code{"ordinal"}), \code{n.grid}
-(cutpoint resolution for continuous markers; default 80), and optional \code{label}.
-A pair reaches a PRO tier iff tied on all higher tiers (both event-free and
-alive at the horizon); within reach the markers are compared with margin
-\eqn{\delta}. The marker distribution is \strong{reach-weighted} standardized
-and landmark-missingness is IPCW-corrected; see Details and \code{\link[=clinicalPSNB]{clinicalPSNB()}}.}
+of specs in priority order, each with: \code{marker} (column of the final-visit
+value, \code{NA} if not measured), \code{landmark} (measurement time; must equal the
+horizon --- a final-visit design), \code{margin} (the win margin \eqn{\delta};
+default 0), \code{direction} (\code{"higher.better"} (default) or \code{"lower.better"}),
+\code{type} (\code{"continuous"} (default) or \code{"ordinal"}), and optional \code{label}. A pair
+reaches the PRO block iff tied on all higher tiers (both event-free, alive and
+in follow-up at the horizon); within reach the PRO tiers are compared
+\strong{sequentially}, each with its margin \eqn{\delta}. This is the TRISCEND
+II construction (death > RV-assist/transplant > tricuspid reintervention > HF
+hospitalization > KCCQ \eqn{\ge} 10 > NYHA \eqn{\ge} 1 class > 6-min walk
+\eqn{\ge} 30 m). See Details and \code{\link[=clinicalPSNB]{clinicalPSNB()}}.}
 }
 \value{
 a \code{data.table} of class \code{"ConcreteOut"} with \code{PSNB} and \code{PSWR} (each

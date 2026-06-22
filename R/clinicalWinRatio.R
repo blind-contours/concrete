@@ -68,6 +68,18 @@
 #'   censoring model (never the outcome hazards), so the marginal/ITT estimand is
 #'   preserved (they are post-treatment mediators). No effect on the result when
 #'   omitted.
+#' @param crossover optional character: name of a column giving each subject's
+#'   \strong{treatment-switch time} (e.g.\ days from randomization to crossover),
+#'   `NA`/`Inf` for those who never switched. When supplied, switchers are
+#'   re-censored at their switch time and a \strong{separate covariate-adjusted
+#'   crossover hazard} is fit and combined with the censoring hazard, so the IPCW
+#'   becomes \eqn{1/(S_{\mathrm{drop}} S_{\mathrm{cross}})} --- the doubly-robust
+#'   \strong{hypothetical no-switching} win ratio (what the contrast would be had
+#'   no one crossed over), rather than the ITT treatment-policy estimand. Validated
+#'   to recover the no-switching truth under informative switching
+#'   (`scripts/dev-crossover-winratio.R`). Requires conditional independence of the
+#'   switch and the outcome given the covariates; with heavy late crossover at
+#'   small n the estimate can be high-variance.
 #' @param pro optional continuous / ordinal patient-reported-outcome (PRO) tier(s)
 #'   appended at the \strong{bottom} of the hierarchy (below all hard-event tiers),
 #'   the clinical norm for soft markers. A single spec (a named `list`) or a `list`
@@ -135,11 +147,13 @@
 clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.status,
                              covariates, horizon = NULL, n.grid = 60L, n.folds = 5L,
                              SL.library = c("SL.mean", "SL.glm"), Signif = 0.05,
-                             id = NULL, censoring.tv = NULL, pro = NULL) {
+                             id = NULL, censoring.tv = NULL, crossover = NULL, pro = NULL) {
   data <- as.data.frame(data)
   illness.time <- as.character(illness.time)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
     if (!col %in% names(data)) stop("column '", col, "' not found in data.")
+  if (!is.null(crossover) && !crossover %in% names(data))
+    stop("crossover column '", crossover, "' not found in data.")
   A <- data[[arm]]
   if (!all(A %in% c(0, 1))) stop("arm must be coded 0/1 (1 = active arm).")
   if (length(unique(A)) != 2L) stop("arm must contain both 0 and 1.")
@@ -158,6 +172,10 @@ clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.st
     ti <- data[[illness.time[ei]]]; ti[is.na(ti)] <- Inf; D[[paste0("t", ei)]] <- ti
   }
   D$C <- ifelse(delta == 0, term, Inf)
+  ## crossover (treatment-switching): re-censor at the switch time and carry it so
+  ## a separate crossover hazard reweights the IPCW (hypothetical no-switching).
+  sw <- if (is.null(crossover)) rep(Inf, nrow(data)) else { x <- as.numeric(data[[crossover]]); x[is.na(x)] <- Inf; x }
+  D$switch <- sw; D$C <- pmin(D$C, sw)
   for (mc in proCols) D[[mc]] <- data[[mc]]                 # carry PRO markers through
 
   ## --- optional time-varying censoring covariates (LOCF value + change) ---
@@ -175,7 +193,7 @@ clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.st
   buildArm <- function(av) {
     sel <- A == av; Da <- D[sel, , drop = FALSE]
     tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[sel, , drop = FALSE])
-    nu <- .msNuisances(eng, Da, covariates, SL.library, n.folds, tvA)
+    nu <- .msNuisances(eng, Da, covariates, SL.library, n.folds, tvA, xover = Da$switch)
     list(arm = eng$armSetup(Da, nu$rmat, nu$Ginv), D = Da)
   }
   bT <- buildArm(1); bC <- buildArm(0)

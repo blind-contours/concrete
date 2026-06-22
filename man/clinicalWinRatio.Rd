@@ -18,6 +18,7 @@ clinicalWinRatio(
   Signif = 0.05,
   id = NULL,
   censoring.tv = NULL,
+  crossover = NULL,
   pro = NULL
 )
 }
@@ -72,6 +73,19 @@ bias when dropout is driven by these measurements. They enter \strong{only} the
 censoring model (never the outcome hazards), so the marginal/ITT estimand is
 preserved (they are post-treatment mediators). No effect on the result when
 omitted.}
+
+\item{crossover}{optional character: name of a column giving each subject's
+\strong{treatment-switch time} (e.g.\ days from randomization to crossover),
+\code{NA}/\code{Inf} for those who never switched. When supplied, switchers are
+re-censored at their switch time and a \strong{separate covariate-adjusted
+crossover hazard} is fit and combined with the censoring hazard, so the IPCW
+becomes \eqn{1/(S_{\mathrm{drop}} S_{\mathrm{cross}})} --- the doubly-robust
+\strong{hypothetical no-switching} win ratio (what the contrast would be had
+no one crossed over), rather than the ITT treatment-policy estimand. Validated
+to recover the no-switching truth under informative switching
+(\code{scripts/dev-crossover-winratio.R}). Requires conditional independence of the
+switch and the outcome given the covariates; with heavy late crossover at
+small n the estimate can be high-variance.}
 
 \item{pro}{optional continuous / ordinal patient-reported-outcome (PRO) tier(s)
 appended at the \strong{bottom} of the hierarchy (below all hard-event tiers),

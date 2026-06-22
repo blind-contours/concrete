@@ -47,11 +47,13 @@
 clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status,
                          covariates, charter, horizon = NULL, n.grid = 60L, n.folds = 5L,
                          SL.library = c("SL.mean", "SL.glm"), Signif = 0.05,
-                         id = NULL, censoring.tv = NULL, pro = NULL) {
+                         id = NULL, censoring.tv = NULL, crossover = NULL, pro = NULL) {
   data <- as.data.frame(data)
   illness.time <- as.character(illness.time)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
     if (!col %in% names(data)) stop("column '", col, "' not found in data.")
+  if (!is.null(crossover) && !crossover %in% names(data))
+    stop("crossover column '", crossover, "' not found in data.")
   A <- data[[arm]]
   if (!all(A %in% c(0, 1))) stop("arm must be coded 0/1 (1 = active arm).")
   term <- data[[terminal.time]]; delta <- data[[terminal.status]]
@@ -73,12 +75,14 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   eng <- .msEngine(Kev, grid)                          # engine spans the hard-event tiers
   proCols <- unique(vapply(pros, function(s) s$marker, character(1)))
 
+  sw <- if (is.null(crossover)) rep(Inf, nrow(data)) else { x <- as.numeric(data[[crossover]]); x[is.na(x)] <- Inf; x }
   parseArm <- function(rows) {
     D <- data[rows, covariates, drop = FALSE]
     D$tD <- ifelse(delta[rows] == 1, term[rows], Inf)
     for (ei in seq_along(illness.time)) {
       ti <- data[[illness.time[ei]]][rows]; ti[is.na(ti)] <- Inf; D[[paste0("t", ei)]] <- ti }
-    D$C <- ifelse(delta[rows] == 0, term[rows], Inf)
+    D$C <- pmin(ifelse(delta[rows] == 0, term[rows], Inf), sw[rows])   # re-censor at switch
+    D$switch <- sw[rows]
     for (mc in proCols) D[[mc]] <- data[[mc]][rows]    # carry PRO markers through
     D
   }
@@ -91,7 +95,7 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   fitArm <- function(rows) {
     D <- parseArm(rows)
     tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[rows, , drop = FALSE])
-    nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA)
+    nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA, xover = D$switch)
     list(arm = eng$armSetup(D, nu$rmat, nu$Ginv), D = D)
   }
   fT <- fitArm(which(A == 1)); fC <- fitArm(which(A == 0))
