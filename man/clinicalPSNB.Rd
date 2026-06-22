@@ -20,7 +20,8 @@ clinicalPSNB(
   id = NULL,
   censoring.tv = NULL,
   crossover = NULL,
-  pro = NULL
+  pro = NULL,
+  min.cens.surv = 0.05
 )
 }
 \arguments{
@@ -111,6 +112,13 @@ in follow-up at the horizon); within reach the PRO tiers are compared
 II construction (death > RV-assist/transplant > tricuspid reintervention > HF
 hospitalization > KCCQ \eqn{\ge} 10 > NYHA \eqn{\ge} 1 class > 6-min walk
 \eqn{\ge} 30 m). See Details and \code{\link[=clinicalPSNB]{clinicalPSNB()}}.}
+
+\item{min.cens.surv}{numeric (default 0.05): lower bound (truncation floor) on
+the combined censoring (and crossover) survival used in the IPCW, i.e.\ the
+inverse-probability weight is capped at \code{1/min.cens.surv}. Stabilizes the
+weights when follow-up / non-switching becomes rare; raise it for more
+stability (more bias) or lower it for less truncation. Matters most with heavy
+crossover, where the no-switching weights can otherwise blow up.}
 }
 \value{
 a \code{data.table} of class \code{"ConcreteOut"} with \code{PSNB} and \code{PSWR} (each

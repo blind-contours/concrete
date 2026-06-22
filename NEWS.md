@@ -1,5 +1,27 @@
 # concrete 1.1.1.9000
 
+## Crossover / censoring IPCW robustness fixes (code audit)
+
+* **Core path now honors the analyst's censoring/crossover learner.** When
+  `CensoringTV` or `Crossover` is supplied, `getInitialEstimate()` /
+  `getCVInitialEstimate()` re-estimate the lagged censoring survival via
+  `.tvCensLaggedSurv()`, which previously used fixed defaults
+  (`SL.mean`/`SL.glm`, 5 folds) regardless of the analysis settings. It now
+  passes the analyst's treatment/propensity SuperLearner library (a binary-hazard
+  library, appropriate for the censoring/crossover hazard) and the analysis fold
+  count. The IPCW algebra was already correct; this makes the *learner* the one
+  the analyst chose.
+* **Clinical-path censoring-survival truncation is now exposed** as
+  `min.cens.surv` (default 0.05) on `clinicalWinRatio()` / `clinicalPSNB()`,
+  replacing a hard-coded 0.05 floor on the combined dropout+crossover survival in
+  the IPCW. This matters with heavy crossover, where the no-switching weights can
+  otherwise be silently capped; analysts can now see and set the floor (the core
+  path's analogue is `MinNuisance`).
+* **Added `Crossover=` regression tests** (`tests/testthat/test-crossover.R`):
+  the win ratio runs with a crossover column and finite inference; the
+  crossover-IPCW estimand differs from ITT; the `min.cens.surv` floor is honored;
+  and an invalid crossover column errors clearly.
+
 ## Covariate-adjusted crossover (treatment-switching) for the win ratio
 
 * `clinicalWinRatio()` and `clinicalPSNB()` gain a **`crossover`** argument (a

@@ -80,6 +80,12 @@
 #'   (`scripts/dev-crossover-winratio.R`). Requires conditional independence of the
 #'   switch and the outcome given the covariates; with heavy late crossover at
 #'   small n the estimate can be high-variance.
+#' @param min.cens.surv numeric (default 0.05): lower bound (truncation floor) on
+#'   the combined censoring (and crossover) survival used in the IPCW, i.e.\ the
+#'   inverse-probability weight is capped at `1/min.cens.surv`. Stabilizes the
+#'   weights when follow-up / non-switching becomes rare; raise it for more
+#'   stability (more bias) or lower it for less truncation. Matters most with heavy
+#'   crossover, where the no-switching weights can otherwise blow up.
 #' @param pro optional continuous / ordinal patient-reported-outcome (PRO) tier(s)
 #'   appended at the \strong{bottom} of the hierarchy (below all hard-event tiers),
 #'   the clinical norm for soft markers. A single spec (a named `list`) or a `list`
@@ -147,7 +153,8 @@
 clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.status,
                              covariates, horizon = NULL, n.grid = 60L, n.folds = 5L,
                              SL.library = c("SL.mean", "SL.glm"), Signif = 0.05,
-                             id = NULL, censoring.tv = NULL, crossover = NULL, pro = NULL) {
+                             id = NULL, censoring.tv = NULL, crossover = NULL, pro = NULL,
+                             min.cens.surv = 0.05) {
   data <- as.data.frame(data)
   illness.time <- as.character(illness.time)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
@@ -193,7 +200,7 @@ clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.st
   buildArm <- function(av) {
     sel <- A == av; Da <- D[sel, , drop = FALSE]
     tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[sel, , drop = FALSE])
-    nu <- .msNuisances(eng, Da, covariates, SL.library, n.folds, tvA, xover = Da$switch)
+    nu <- .msNuisances(eng, Da, covariates, SL.library, n.folds, tvA, xover = Da$switch, minG = min.cens.surv)
     list(arm = eng$armSetup(Da, nu$rmat, nu$Ginv), D = Da)
   }
   bT <- buildArm(1); bC <- buildArm(0)

@@ -342,7 +342,8 @@
 #' inverse lagged censoring survival). `n.folds <= 1` gives in-sample fits.
 #' @keywords internal
 #' @noRd
-.msNuisances <- function(eng, D, covariates, SL.library, n.folds, tvMats = NULL, xover = NULL) {
+.msNuisances <- function(eng, D, covariates, SL.library, n.folds, tvMats = NULL, xover = NULL,
+                         minG = 0.05) {
   M <- eng$M; grid <- eng$grid; structTrans <- eng$structTrans; tau <- eng$tau; n <- nrow(D)
   V <- max(1L, min(as.integer(n.folds), floor(n / 30)))
   rmat <- stats::setNames(lapply(structTrans, function(k) matrix(1e-10, M, n)), structTrans)
@@ -384,7 +385,7 @@
     if (hasX) incX <- .tvCensoringInc(grid, obsT, censX, D[, covariates, drop = FALSE], tvMats, SL.library, n.folds)
   }
   incTot <- incC + incX                                 # combined dropout + crossover cumulative hazard
-  Glag <- pmax(rbind(1, exp(-apply(incTot, 2, cumsum)))[1:M, , drop = FALSE], 0.05)
+  Glag <- pmax(rbind(1, exp(-apply(incTot, 2, cumsum)))[1:M, , drop = FALSE], minG)
   list(rmat = rmat, Ginv = 1 / t(Glag))
 }
 

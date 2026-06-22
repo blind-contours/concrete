@@ -111,7 +111,10 @@ getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent,
     ## throughout. Outcome hazards are untouched.
     Crossover <- attr(Data, "CrossoverTime")
     if (Censored && (!is.null(CensoringTV) || !is.null(Crossover))) {
-        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time, Crossover = Crossover)
+        .tvLib <- { tl <- Model[[attr(Data, "Treatment")]]
+          if (is.character(tl) && length(tl)) tl else c("SL.mean", "SL.glm") }
+        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time, Crossover = Crossover,
+                                   SL.library = .tvLib, n.folds = max(1L, length(CVFolds)))
         for (a in arms) LagCensFull[[a]][] <- LagTV
     }
 

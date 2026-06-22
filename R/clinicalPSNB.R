@@ -47,7 +47,8 @@
 clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status,
                          covariates, charter, horizon = NULL, n.grid = 60L, n.folds = 5L,
                          SL.library = c("SL.mean", "SL.glm"), Signif = 0.05,
-                         id = NULL, censoring.tv = NULL, crossover = NULL, pro = NULL) {
+                         id = NULL, censoring.tv = NULL, crossover = NULL, pro = NULL,
+                         min.cens.surv = 0.05) {
   data <- as.data.frame(data)
   illness.time <- as.character(illness.time)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
@@ -95,7 +96,7 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   fitArm <- function(rows) {
     D <- parseArm(rows)
     tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[rows, , drop = FALSE])
-    nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA, xover = D$switch)
+    nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA, xover = D$switch, minG = min.cens.surv)
     list(arm = eng$armSetup(D, nu$rmat, nu$Ginv), D = D)
   }
   fT <- fitArm(which(A == 1)); fC <- fitArm(which(A == 0))
