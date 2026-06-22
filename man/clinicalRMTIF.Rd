@@ -18,6 +18,8 @@ clinicalRMTIF(
   Signif = 0.05,
   id = NULL,
   censoring.tv = NULL,
+  crossover = NULL,
+  min.cens.surv = 0.05,
   nBoot = 0L
 )
 }
@@ -72,6 +74,26 @@ bias when dropout is driven by these measurements. They enter \strong{only} the
 censoring model (never the outcome hazards), so the marginal/ITT estimand is
 preserved (they are post-treatment mediators). No effect on the result when
 omitted.}
+
+\item{crossover}{optional character: name of a column giving each subject's
+\strong{treatment-switch time} (e.g.\ days from randomization to crossover),
+\code{NA}/\code{Inf} for those who never switched. When supplied, switchers are
+re-censored at their switch time and a \strong{separate covariate-adjusted
+crossover hazard} is fit and combined with the censoring hazard, so the IPCW
+becomes \eqn{1/(S_{\mathrm{drop}} S_{\mathrm{cross}})} --- the doubly-robust
+\strong{hypothetical no-switching} win ratio (what the contrast would be had
+no one crossed over), rather than the ITT treatment-policy estimand. Validated
+to recover the no-switching truth under informative switching
+(\code{scripts/dev-crossover-winratio.R}). Requires conditional independence of the
+switch and the outcome given the covariates; with heavy late crossover at
+small n the estimate can be high-variance.}
+
+\item{min.cens.surv}{numeric (default 0.05): lower bound (truncation floor) on
+the combined censoring (and crossover) survival used in the IPCW, i.e.\ the
+inverse-probability weight is capped at \code{1/min.cens.surv}. Stabilizes the
+weights when follow-up / non-switching becomes rare; raise it for more
+stability (more bias) or lower it for less truncation. Matters most with heavy
+crossover, where the no-switching weights can otherwise blow up.}
 
 \item{nBoot}{integer (default 0): inference method. With \code{nBoot = 0} (default)
 the \strong{analytic adjoint-value efficient influence function} is used for the

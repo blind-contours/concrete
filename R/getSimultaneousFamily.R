@@ -120,7 +120,8 @@ getSimultaneousFamily <- function(..., Signif = 0.05, nSim = 1e4L) {
 #' @keywords internal
 #' @noRd
 .attachFamily <- function(out, ids, parts) {
-  z <- stats::qnorm(1 - 0.05 / 2)
+  sig <- attr(out, "Signif"); if (is.null(sig) || !is.numeric(sig) || length(sig) != 1) sig <- 0.05
+  z <- stats::qnorm(1 - sig / 2)              # pointwise CI at the source output's alpha
   est <- data.table::rbindlist(lapply(parts, function(p) {
     ciLo <- if (identical(p$scale, "log")) p$est * exp(-z * p$se) else p$est - z * p$se
     ciHi <- if (identical(p$scale, "log")) p$est * exp(z * p$se)  else p$est + z * p$se

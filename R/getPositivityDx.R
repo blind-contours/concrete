@@ -48,7 +48,11 @@ getPositivityDx <- function(ConcreteEst, Verbose = TRUE) {
     maxwT <- apply(w, 1, max)
     denom <- 1 / w                                             # truncated observation probability
     minpT <- apply(denom, 1, min)
-    floorVal <- min(denom)                                     # truncation bound (MinNuisance)
+    ## "at bound" = the denominator was actually clamped at the MinNuisance floor,
+    ## NOT merely equal to the smallest observed value (else a clean RCT with a
+    ## constant weight reports 100% at-bound when no truncation occurred).
+    mn <- attr(ConcreteEst, "MinNuisance")
+    floorVal <- if (is.numeric(mn) && length(mn) == 1L) mn else min(denom)
     atBound <- denom <= floorVal * (1 + 1e-8)
     byTime[[a]] <- data.frame(time_index = seq_len(nrow(w)), ESS_frac = round(essT, 3),
                               max_weight = round(maxwT, 1), min_obs_prob = signif(minpT, 3))
@@ -56,8 +60,8 @@ getPositivityDx <- function(ConcreteEst, Verbose = TRUE) {
       ESS_overall = round(min(essT), 3),                        # whole-window ESS = its worst point
       ESS_worst = round(min(essT), 3),
       max_weight = round(max(w), 1),
-      min_obs_prob = signif(floorVal, 3),
-      pct_at_bound = round(100 * mean(atBound), 1))
+      min_obs_prob = signif(min(denom), 3),                     # smallest observed obs. probability
+      pct_at_bound = round(100 * mean(atBound), 1))             # % actually clamped at MinNuisance
   }
   summ <- do.call(rbind, summ); rownames(summ) <- NULL
   if (isTRUE(Verbose)) {

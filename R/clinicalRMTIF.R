@@ -52,11 +52,14 @@
 clinicalRMTIF <- function(data, arm, illness.time, terminal.time, terminal.status,
                           covariates, horizon = NULL, n.grid = 60L, n.folds = 5L,
                           SL.library = c("SL.mean", "SL.glm"), Signif = 0.05,
-                          id = NULL, censoring.tv = NULL, nBoot = 0L) {
+                          id = NULL, censoring.tv = NULL, crossover = NULL,
+                          min.cens.surv = 0.05, nBoot = 0L) {
   data <- as.data.frame(data)
   illness.time <- as.character(illness.time)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
     if (!col %in% names(data)) stop("column '", col, "' not found in data.")
+  if (!is.null(crossover) && !crossover %in% names(data))
+    stop("crossover column '", crossover, "' not found in data.")
   A <- data[[arm]]
   if (!all(A %in% c(0, 1))) stop("arm must be coded 0/1 (1 = active arm).")
   if (length(unique(A)) != 2L) stop("arm must contain both 0 and 1.")
@@ -67,12 +70,14 @@ clinicalRMTIF <- function(data, arm, illness.time, terminal.time, terminal.statu
   grid <- seq(0, horizon, length.out = as.integer(n.grid) + 1L)
   eng <- .msEngine(K, grid)
 
+  sw <- if (is.null(crossover)) rep(Inf, nrow(data)) else { x <- as.numeric(data[[crossover]]); x[is.na(x)] <- Inf; x }
   parseArm <- function(rows) {
     D <- data[rows, covariates, drop = FALSE]
     D$tD <- ifelse(delta[rows] == 1, term[rows], Inf)
     for (ei in seq_along(illness.time)) {
       ti <- data[[illness.time[ei]]][rows]; ti[is.na(ti)] <- Inf; D[[paste0("t", ei)]] <- ti }
-    D$C <- ifelse(delta[rows] == 0, term[rows], Inf)
+    D$C <- pmin(ifelse(delta[rows] == 0, term[rows], Inf), sw[rows])   # re-censor at switch
+    D$switch <- sw[rows]
     D
   }
   tvMats <- NULL
@@ -86,7 +91,7 @@ clinicalRMTIF <- function(data, arm, illness.time, terminal.time, terminal.statu
   fitArm <- function(rows) {
     D <- parseArm(rows)
     tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[rows, , drop = FALSE])
-    nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA)
+    nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA, xover = D$switch, minG = min.cens.surv)
     arm <- eng$armSetup(D, nu$rmat, nu$Ginv)
     list(arm = arm, L = eng$levelOcc(nu$rmat))
   }

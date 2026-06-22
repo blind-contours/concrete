@@ -1,5 +1,34 @@
 # concrete 1.1.1.9000
 
+## Audit round 2: inference & robustness fixes
+
+* **Relative-risk CIs are now actually log-scale.** A previous fix set log-scale RR
+  CIs in `getOutput()`, but `addWaldInference()` (the final step) overwrote them
+  with additive `est +/- z*se` CIs (which can be negative). The log-scale CI for
+  ratio estimands (RR, RMST ratio) now lives in `addWaldInference()` itself, so it
+  is the final assignment. Simultaneous RR bands in `getOutput()` are likewise
+  log-scale now.
+* **`clinicalRMTIF()` gains `crossover=` and `min.cens.surv=`** (it was the only
+  win-statistic missing the covariate-adjusted crossover IPCW and the exposed
+  censoring-survival floor).
+* **`clinicalPSNB()` guards near-zero reach.** A bottom tier reached by almost no
+  pairs no longer divides `w_k = W^(k)/r_k` by ~0 (Inf/NaN); the reach is floored
+  and a warning is issued.
+* **`getRMTIF()` snaps the horizon to the target grid** and messages when the
+  requested `Horizon` is not a target time (matching `getRMST()`/`targetRMST()`),
+  instead of silently reporting an unreached horizon.
+* **`getPositivityDx()` no longer overstates "% at bound."** It now compares the
+  observation probability to the actual `MinNuisance` truncation floor (stored on
+  the fit), so a clean RCT with untruncated weights reports 0% (was 100%).
+* **`getSimultaneousFamily()` honors the source output's alpha** for pointwise CIs
+  (was hard-coded 95%), and `getOutput()` now attaches per-subject influence
+  functions for absolute risk and relative risk (log-scale), not only risk
+  difference -- so plain risk / RR outputs can be stacked into a joint band.
+* Documented that PRO-tier SEs are mildly optimistic (the U-statistic IF treats the
+  attendance/censoring/reach-rescaling nuisances as known). Known limitation: the
+  time-varying / crossover censoring learner is derived from the treatment model
+  rather than a separately specifiable censoring learner (future enhancement).
+
 ## Crossover / censoring IPCW robustness fixes (code audit)
 
 * **Core path now honors the analyst's censoring/crossover learner.** When

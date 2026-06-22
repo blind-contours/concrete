@@ -127,18 +127,26 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   rk <- numeric(K); wk <- numeric(K); lk <- numeric(K)
   IFw_T <- IFw_C <- IFl_T <- IFl_C <- vector("list", K)
   cumW_T <- zT; cumW_C <- zC; cumWpt <- 0                    # running sum of decided mass below k
+  minReach <- 1e-3                                           # support floor: a tier reached by
+  lowReach <- FALSE                                          # almost no pairs has no estimable w/l
   for (k in seq_len(K)) {
     rk[k] <- 1 - cumWpt
     IFr_T <- -cumW_T; IFr_C <- -cumW_C                       # IF of reach r_k
-    wk[k] <- Wk[k] / rk[k]; lk[k] <- Lk[k] / rk[k]
-    IFw_T[[k]] <- (DWk_T[[k]] - wk[k] * IFr_T) / rk[k]
-    IFw_C[[k]] <- (DWk_C[[k]] - wk[k] * IFr_C) / rk[k]
-    IFl_T[[k]] <- (DLk_T[[k]] - lk[k] * IFr_T) / rk[k]
-    IFl_C[[k]] <- (DLk_C[[k]] - lk[k] * IFr_C) / rk[k]
+    rks <- rk[k]                                             # guarded reach for the divide-out
+    if (!is.finite(rks) || rks < minReach) { rks <- minReach; if (k < K || Wk[k] != 0 || Lk[k] != 0) lowReach <- TRUE }
+    wk[k] <- Wk[k] / rks; lk[k] <- Lk[k] / rks
+    IFw_T[[k]] <- (DWk_T[[k]] - wk[k] * IFr_T) / rks
+    IFw_C[[k]] <- (DWk_C[[k]] - wk[k] * IFr_C) / rks
+    IFl_T[[k]] <- (DLk_T[[k]] - lk[k] * IFr_T) / rks
+    IFl_C[[k]] <- (DLk_C[[k]] - lk[k] * IFr_C) / rks
     cumWpt <- cumWpt + Wk[k] + Lk[k]
     cumW_T <- cumW_T + DWk_T[[k]] + DLk_T[[k]]
     cumW_C <- cumW_C + DWk_C[[k]] + DLk_C[[k]]
   }
+  if (lowReach)
+    warning("a layer has near-zero estimated reach (< ", minReach, "); its ",
+            "stage-conditional w/l/Delta are unstable (divided by a tiny reach). ",
+            "Interpret that layer's PSNB contribution with caution.")
   if (useReach) alpha <- rk      # alpha_k = realized reach -> reproduces standard NB / WR
 
   seGrad <- function(IF_T, IF_C) sqrt((sum(((1/piT)*IF_T)^2) + sum(((1/piC)*IF_C)^2)) / Ntot^2)

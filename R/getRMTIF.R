@@ -69,6 +69,15 @@ getRMTIF <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
   if (length(grid) < 2L)
     warning("RMT-IF is integrated over fewer than two target times; refit with a ",
             "denser TargetTime grid.")
+  ## snap the horizon to the integration grid (the largest target time <= Horizon)
+  ## and report THAT, like getRMST()/targetRMST() -- the integral cannot reach a
+  ## horizon that is not on the TargetTime grid.
+  if (length(grid) && Horizon > max(grid) + 1e-9) {
+    message("RMT-IF: requested Horizon (", Horizon, ") is not on the TargetTime grid; ",
+            "integrating to the last target time below it (", max(grid), "). ",
+            "Add ", Horizon, " to TargetTime in doConcrete() to integrate to it exactly.")
+    Horizon <- max(grid)
+  }
   m <- length(grid)
   A1 <- names(ConcreteEst)[Intervention[1]]
   A0 <- names(ConcreteEst)[Intervention[2]]

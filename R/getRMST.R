@@ -203,11 +203,22 @@ addWaldInference <- function(dt, Signif = 0.05, NIMargin = NULL,
   sterr <- dt[["se"]]
   est <- dt[["Estimand"]]
 
-  dt[, "CI Low" := pt - z * sterr]
-  dt[, "CI Hi" := pt + z * sterr]
-
   ratio_est <- grepl("Ratio|Rel Risk", est)
   comparative <- grepl("Diff|Ratio|Rel Risk", est)
+
+  dt[, "CI Low" := pt - z * sterr]
+  dt[, "CI Hi" := pt + z * sterr]
+  ## ratio estimands (relative risk, RMST ratio, ...): log-scale delta-method CI --
+  ## symmetric in log, always positive, better small-sample coverage. `se` is the
+  ## natural-scale SE so se_log = se / est. This is the final CI assignment (it runs
+  ## after getSimultaneous, which writes separate SimCI columns), so it is not
+  ## overwritten downstream.
+  lr <- which(ratio_est & is.finite(pt) & pt > 0 & is.finite(sterr) & sterr > 0)
+  if (length(lr)) {
+    data.table::set(dt, lr, "CI Low", pt[lr] * exp(-z * sterr[lr] / pt[lr]))
+    data.table::set(dt, lr, "CI Hi",  pt[lr] * exp( z * sterr[lr] / pt[lr]))
+  }
+
   null0 <- ifelse(ratio_est, 1, 0)
   zstat <- (pt - null0) / sterr
   pval <- 2 * stats::pnorm(-abs(zstat))

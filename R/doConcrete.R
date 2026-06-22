@@ -117,6 +117,7 @@ doConCRTmle <- function(DataTable, TargetTime, TargetEvent, Regime, CVFolds, Mod
         attr(Estimates, "NormPnEICs") <- NormPnEIC
     }
 
+    attr(Estimates, "MinNuisance") <- MinNuisance     # IPCW truncation floor (for getPositivityDx)
     attr(Estimates, "TargetTime") <- TargetTime
     attr(Estimates, "T.tilde") <- DataTable[[attr(DataTable, "EventTime")]]
     attr(Estimates, "TargetEvent") <- TargetEvent
