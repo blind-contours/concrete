@@ -123,16 +123,18 @@ getSimultaneousFamily <- function(..., Signif = 0.05, nSim = 1e4L) {
   sig <- attr(out, "Signif"); if (is.null(sig) || !is.numeric(sig) || length(sig) != 1) sig <- 0.05
   z <- stats::qnorm(1 - sig / 2)              # pointwise CI at the source output's alpha
   est <- data.table::rbindlist(lapply(parts, function(p) {
-    ciLo <- if (identical(p$scale, "log")) p$est * exp(-z * p$se) else p$est - z * p$se
-    ciHi <- if (identical(p$scale, "log")) p$est * exp(z * p$se)  else p$est + z * p$se
+    ok <- is.finite(p$est) && is.finite(p$se)                  # degenerate (e.g. 0-denom ratio): NA CI
+    ciLo <- if (!ok) NA_real_ else if (identical(p$scale, "log")) p$est * exp(-z * p$se) else p$est - z * p$se
+    ciHi <- if (!ok) NA_real_ else if (identical(p$scale, "log")) p$est * exp(z * p$se)  else p$est + z * p$se
     data.table::data.table(ekey = p$key, Estimand = p$Estimand,
                            Event = as.character(p$Event), Time = p$Time,
                            Intervention = p$Intervention, `Pt Est` = p$est,
                            se = p$se, scale = p$scale,
                            `CI Low` = ciLo, `CI Hi` = ciHi)
   }))
-  ic <- data.table::rbindlist(lapply(parts, function(p)
-    data.table::data.table(ekey = p$key, ID = ids, ic = as.numeric(p$ic))))
+  ic <- data.table::rbindlist(lapply(parts, function(p) {
+    icv <- as.numeric(p$ic); icv[!is.finite(icv)] <- 0          # never poison the joint band with Inf/NaN
+    data.table::data.table(ekey = p$key, ID = ids, ic = icv) }))
   data.table::setattr(out, "famEst", est)
   data.table::setattr(out, "famIC", ic)
   out

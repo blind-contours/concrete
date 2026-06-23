@@ -414,7 +414,13 @@
     Dt <- (1 / piT) * (gw * DPwin_T + gl * DPloss_T); Dc <- (1 / piC) * (gw * DPwin_C + gl * DPloss_C)
     sqrt((sum(Dt^2) + sum(Dc^2)) / Ntot^2)
   }
-  ratioRow <- function(label, val, gw, gl) { se <- seGrad(gw, gl); sl <- se / val
+  ratioRow <- function(label, val, gw, gl) {
+    if (!is.finite(val) || val <= 0 || !all(is.finite(c(gw, gl)))) {
+      warning(label, ": near-zero denominator; ratio undefined, inference set to NA.")
+      return(data.table::data.table(Estimand = label, `Pt Est` = val, se = NA_real_,
+                                    `CI Low` = NA_real_, `CI Hi` = NA_real_, pValue = NA_real_))
+    }
+    se <- seGrad(gw, gl); sl <- se / val
     data.table::data.table(Estimand = label, `Pt Est` = val, se = se,
       `CI Low` = val * exp(-z * sl), `CI Hi` = val * exp(z * sl),
       pValue = 2 * stats::pnorm(-abs(log(val) / sl))) }

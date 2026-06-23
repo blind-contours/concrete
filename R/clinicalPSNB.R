@@ -166,14 +166,20 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   IFwbar_C <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFw_C[[k]]))
   IFlbar_T <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFl_T[[k]]))
   IFlbar_C <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFl_C[[k]]))
-  IFlogwr_T <- IFwbar_T/wbar - IFlbar_T/lbar; IFlogwr_C <- IFwbar_C/wbar - IFlbar_C/lbar
-  slwr <- seGrad(IFlogwr_T, IFlogwr_C)
-
+  pswrOK <- is.finite(pswr) && pswr > 0 && lbar > 1e-10 && wbar > 1e-12
+  if (pswrOK) {
+    IFlogwr_T <- IFwbar_T/wbar - IFlbar_T/lbar; IFlogwr_C <- IFwbar_C/wbar - IFlbar_C/lbar
+    slwr <- seGrad(IFlogwr_T, IFlogwr_C)
+    pswrRow <- data.table::data.table(Estimand = "PSWR", `Pt Est` = pswr, se = pswr*slwr,
+      `CI Low` = pswr*exp(-z*slwr), `CI Hi` = pswr*exp(z*slwr), pValue = 2*stats::pnorm(-abs(log(pswr)/slwr)))
+  } else {                                                    # near-zero denominator: NA inference
+    pswrRow <- data.table::data.table(Estimand = "PSWR", `Pt Est` = pswr, se = NA_real_,
+      `CI Low` = NA_real_, `CI Hi` = NA_real_, pValue = NA_real_)
+  }
   rows <- list(
     data.table::data.table(Estimand = "PSNB", `Pt Est` = psnb, se = sePsnb,
       `CI Low` = psnb - z*sePsnb, `CI Hi` = psnb + z*sePsnb, pValue = 2*stats::pnorm(-abs(psnb/sePsnb))),
-    data.table::data.table(Estimand = "PSWR", `Pt Est` = pswr, se = pswr*slwr,
-      `CI Low` = pswr*exp(-z*slwr), `CI Hi` = pswr*exp(z*slwr), pValue = 2*stats::pnorm(-abs(log(pswr)/slwr))))
+    pswrRow)
   tierLab <- c("D", eng$NF, proLab)
   for (k in seq_len(K)) {
     se_dk <- seGrad(IFw_T[[k]] - IFl_T[[k]], IFw_C[[k]] - IFl_C[[k]])

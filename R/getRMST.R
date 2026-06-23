@@ -218,6 +218,8 @@ addWaldInference <- function(dt, Signif = 0.05, NIMargin = NULL,
     data.table::set(dt, lr, "CI Low", pt[lr] * exp(-z * sterr[lr] / pt[lr]))
     data.table::set(dt, lr, "CI Hi",  pt[lr] * exp( z * sterr[lr] / pt[lr]))
   }
+  bad <- which(!is.finite(pt) | !is.finite(sterr))   # degenerate (e.g. 0-denom ratio): no CI
+  if (length(bad)) { data.table::set(dt, bad, "CI Low", NA_real_); data.table::set(dt, bad, "CI Hi", NA_real_) }
 
   ## difference estimands test (est - 0)/se; ratio estimands test on the LOG scale,
   ## log(est)/se_log with se_log = se/est -- consistent with the log-scale ratio CI.

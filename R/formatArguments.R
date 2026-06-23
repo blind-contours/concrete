@@ -429,6 +429,7 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
     CrossFit <- CrossFit
     HazEnsemble <- HazEnsemble
     CensoringTV <- CensoringTV
+    CensoringTVLibrary <- CensoringTVLibrary
     Crossover <- Crossover
     Strata <- Strata
   })

@@ -15,10 +15,13 @@
   snap an off-grid `Horizon` to the last target time below it (and report that),
   and `stop()` cleanly if no target time is at or below the horizon -- matching
   `getRMST()`/`targetRMST()`.
-* **Zero-denominator guards** in the ratio estimators: `getWinRatio()` (P(loss)),
-  `targetWinRatio()` (any ratio denominator), and `clinicalPSNB()` (PSWR
-  denominator) now warn when the denominator is ~0 (result reported as Inf/NaN)
-  instead of silently dividing by zero.
+* **Zero-denominator guards** in the ratio estimators: `getWinRatio()`,
+  `targetWinRatio()`, `clinicalWinRatio()`/`clinicalPSNB()`, and `getOutput()` (RR)
+  now short-circuit a near-zero ratio denominator -- the point estimate is reported
+  but `se`/`CI`/`p` are set to `NA` (with a warning) instead of computing log
+  influence functions that put `Inf`/`NaN` into the output. `.attachFamily()`
+  likewise drops non-finite estimates/IFs so a degenerate ratio cannot poison a
+  joint band.
 * Documented design choice: the PRO tiers use an IPCW reach-weighted two-sample
   generalized pairwise comparison (which supports stacked PRO tiers, responder
   rules, and reproduces the TRISCEND II win ratio), not a single-marker
