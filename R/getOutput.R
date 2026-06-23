@@ -125,9 +125,10 @@ getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_alon
                           A0 = names(ConcreteEst)[Intervention[2]], TargetTime = TargetTime, 
                           TargetEvent = TargetEvent, GComp = GComp))
   
-  Output[, `CI Low` := `Pt Est` - qnorm(1 - Signif/2)*se]
-  Output[, `CI Hi` := `Pt Est` + qnorm(1 - Signif/2)*se]
-  
+  .z <- qnorm(1 - Signif/2)
+  Output[, `CI Low` := `Pt Est` - .z*se]    # placeholder columns; ratio CIs are set
+  Output[, `CI Hi` := `Pt Est` + .z*se]     # log-scale in addWaldInference() (final)
+
   if (Simultaneous)
     Output <- getSimultaneous(ConcreteEst = ConcreteEst, Output = Output, EstimandType = EstimandType,
                               Intervention = Intervention, Signif = Signif)
@@ -166,6 +167,42 @@ getOutput <- function(ConcreteEst, Estimand = c("Risk"), Intervention = seq_alon
         key = paste0("RD e", e, " t", tt), Estimand = "Risk Diff", Event = e, Time = tt,
         Intervention = ivn, est = row[["Pt Est"]][1], se = row[["se"]][1],
         scale = "identity", ic = mm[["dic"]])
+    }
+  }
+  ## per-arm absolute risks (identity scale)
+  if (any(grepl("Risk", EstimandType))) {
+    OutDT <- as.data.table(Output)
+    for (a in Intervention) {
+      An <- names(ConcreteEst)[a]; ica <- icAll[icAll[["Intervention"]] == An]
+      for (e in sort(unique(ica[["Event"]]))) for (tt in sort(unique(ica[["Time"]]))) {
+        mm <- ica[Event == e & Time == tt][order(ID)]
+        row <- OutDT[OutDT[["Estimand"]] == "Abs Risk" & OutDT[["Estimator"]] == "tmle" &
+                       OutDT[["Intervention"]] == An & OutDT[["Event"]] == e & OutDT[["Time"]] == tt]
+        if (!nrow(row) || !nrow(mm)) next
+        parts[[length(parts) + 1L]] <- list(
+          key = paste0("Risk ", An, " e", e, " t", tt), Estimand = "Abs Risk", Event = e, Time = tt,
+          Intervention = An, est = row[["Pt Est"]][1], se = row[["se"]][1], scale = "identity", ic = mm[["IC"]])
+      }
+    }
+  }
+  ## relative risks (log scale: se & ic on the log scale)
+  if (any(grepl("RR", EstimandType))) {
+    A1 <- names(ConcreteEst)[Intervention[1]]; A0 <- names(ConcreteEst)[Intervention[2]]
+    ivnR <- paste0("[", A1, "] / [", A0, "]"); rk <- as.data.table(Risks)[Estimator == "tmle"]
+    m <- merge(icAll[icAll[["Intervention"]] == A1, list(ID, Time, Event, IC1 = IC)],
+               icAll[icAll[["Intervention"]] == A0, list(ID, Time, Event, IC0 = IC)], by = c("ID", "Time", "Event"))
+    OutDT <- as.data.table(Output)
+    for (e in sort(unique(m[["Event"]]))) for (tt in sort(unique(m[["Time"]]))) {
+      R1 <- rk[rk[["Intervention"]] == A1 & Event == e & Time == tt][["Pt Est"]]
+      R0 <- rk[rk[["Intervention"]] == A0 & Event == e & Time == tt][["Pt Est"]]
+      row <- OutDT[OutDT[["Estimand"]] == "Rel Risk" & OutDT[["Estimator"]] == "tmle" &
+                     OutDT[["Event"]] == e & OutDT[["Time"]] == tt]
+      if (!length(R1) || !length(R0) || R0 <= 0 || !nrow(row)) next
+      mm <- m[Event == e & Time == tt][order(ID)]; rr <- R1 / R0
+      icNat <- mm[["IC1"]] / R0 - mm[["IC0"]] * R1 / R0^2                  # natural-scale RR IC
+      parts[[length(parts) + 1L]] <- list(
+        key = paste0("RR e", e, " t", tt), Estimand = "Rel Risk", Event = e, Time = tt,
+        Intervention = ivnR, est = rr, se = row[["se"]][1] / rr, scale = "log", ic = icNat / rr)
     }
   }
   if (length(parts)) {
@@ -319,7 +356,7 @@ getSimultaneous <- function(ConcreteEst, Output, EstimandType, Intervention, Sig
   CorrEIC <- cor(subset(ICs, select = keepCol))
   n <- length(attr(ConcreteEst, "T.tilde"))
   
-  q <- apply(abs(MASS::mvrnorm(n = 1e3, mu = rep(0, nrow(CorrEIC)), Sigma = CorrEIC)), 1, max)
+  q <- apply(abs(MASS::mvrnorm(n = 1e4, mu = rep(0, nrow(CorrEIC)), Sigma = CorrEIC)), 1, max)
   q <- as.numeric(stats::quantile(q, 1 - Signif))
   se <- data.table(names = rownames(CorrEIC), SimQ = q)
   se[, c("Intervention", "Time", "Event") := tstrsplit(names, "_")]
@@ -329,6 +366,9 @@ getSimultaneous <- function(ConcreteEst, Output, EstimandType, Intervention, Sig
   Output[, NumTime := Time][, Time := as.character(Time)]
   simCI <- merge(Output, se, c("Intervention", "Estimator", "Event", "Time"), all.x = TRUE)
   simCI[, Time := NumTime][, "SimCI Low" := `Pt Est` - se*SimQ][, "SimCI Hi" := `Pt Est` + se*SimQ]
+  simCI[Estimand == "Rel Risk" & `Pt Est` > 0,                  # ratio band on the log scale
+        `:=`("SimCI Low" = `Pt Est`*exp(-se*SimQ/`Pt Est`),
+             "SimCI Hi"  = `Pt Est`*exp( se*SimQ/`Pt Est`))]
   simCI <- subset(simCI, select = c("Intervention", "Estimand", "Estimator", "Event", "Time", 
                                     "Pt Est", "se","CI Low", "CI Hi", "SimCI Low", "SimCI Hi"))
   return(simCI)

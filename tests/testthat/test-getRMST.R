@@ -17,11 +17,15 @@ test_that("addWaldInference computes Wald p-values and CIs", {
   out <- concrete:::addWaldInference(dt, Signif = 0.05)
   # Risk Diff: z = 0.10 / 0.05 = 2
   expect_equal(out$pValue[1], 2 * stats::pnorm(-2), tolerance = 1e-8)
-  # Rel Risk: null is 1, z = (1.5 - 1) / 0.25 = 2
-  expect_equal(out$pValue[2], 2 * stats::pnorm(-2), tolerance = 1e-8)
+  # Rel Risk: tested on the LOG scale, z = log(1.5) / (0.25/1.5)
+  expect_equal(out$pValue[2], 2 * stats::pnorm(-abs(log(1.5) / (0.25 / 1.5))), tolerance = 1e-8)
   # Absolute risk is one-sample: no p-value
   expect_true(is.na(out$pValue[3]))
   expect_equal(out$`CI Low`[1], 0.10 - stats::qnorm(0.975) * 0.05, tolerance = 1e-8)
+  # Rel Risk CI is log-scale: multiplicative, symmetric in log, always positive
+  expect_equal(out$`CI Low`[2], 1.5 * exp(-stats::qnorm(0.975) * (0.25 / 1.5)), tolerance = 1e-8)
+  expect_equal(out$`CI Hi`[2],  1.5 * exp( stats::qnorm(0.975) * (0.25 / 1.5)), tolerance = 1e-8)
+  expect_true(out$`CI Low`[2] > 0)
 })
 
 test_that("addWaldInference non-inferiority respects the confidence interval", {

@@ -46,7 +46,14 @@ getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, T
         message("\nRe-estimating censoring",
                 if (!is.null(Crossover)) " (+ separate crossover hazard for the hypothetical estimand)" else
                 " with time-varying covariates", ":\n")
-        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time, Crossover = Crossover)
+        ## censoring/crossover-hazard learner: the explicit CensoringTVLibrary if the
+        ## analyst set one, else a covariate-adjusted default. (Do NOT borrow the
+        ## treatment library: in an RCT it is rightly SL.mean, which would make the
+        ## censoring/crossover hazard intercept-only.) Fold count from the analysis.
+        .tvLib <- { cl <- attr(Data, "CensoringTVLibrary")
+          if (is.character(cl) && length(cl)) cl else c("SL.mean", "SL.glm") }
+        LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time, Crossover = Crossover,
+                                   SL.library = .tvLib, n.folds = max(1L, length(CVFolds)))
         for (a in seq_along(HazSurvPreds))
             HazSurvPreds[[a]][["Survival"]][["LaggedCensSurv"]] <- LagTV
     }

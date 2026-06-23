@@ -1,25 +1,151 @@
 # concrete 1.1.1.9000
 
-## Continuous / ordinal PRO tiers for the win statistics
+## Audit round 3: ratio p-values, horizons, denominators, censoring learner
+
+* **Ratio p-values are now log-scale**, consistent with the log-scale ratio CIs:
+  `addWaldInference()` tests relative risk / RMST ratio as `log(est)/se_log`
+  (and ratio non-inferiority margins on the log scale), instead of the
+  natural-scale `(est-1)/se`.
+* **Explicit, covariate-adjusted censoring/crossover learner.** The time-varying /
+  crossover censoring hazard previously borrowed the *treatment* SuperLearner
+  library, which in an RCT is `SL.mean` -- making the censoring/crossover model
+  intercept-only. It now defaults to a covariate-adjusted `c("SL.mean", "SL.glm")`
+  and is settable via a new `CensoringTVLibrary` argument to `formatArguments()`.
+* **Horizon snapping / validation for `getWinRatio()` and `getRMTIF()`**: both now
+  snap an off-grid `Horizon` to the last target time below it (and report that),
+  and `stop()` cleanly if no target time is at or below the horizon -- matching
+  `getRMST()`/`targetRMST()`.
+* **Zero-denominator guards** in the ratio estimators: `getWinRatio()`,
+  `targetWinRatio()`, `clinicalWinRatio()`/`clinicalPSNB()`, and `getOutput()` (RR)
+  now short-circuit a near-zero ratio denominator -- the point estimate is reported
+  but `se`/`CI`/`p` are set to `NA` (with a warning) instead of computing log
+  influence functions that put `Inf`/`NaN` into the output. `.attachFamily()`
+  likewise drops non-finite estimates/IFs so a degenerate ratio cannot poison a
+  joint band.
+* Documented design choice: the PRO tiers use an IPCW reach-weighted two-sample
+  generalized pairwise comparison (which supports stacked PRO tiers, responder
+  rules, and reproduces the TRISCEND II win ratio), not a single-marker
+  conditional-CDF Super Learner; the latter remains an option for a lone
+  continuous PRO but does not stack.
+
+## Audit round 2: inference & robustness fixes
+
+* **Relative-risk CIs are now actually log-scale.** A previous fix set log-scale RR
+  CIs in `getOutput()`, but `addWaldInference()` (the final step) overwrote them
+  with additive `est +/- z*se` CIs (which can be negative). The log-scale CI for
+  ratio estimands (RR, RMST ratio) now lives in `addWaldInference()` itself, so it
+  is the final assignment. Simultaneous RR bands in `getOutput()` are likewise
+  log-scale now.
+* **`clinicalRMTIF()` gains `crossover=` and `min.cens.surv=`** (it was the only
+  win-statistic missing the covariate-adjusted crossover IPCW and the exposed
+  censoring-survival floor).
+* **`clinicalPSNB()` guards near-zero reach.** A bottom tier reached by almost no
+  pairs no longer divides `w_k = W^(k)/r_k` by ~0 (Inf/NaN); the reach is floored
+  and a warning is issued.
+* **`getRMTIF()` snaps the horizon to the target grid** and messages when the
+  requested `Horizon` is not a target time (matching `getRMST()`/`targetRMST()`),
+  instead of silently reporting an unreached horizon.
+* **`getPositivityDx()` no longer overstates "% at bound."** It now compares the
+  observation probability to the actual `MinNuisance` truncation floor (stored on
+  the fit), so a clean RCT with untruncated weights reports 0% (was 100%).
+* **`getSimultaneousFamily()` honors the source output's alpha** for pointwise CIs
+  (was hard-coded 95%), and `getOutput()` now attaches per-subject influence
+  functions for absolute risk and relative risk (log-scale), not only risk
+  difference -- so plain risk / RR outputs can be stacked into a joint band.
+* Documented that PRO-tier SEs are mildly optimistic (the U-statistic IF treats the
+  attendance/censoring/reach-rescaling nuisances as known). Known limitation: the
+  time-varying / crossover censoring learner is derived from the treatment model
+  rather than a separately specifiable censoring learner (future enhancement).
+
+## Crossover / censoring IPCW robustness fixes (code audit)
+
+* **Core path now honors the analyst's censoring/crossover learner.** When
+  `CensoringTV` or `Crossover` is supplied, `getInitialEstimate()` /
+  `getCVInitialEstimate()` re-estimate the lagged censoring survival via
+  `.tvCensLaggedSurv()`, which previously used fixed defaults
+  (`SL.mean`/`SL.glm`, 5 folds) regardless of the analysis settings. It now
+  passes the analyst's treatment/propensity SuperLearner library (a binary-hazard
+  library, appropriate for the censoring/crossover hazard) and the analysis fold
+  count. The IPCW algebra was already correct; this makes the *learner* the one
+  the analyst chose.
+* **Clinical-path censoring-survival truncation is now exposed** as
+  `min.cens.surv` (default 0.05) on `clinicalWinRatio()` / `clinicalPSNB()`,
+  replacing a hard-coded 0.05 floor on the combined dropout+crossover survival in
+  the IPCW. This matters with heavy crossover, where the no-switching weights can
+  otherwise be silently capped; analysts can now see and set the floor (the core
+  path's analogue is `MinNuisance`).
+* **Added `Crossover=` regression tests** (`tests/testthat/test-crossover.R`):
+  the win ratio runs with a crossover column and finite inference; the
+  crossover-IPCW estimand differs from ITT; the `min.cens.surv` floor is honored;
+  and an invalid crossover column errors clearly.
+
+## Covariate-adjusted crossover (treatment-switching) for the win ratio
+
+* `clinicalWinRatio()` and `clinicalPSNB()` gain a **`crossover`** argument (a
+  per-subject switch-time column) that turns the ITT treatment-policy win ratio
+  into the doubly-robust **hypothetical no-switching** estimand. Switchers are
+  re-censored at their switch time and a **separate covariate-adjusted crossover
+  hazard** (SuperLearner on the covariates, optionally time-varying via
+  `censoring.tv`) is combined with the dropout-censoring hazard, so the IPCW is
+  `1/(S_dropout * S_crossover)` -- mirroring the crossover handling `doConcrete()`
+  already provides for absolute risk. The censoring IPCW was already
+  covariate-adjusted; this adds the crossover mechanism. Validated to recover the
+  no-switching truth under informative switching (ITT 1.78 -> no-switching 2.42 vs
+  truth 2.45; `scripts/dev-crossover-winratio.R`). Caveat: with heavy late
+  crossover at small n the no-switching estimate is high-variance.
+
+## Estimator audit fixes
+
+* **PRO block rescaled to the hard-tier residual reach (coherent hierarchy).** The
+  PRO generalized-pairwise-comparison estimates its own reach by inverse-probability
+  weighting; with extreme attendance/censoring weights at small n that empirical
+  reach can exceed the engine's residual reach `1 - sum_hard(W+L)`, pushing the
+  composite `P(win)+P(loss)` above 1. The PRO win/loss components are now rescaled by
+  `(engine residual reach) / (PRO empirical reach)`, so the whole hierarchy stays
+  coherent. In well-behaved cases the factor is ~1 (no-op). Surfaced on the real
+  TRISCEND II data (n=400, sparse hard events): `P(win)` 1.23 -> 0.80, win ratio
+  2.19 (95% CI 1.43-3.35) vs the published 2.02 (1.56-2.62).
+* **PRO tiers now inverse-probability-weight pre-horizon censoring.** The PRO
+  block previously corrected only for landmark-visit non-attendance, not for
+  censoring before the horizon, so its win/loss components were attenuated
+  (~`G(tau)^2`) while the hard-tier reach was censoring-corrected --- biasing
+  `clinicalWinRatio` / `clinicalPSNB` PRO tiers toward the null under meaningful
+  censoring. Reachers are now weighted by `1/G(tau | W)` (the engine's `Ginv` at
+  the horizon). Validated: the conditional PRO net benefit is now invariant to the
+  censoring rate (0.25 across 0/18/45% pre-horizon censoring vs a drift to 0.08
+  before), and the TRISCEND II 7-tier win-ratio bias falls from −0.10 to −0.05
+  with coverage 0.967.
+* **Ratio confidence intervals (`Rel Risk`) are now on the log scale** in
+  `getOutput()` --- symmetric in log, always positive, better small-sample coverage
+  (the win ratio already did this). Point estimates, SEs and Wald p-values are
+  unchanged. Validated: null RR (=1) log-scale CI coverage 0.956. The core TMLE
+  was re-confirmed well-calibrated in the same run (RD coverage 0.950, type-I
+  0.050; per-arm risk 0.96–0.98).
+* `getOutput()` simultaneous bands use 1e4 (was 1e3) multiplier draws for a stabler
+  max-statistic quantile, matching `getSimultaneousFamily()`.
+
+## Continuous / ordinal PRO tiers for the win statistics (TRISCEND II-style)
 
 * `clinicalWinRatio()` and `clinicalPSNB()` gain a **`pro`** argument: continuous
   or ordinal patient-reported-outcome tiers (e.g. KCCQ, NYHA, 6-minute walk)
-  measured at a landmark, appended at the **bottom** of the hierarchy (the
-  clinical norm for soft markers; multiple PRO tiers may be stacked). A pair
-  reaches a PRO tier iff tied on every higher, hard-event tier (both event-free
-  and alive at the horizon); within reach the markers are compared with a win
-  margin `delta` and a direction (`higher.better` / `lower.better`). The marker
-  distribution is **reach-weighted standardized**, `G_a^R(y) = E[rho_a(W)
-  Q_a(y|W)] / E[rho_a(W)]` --- not a naive marginal --- with `rho_a(W)` the
-  engine's event-free-alive (state-0) occupancy and `Q_a` an IPCW-weighted
-  binary-threshold Super Learner conditional CDF (corrects landmark
-  missingness). Inference is the analytic influence function (reach via the
-  occupancy adjoint, marker via the IPCW residual). Validated end-to-end against
-  a brute-force pairwise truth (reach unbiased; PSNB essentially unbiased;
-  coverage approaching nominal as n grows, with the usual win-ratio small-sample
-  anti-conservatism). Experimental; assumes the landmark marker is conditionally
-  independent of the post-landmark event process given baseline covariates and
-  arm. A PRO ranked *above* a hard event is not yet supported.
+  measured at the final visit, appended at the **bottom** of the hierarchy (the
+  clinical norm for soft markers; multiple PRO tiers may be stacked in priority
+  order). This reproduces the **TRISCEND II** primary endpoint (Hahn et al., NEJM
+  2025): `death > RV-assist/transplant > tricuspid reintervention > HF
+  hospitalization > KCCQ >= 10 > NYHA >= 1 class > 6-min walk >= 30 m`.
+* A pair reaches the PRO block iff tied on every hard-event tier (both event-free
+  and alive at the horizon); within reach the PRO tiers are compared
+  **sequentially**, each with a win margin `delta` and a direction
+  (`higher.better` / `lower.better`). The block is estimated by a **reach-weighted,
+  IPCW-corrected two-sample generalized pairwise comparison** on the joint marker
+  vectors (pairs restricted to reachers; missing final visits inverse-probability
+  weighted), so the markers may be arbitrarily correlated and the sequential
+  tie-passing among PRO tiers is exact. Inference is the two-sample U-statistic
+  (Hajek) influence function; hard-event tiers above keep the engine's
+  covariate-adjusted, doubly-robust influence-function inference. Validated
+  end-to-end against a brute-force pairwise win-ratio truth over the full 7-tier
+  hierarchy. Experimental; the PRO landmark must equal the horizon (final-visit
+  design), and a PRO ranked *above* a hard event is not supported.
 * The multistate engine now supports a **death-only** hard-event hierarchy
   (`Kev = 1`), e.g. `death > KCCQ` with no non-fatal event tier.
 

@@ -47,11 +47,14 @@
 clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status,
                          covariates, charter, horizon = NULL, n.grid = 60L, n.folds = 5L,
                          SL.library = c("SL.mean", "SL.glm"), Signif = 0.05,
-                         id = NULL, censoring.tv = NULL, pro = NULL) {
+                         id = NULL, censoring.tv = NULL, crossover = NULL, pro = NULL,
+                         min.cens.surv = 0.05) {
   data <- as.data.frame(data)
   illness.time <- as.character(illness.time)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
     if (!col %in% names(data)) stop("column '", col, "' not found in data.")
+  if (!is.null(crossover) && !crossover %in% names(data))
+    stop("crossover column '", crossover, "' not found in data.")
   A <- data[[arm]]
   if (!all(A %in% c(0, 1))) stop("arm must be coded 0/1 (1 = active arm).")
   term <- data[[terminal.time]]; delta <- data[[terminal.status]]
@@ -73,12 +76,14 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   eng <- .msEngine(Kev, grid)                          # engine spans the hard-event tiers
   proCols <- unique(vapply(pros, function(s) s$marker, character(1)))
 
+  sw <- if (is.null(crossover)) rep(Inf, nrow(data)) else { x <- as.numeric(data[[crossover]]); x[is.na(x)] <- Inf; x }
   parseArm <- function(rows) {
     D <- data[rows, covariates, drop = FALSE]
     D$tD <- ifelse(delta[rows] == 1, term[rows], Inf)
     for (ei in seq_along(illness.time)) {
       ti <- data[[illness.time[ei]]][rows]; ti[is.na(ti)] <- Inf; D[[paste0("t", ei)]] <- ti }
-    D$C <- ifelse(delta[rows] == 0, term[rows], Inf)
+    D$C <- pmin(ifelse(delta[rows] == 0, term[rows], Inf), sw[rows])   # re-censor at switch
+    D$switch <- sw[rows]
     for (mc in proCols) D[[mc]] <- data[[mc]][rows]    # carry PRO markers through
     D
   }
@@ -91,7 +96,7 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   fitArm <- function(rows) {
     D <- parseArm(rows)
     tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[rows, , drop = FALSE])
-    nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA)
+    nu <- .msNuisances(eng, D, covariates, SL.library, n.folds, tvA, xover = D$switch, minG = min.cens.surv)
     list(arm = eng$armSetup(D, nu$rmat, nu$Ginv), D = D)
   }
   fT <- fitArm(which(A == 1)); fC <- fitArm(which(A == 0))
@@ -109,9 +114,11 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   proLab <- character(0)
   if (!is.null(pros)) {
     pc <- .proComponents(eng, pros, fT$D, fC$D, trt, ctl, covariates, SL.library, n.folds)
-    Wk <- c(Wk, pc$winP); Lk <- c(Lk, pc$losP)
-    DWk_T <- c(DWk_T, pc$winIFwin); DWk_C <- c(DWk_C, pc$winIFlos)
-    DLk_C <- c(DLk_C, pc$losIFwin); DLk_T <- c(DLk_T, pc$losIFlos)
+    ## rescale the PRO block to the hard-tier residual reach (coherent hierarchy)
+    s <- max(1e-6, 1 - sum(Wk) - sum(Lk)) / max(pc$reachEmp, 1e-6)
+    Wk <- c(Wk, s * pc$winP); Lk <- c(Lk, s * pc$losP)
+    DWk_T <- c(DWk_T, lapply(pc$winIFwin, `*`, s)); DWk_C <- c(DWk_C, lapply(pc$winIFlos, `*`, s))
+    DLk_C <- c(DLk_C, lapply(pc$losIFwin, `*`, s)); DLk_T <- c(DLk_T, lapply(pc$losIFlos, `*`, s))
     proLab <- pc$labels
   }
 
@@ -120,18 +127,26 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   rk <- numeric(K); wk <- numeric(K); lk <- numeric(K)
   IFw_T <- IFw_C <- IFl_T <- IFl_C <- vector("list", K)
   cumW_T <- zT; cumW_C <- zC; cumWpt <- 0                    # running sum of decided mass below k
+  minReach <- 1e-3                                           # support floor: a tier reached by
+  lowReach <- FALSE                                          # almost no pairs has no estimable w/l
   for (k in seq_len(K)) {
     rk[k] <- 1 - cumWpt
     IFr_T <- -cumW_T; IFr_C <- -cumW_C                       # IF of reach r_k
-    wk[k] <- Wk[k] / rk[k]; lk[k] <- Lk[k] / rk[k]
-    IFw_T[[k]] <- (DWk_T[[k]] - wk[k] * IFr_T) / rk[k]
-    IFw_C[[k]] <- (DWk_C[[k]] - wk[k] * IFr_C) / rk[k]
-    IFl_T[[k]] <- (DLk_T[[k]] - lk[k] * IFr_T) / rk[k]
-    IFl_C[[k]] <- (DLk_C[[k]] - lk[k] * IFr_C) / rk[k]
+    rks <- rk[k]                                             # guarded reach for the divide-out
+    if (!is.finite(rks) || rks < minReach) { rks <- minReach; if (k < K || Wk[k] != 0 || Lk[k] != 0) lowReach <- TRUE }
+    wk[k] <- Wk[k] / rks; lk[k] <- Lk[k] / rks
+    IFw_T[[k]] <- (DWk_T[[k]] - wk[k] * IFr_T) / rks
+    IFw_C[[k]] <- (DWk_C[[k]] - wk[k] * IFr_C) / rks
+    IFl_T[[k]] <- (DLk_T[[k]] - lk[k] * IFr_T) / rks
+    IFl_C[[k]] <- (DLk_C[[k]] - lk[k] * IFr_C) / rks
     cumWpt <- cumWpt + Wk[k] + Lk[k]
     cumW_T <- cumW_T + DWk_T[[k]] + DLk_T[[k]]
     cumW_C <- cumW_C + DWk_C[[k]] + DLk_C[[k]]
   }
+  if (lowReach)
+    warning("a layer has near-zero estimated reach (< ", minReach, "); its ",
+            "stage-conditional w/l/Delta are unstable (divided by a tiny reach). ",
+            "Interpret that layer's PSNB contribution with caution.")
   if (useReach) alpha <- rk      # alpha_k = realized reach -> reproduces standard NB / WR
 
   seGrad <- function(IF_T, IF_C) sqrt((sum(((1/piT)*IF_T)^2) + sum(((1/piC)*IF_C)^2)) / Ntot^2)
@@ -142,19 +157,29 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   IFpsnb_C <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*(IFw_C[[k]] - IFl_C[[k]])))
   sePsnb <- seGrad(IFpsnb_T, IFpsnb_C)
   ## PSWR = wbar / lbar
-  wbar <- sum(alpha * wk); lbar <- sum(alpha * lk); pswr <- wbar / lbar
+  wbar <- sum(alpha * wk); lbar <- sum(alpha * lk)
+  if (!is.finite(lbar) || lbar < 1e-10)
+    warning("PSWR denominator (sum_k alpha_k * l_k) is ~0; PSWR is unstable / undefined ",
+            "(Inf/NaN). PSNB is unaffected.")
+  pswr <- wbar / lbar
   IFwbar_T <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFw_T[[k]]))
   IFwbar_C <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFw_C[[k]]))
   IFlbar_T <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFl_T[[k]]))
   IFlbar_C <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFl_C[[k]]))
-  IFlogwr_T <- IFwbar_T/wbar - IFlbar_T/lbar; IFlogwr_C <- IFwbar_C/wbar - IFlbar_C/lbar
-  slwr <- seGrad(IFlogwr_T, IFlogwr_C)
-
+  pswrOK <- is.finite(pswr) && pswr > 0 && lbar > 1e-10 && wbar > 1e-12
+  if (pswrOK) {
+    IFlogwr_T <- IFwbar_T/wbar - IFlbar_T/lbar; IFlogwr_C <- IFwbar_C/wbar - IFlbar_C/lbar
+    slwr <- seGrad(IFlogwr_T, IFlogwr_C)
+    pswrRow <- data.table::data.table(Estimand = "PSWR", `Pt Est` = pswr, se = pswr*slwr,
+      `CI Low` = pswr*exp(-z*slwr), `CI Hi` = pswr*exp(z*slwr), pValue = 2*stats::pnorm(-abs(log(pswr)/slwr)))
+  } else {                                                    # near-zero denominator: NA inference
+    pswrRow <- data.table::data.table(Estimand = "PSWR", `Pt Est` = pswr, se = NA_real_,
+      `CI Low` = NA_real_, `CI Hi` = NA_real_, pValue = NA_real_)
+  }
   rows <- list(
     data.table::data.table(Estimand = "PSNB", `Pt Est` = psnb, se = sePsnb,
       `CI Low` = psnb - z*sePsnb, `CI Hi` = psnb + z*sePsnb, pValue = 2*stats::pnorm(-abs(psnb/sePsnb))),
-    data.table::data.table(Estimand = "PSWR", `Pt Est` = pswr, se = pswr*slwr,
-      `CI Low` = pswr*exp(-z*slwr), `CI Hi` = pswr*exp(z*slwr), pValue = 2*stats::pnorm(-abs(log(pswr)/slwr))))
+    pswrRow)
   tierLab <- c("D", eng$NF, proLab)
   for (k in seq_len(K)) {
     se_dk <- seGrad(IFw_T[[k]] - IFl_T[[k]], IFw_C[[k]] - IFl_C[[k]])

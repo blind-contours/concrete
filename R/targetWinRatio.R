@@ -257,6 +257,12 @@ targetWinRatio <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
 
   z <- stats::qnorm(1 - Signif / 2)
   ratioRow <- function(label, num, den, Dnum, Dden) {
+    if (!is.finite(den) || abs(den) < 1e-10 || !is.finite(num) || num < 1e-12) {
+      warning(label, ": near-zero win/loss probability; the ratio is undefined -- ",
+              "point estimate reported, inference set to NA.")
+      return(data.table::data.table(Estimand = label, `Pt Est` = num / den, se = NA_real_,
+                                    `CI Low` = NA_real_, `CI Hi` = NA_real_, pValue = NA_real_))
+    }
     est <- num / den
     Dlog <- Dnum / num - Dden / den
     sl <- seIF(Dlog)

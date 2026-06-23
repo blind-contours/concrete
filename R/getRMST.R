@@ -203,13 +203,30 @@ addWaldInference <- function(dt, Signif = 0.05, NIMargin = NULL,
   sterr <- dt[["se"]]
   est <- dt[["Estimand"]]
 
-  dt[, "CI Low" := pt - z * sterr]
-  dt[, "CI Hi" := pt + z * sterr]
-
   ratio_est <- grepl("Ratio|Rel Risk", est)
   comparative <- grepl("Diff|Ratio|Rel Risk", est)
+
+  dt[, "CI Low" := pt - z * sterr]
+  dt[, "CI Hi" := pt + z * sterr]
+  ## ratio estimands (relative risk, RMST ratio, ...): log-scale delta-method CI --
+  ## symmetric in log, always positive, better small-sample coverage. `se` is the
+  ## natural-scale SE so se_log = se / est. This is the final CI assignment (it runs
+  ## after getSimultaneous, which writes separate SimCI columns), so it is not
+  ## overwritten downstream.
+  lr <- which(ratio_est & is.finite(pt) & pt > 0 & is.finite(sterr) & sterr > 0)
+  if (length(lr)) {
+    data.table::set(dt, lr, "CI Low", pt[lr] * exp(-z * sterr[lr] / pt[lr]))
+    data.table::set(dt, lr, "CI Hi",  pt[lr] * exp( z * sterr[lr] / pt[lr]))
+  }
+  bad <- which(!is.finite(pt) | !is.finite(sterr))   # degenerate (e.g. 0-denom ratio): no CI
+  if (length(bad)) { data.table::set(dt, bad, "CI Low", NA_real_); data.table::set(dt, bad, "CI Hi", NA_real_) }
+
+  ## difference estimands test (est - 0)/se; ratio estimands test on the LOG scale,
+  ## log(est)/se_log with se_log = se/est -- consistent with the log-scale ratio CI.
   null0 <- ifelse(ratio_est, 1, 0)
   zstat <- (pt - null0) / sterr
+  lr <- ratio_est & is.finite(pt) & pt > 0 & is.finite(sterr) & sterr > 0
+  zstat[lr] <- log(pt[lr]) / (sterr[lr] / pt[lr])
   pval <- 2 * stats::pnorm(-abs(zstat))
   pval[!comparative | !is.finite(sterr) | sterr <= 0] <- NA_real_
   dt[, "pValue" := pval]
@@ -219,14 +236,20 @@ addWaldInference <- function(dt, Signif = 0.05, NIMargin = NULL,
       stop("NIMargin must be a single numeric value.")
     cilo <- dt[["CI Low"]]
     cihi <- dt[["CI Hi"]]
+    ## ratio estimands: test the NI margin on the log scale too (consistent with the
+    ## log-scale ratio CI). se_log = se/est; the margin and estimate are logged.
+    selog <- sterr; selog[lr] <- sterr[lr] / pt[lr]
+    estS <- pt; estS[lr] <- log(pt[lr])
+    marginS <- rep(NIMargin, length(pt))
+    if (NIMargin > 0) marginS[ratio_est] <- log(NIMargin)
     if (identical(NIDirection, "upper")) {
       # smaller is better: non-inferior if the whole CI sits below the margin
       noninf <- cihi < NIMargin
-      nip <- stats::pnorm((pt - NIMargin) / sterr)
+      nip <- stats::pnorm((estS - marginS) / selog)
     } else {
       # larger is better: non-inferior if the whole CI sits above the margin
       noninf <- cilo > NIMargin
-      nip <- stats::pnorm((NIMargin - pt) / sterr)
+      nip <- stats::pnorm((marginS - estS) / selog)
     }
     noninf[!comparative | !is.finite(sterr) | sterr <= 0] <- NA
     nip[!comparative | !is.finite(sterr) | sterr <= 0] <- NA_real_

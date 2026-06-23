@@ -38,22 +38,25 @@ oneRep <- function(b) {
   a <- suppressMessages(formatArguments(DataTable = dat, EventTime = "time", EventType = "status",
         Treatment = "trt", ID = "id", Intervention = 0:1, TargetTime = targT, TargetEvent = c(1, 2),
         CVArg = list(V = 2), MaxUpdateIter = 15, Model = Mdl, Verbose = FALSE))
-  o <- suppressMessages(getOutput(suppressMessages(doConcrete(a)), Estimand = c("Risk", "RD"),
+  o <- suppressMessages(getOutput(suppressMessages(doConcrete(a)), Estimand = c("Risk", "RD", "RR"),
                                   Simultaneous = FALSE))
   o <- as.data.table(o)[Estimator == "tmle" & Event == 1]
   r1 <- o[Estimand == "Abs Risk" & Intervention == "A=1"]
   r0 <- o[Estimand == "Abs Risk" & Intervention == "A=0"]
   rd <- o[Estimand == "Risk Diff"]
+  rr <- o[Estimand == "Rel Risk"]                              # truth RR = 1 (null); CI is log-scale
   c(est1 = r1[["Pt Est"]], cov1 = as.integer(r1[["CI Low"]] <= truthF1 & truthF1 <= r1[["CI Hi"]]),
     est0 = r0[["Pt Est"]], cov0 = as.integer(r0[["CI Low"]] <= truthF1 & truthF1 <= r0[["CI Hi"]]),
     rd = rd[["Pt Est"]], rdse = rd[["se"]],
     covRD = as.integer(rd[["CI Low"]] <= 0 & 0 <= rd[["CI Hi"]]),
-    rej = as.integer(rd[["pValue"]] < 0.05))
+    rej = as.integer(rd[["pValue"]] < 0.05),
+    rr = rr[["Pt Est"]], covRR = as.integer(rr[["CI Low"]] <= 1 & 1 <= rr[["CI Hi"]]),
+    rejRR = as.integer(rr[["pValue"]] < 0.05))
 }
 
 R <- do.call(rbind, parallel::mclapply(seq_len(B), function(b)
-  tryCatch(oneRep(b), error = function(e) rep(NA_real_, 8)), mc.cores = MC))
-colnames(R) <- c("est1","cov1","est0","cov0","rd","rdse","covRD","rej")
+  tryCatch(oneRep(b), error = function(e) rep(NA_real_, 11)), mc.cores = MC))
+colnames(R) <- c("est1","cov1","est0","cov0","rd","rdse","covRD","rej","rr","covRR","rejRR")
 R <- R[stats::complete.cases(R), , drop = FALSE]
 saveRDS(R, "/tmp/null-typeI.rds")
 cat(sprintf("\n===== NULL DGP: core TMLE type-I / coverage (%d reps, n=%d/arm) =====\n", nrow(R), n))
@@ -68,3 +71,5 @@ cat(sprintf("  RD coverage at 0    = %.3f\n", mean(R[,"covRD"])))
 cat(sprintf("  TYPE-I ERROR (a=.05)= %.3f   [acceptance band for B=%d: %.3f-%.3f]\n",
             mean(R[,"rej"]), nrow(R),
             0.05 - 1.96*sqrt(0.05*0.95/nrow(R)), 0.05 + 1.96*sqrt(0.05*0.95/nrow(R))))
+cat(sprintf("  RR (true 1): mean   = %.4f   log-scale CI coverage at 1 = %.3f   type-I %.3f\n",
+            mean(R[,"rr"]), mean(R[,"covRR"]), mean(R[,"rejRR"])))

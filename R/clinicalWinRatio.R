@@ -68,32 +68,59 @@
 #'   censoring model (never the outcome hazards), so the marginal/ITT estimand is
 #'   preserved (they are post-treatment mediators). No effect on the result when
 #'   omitted.
+#' @param crossover optional character: name of a column giving each subject's
+#'   \strong{treatment-switch time} (e.g.\ days from randomization to crossover),
+#'   `NA`/`Inf` for those who never switched. When supplied, switchers are
+#'   re-censored at their switch time and a \strong{separate covariate-adjusted
+#'   crossover hazard} is fit and combined with the censoring hazard, so the IPCW
+#'   becomes \eqn{1/(S_{\mathrm{drop}} S_{\mathrm{cross}})} --- the doubly-robust
+#'   \strong{hypothetical no-switching} win ratio (what the contrast would be had
+#'   no one crossed over), rather than the ITT treatment-policy estimand. Validated
+#'   to recover the no-switching truth under informative switching
+#'   (`scripts/dev-crossover-winratio.R`). Requires conditional independence of the
+#'   switch and the outcome given the covariates; with heavy late crossover at
+#'   small n the estimate can be high-variance.
+#' @param min.cens.surv numeric (default 0.05): lower bound (truncation floor) on
+#'   the combined censoring (and crossover) survival used in the IPCW, i.e.\ the
+#'   inverse-probability weight is capped at `1/min.cens.surv`. Stabilizes the
+#'   weights when follow-up / non-switching becomes rare; raise it for more
+#'   stability (more bias) or lower it for less truncation. Matters most with heavy
+#'   crossover, where the no-switching weights can otherwise blow up.
 #' @param pro optional continuous / ordinal patient-reported-outcome (PRO) tier(s)
 #'   appended at the \strong{bottom} of the hierarchy (below all hard-event tiers),
 #'   the clinical norm for soft markers. A single spec (a named `list`) or a `list`
-#'   of specs, each with: `marker` (column of the landmark value, `NA` if not
-#'   measured), `landmark` (measurement time; default = horizon), `margin` (the win
-#'   margin \eqn{\delta}; default 0), `direction` (`"higher.better"` (default) or
-#'   `"lower.better"`), `type` (`"continuous"` (default) or `"ordinal"`), `n.grid`
-#'   (cutpoint resolution for continuous markers; default 80), and optional `label`.
-#'   A pair reaches a PRO tier iff tied on all higher tiers (both event-free and
-#'   alive at the horizon); within reach the markers are compared with margin
-#'   \eqn{\delta}. The marker distribution is \strong{reach-weighted} standardized
-#'   and landmark-missingness is IPCW-corrected; see Details and [clinicalPSNB()].
+#'   of specs in priority order, each with: `marker` (column of the final-visit
+#'   value, `NA` if not measured), `landmark` (measurement time; must equal the
+#'   horizon --- a final-visit design), `margin` (the win margin \eqn{\delta};
+#'   default 0), `direction` (`"higher.better"` (default) or `"lower.better"`),
+#'   `type` (`"continuous"` (default) or `"ordinal"`), and optional `label`. A pair
+#'   reaches the PRO block iff tied on all higher tiers (both event-free, alive and
+#'   in follow-up at the horizon); within reach the PRO tiers are compared
+#'   \strong{sequentially}, each with its margin \eqn{\delta}. This is the TRISCEND
+#'   II construction (death > RV-assist/transplant > tricuspid reintervention > HF
+#'   hospitalization > KCCQ \eqn{\ge} 10 > NYHA \eqn{\ge} 1 class > 6-min walk
+#'   \eqn{\ge} 30 m). See Details and [clinicalPSNB()].
 #'
 #' @details
-#' \strong{PRO tiers (experimental).} A continuous/ordinal marker measured at a
-#' landmark is compared among pairs that reach the tier (tied on all higher,
-#' hard-event tiers). Because the marker is defined only among reachers, the
-#' standardized CDF is reach-weighted, \eqn{G_a^R(y) = E[\rho_a(W)Q_a(y|W)] /
-#' E[\rho_a(W)]} with \eqn{\rho_a(W)} the engine's state-0 (event-free, alive)
-#' occupancy at the horizon and \eqn{Q_a} the conditional marker CDF (IPCW-weighted
-#' binary-threshold Super Learner for landmark missingness). Inference is by the
-#' analytic influence function (reach via the occupancy adjoint, marker via the
-#' IPCW residual). \strong{Working assumption}: the landmark marker is conditionally
-#' independent of the post-landmark event process given \eqn{(W,\text{arm})}. PRO
-#' tiers must sit below the hard-event tiers; one ranked above a hard event is not
-#' yet supported.
+#' \strong{PRO tiers (experimental).} Markers measured at the final visit are
+#' compared among pairs that reach the PRO block (tied on every hard-event tier,
+#' i.e.\ both event-free and alive at the horizon), \emph{sequentially}: a pair is
+#' decided at the first PRO tier whose two markers differ by more than that tier's
+#' margin \eqn{\delta}, else it descends to the next PRO tier. The block is
+#' estimated by a \strong{reach-weighted, IPCW-corrected two-sample generalized
+#' pairwise comparison} on the joint marker vectors --- pairs restricted to
+#' reachers and inverse-probability weighted for both pre-horizon censoring
+#' (\eqn{1/G(\tau\mid W)}) and missing landmark visits (a per-arm attendance model)
+#' --- so the markers may be arbitrarily correlated and the sequential
+#' tie-passing among PRO tiers is exact. \strong{PRO-tier SEs are mildly
+#' optimistic}: the U-statistic influence function treats the landmark-attendance
+#' model, the censoring weights, and the hard-tier reach-rescaling factor as known
+#' (it does not propagate their estimation uncertainty). Inference is the two-sample
+#' U-statistic
+#' (Hajek) influence function; hard-event tiers above keep the engine's
+#' covariate-adjusted, doubly-robust influence-function inference. \strong{Scope}:
+#' the PRO landmark must equal the horizon (final-visit design); a PRO ranked above
+#' a hard event is not supported.
 #'
 #' @return a `data.table` of class `"ConcreteOut"` with the win ratio, win odds,
 #'   net benefit, and the win/loss/tie probabilities, each with an
@@ -130,11 +157,14 @@
 clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.status,
                              covariates, horizon = NULL, n.grid = 60L, n.folds = 5L,
                              SL.library = c("SL.mean", "SL.glm"), Signif = 0.05,
-                             id = NULL, censoring.tv = NULL, pro = NULL) {
+                             id = NULL, censoring.tv = NULL, crossover = NULL, pro = NULL,
+                             min.cens.surv = 0.05) {
   data <- as.data.frame(data)
   illness.time <- as.character(illness.time)
   for (col in c(arm, illness.time, terminal.time, terminal.status, covariates))
     if (!col %in% names(data)) stop("column '", col, "' not found in data.")
+  if (!is.null(crossover) && !crossover %in% names(data))
+    stop("crossover column '", crossover, "' not found in data.")
   A <- data[[arm]]
   if (!all(A %in% c(0, 1))) stop("arm must be coded 0/1 (1 = active arm).")
   if (length(unique(A)) != 2L) stop("arm must contain both 0 and 1.")
@@ -153,6 +183,10 @@ clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.st
     ti <- data[[illness.time[ei]]]; ti[is.na(ti)] <- Inf; D[[paste0("t", ei)]] <- ti
   }
   D$C <- ifelse(delta == 0, term, Inf)
+  ## crossover (treatment-switching): re-censor at the switch time and carry it so
+  ## a separate crossover hazard reweights the IPCW (hypothetical no-switching).
+  sw <- if (is.null(crossover)) rep(Inf, nrow(data)) else { x <- as.numeric(data[[crossover]]); x[is.na(x)] <- Inf; x }
+  D$switch <- sw; D$C <- pmin(D$C, sw)
   for (mc in proCols) D[[mc]] <- data[[mc]]                 # carry PRO markers through
 
   ## --- optional time-varying censoring covariates (LOCF value + change) ---
@@ -170,7 +204,7 @@ clinicalWinRatio <- function(data, arm, illness.time, terminal.time, terminal.st
   buildArm <- function(av) {
     sel <- A == av; Da <- D[sel, , drop = FALSE]
     tvA <- if (is.null(tvMats)) NULL else lapply(tvMats, function(m) m[sel, , drop = FALSE])
-    nu <- .msNuisances(eng, Da, covariates, SL.library, n.folds, tvA)
+    nu <- .msNuisances(eng, Da, covariates, SL.library, n.folds, tvA, xover = Da$switch, minG = min.cens.surv)
     list(arm = eng$armSetup(Da, nu$rmat, nu$Ginv), D = Da)
   }
   bT <- buildArm(1); bC <- buildArm(0)

@@ -342,13 +342,23 @@
 #' inverse lagged censoring survival). `n.folds <= 1` gives in-sample fits.
 #' @keywords internal
 #' @noRd
-.msNuisances <- function(eng, D, covariates, SL.library, n.folds, tvMats = NULL) {
+.msNuisances <- function(eng, D, covariates, SL.library, n.folds, tvMats = NULL, xover = NULL,
+                         minG = 0.05) {
   M <- eng$M; grid <- eng$grid; structTrans <- eng$structTrans; tau <- eng$tau; n <- nrow(D)
   V <- max(1L, min(as.integer(n.folds), floor(n / 30)))
   rmat <- stats::setNames(lapply(structTrans, function(k) matrix(1e-10, M, n)), structTrans)
-  incC <- matrix(0, M, n)
+  incC <- matrix(0, M, n); incX <- matrix(0, M, n)
   fold <- if (V <= 1L) rep(1L, n) else sample(rep(seq_len(V), length.out = n))
   obsT <- pmin(D$C, D$tD, tau); censInd <- as.integer(D$C < pmin(D$tD, tau))
+  ## crossover (treatment-switching) as a SEPARATE censoring mechanism: a subject
+  ## censored AT the switch time is a crossover event; the rest are real dropout.
+  ## Fit dropout + crossover hazards on the same covariates and combine the
+  ## cumulative hazards -> IPCW 1/(S_dropout * S_crossover) = no-switching estimand.
+  ## (D$C must already be re-censored at the switch by the caller.)
+  xv <- if (is.null(xover)) rep(Inf, n) else { x <- as.numeric(xover); x[is.na(x)] <- Inf; x }
+  isX <- censInd == 1L & is.finite(xv) & xv <= obsT + 1e-9
+  censDrop <- censInd; censDrop[isX] <- 0L; censX <- as.integer(isX)
+  hasX <- any(censX == 1L)
   for (v in seq_len(max(fold))) {
     tr <- if (V <= 1L) seq_len(n) else which(fold != v)
     te <- if (V <= 1L) seq_len(n) else which(fold == v)
@@ -363,14 +373,19 @@
       }), error = function(e) matrix(1e-10, M, length(te)))
     }
     if (is.null(tvMats)) {                               # baseline censoring (unchanged when no L(t))
-      cFit <- tryCatch(suppressWarnings(fitTransitionSL(rep(0, length(tr)), obsT[tr], censInd[tr],
-                D[tr, covariates, drop = FALSE], grid, SL.library = SL.library)), error = function(e) NULL)
-      incC[, te] <- if (is.null(cFit)) matrix(1e-8, M, length(te)) else predictTransitionSL(cFit, CovTe)
+      cens1 <- function(ev) { f <- tryCatch(suppressWarnings(fitTransitionSL(rep(0, length(tr)), obsT[tr],
+                 ev[tr], D[tr, covariates, drop = FALSE], grid, SL.library = SL.library)), error = function(e) NULL)
+        if (is.null(f)) matrix(1e-8, M, length(te)) else predictTransitionSL(f, CovTe) }
+      incC[, te] <- cens1(censDrop)
+      if (hasX) incX[, te] <- cens1(censX)
     }
   }
-  if (!is.null(tvMats))                                  # time-varying censoring (own cross-fit)
-    incC <- .tvCensoringInc(grid, obsT, censInd, D[, covariates, drop = FALSE], tvMats, SL.library, n.folds)
-  Glag <- pmax(rbind(1, exp(-apply(incC, 2, cumsum)))[1:M, , drop = FALSE], 0.05)
+  if (!is.null(tvMats)) {                                # time-varying censoring (own cross-fit)
+    incC <- .tvCensoringInc(grid, obsT, censDrop, D[, covariates, drop = FALSE], tvMats, SL.library, n.folds)
+    if (hasX) incX <- .tvCensoringInc(grid, obsT, censX, D[, covariates, drop = FALSE], tvMats, SL.library, n.folds)
+  }
+  incTot <- incC + incX                                 # combined dropout + crossover cumulative hazard
+  Glag <- pmax(rbind(1, exp(-apply(incTot, 2, cumsum)))[1:M, , drop = FALSE], minG)
   list(rmat = rmat, Ginv = 1 / t(Glag))
 }
 
@@ -384,9 +399,12 @@
   Pwin_pro <- 0; Ploss_pro <- 0
   if (!is.null(pro)) {                                                # append bottom PRO tiers
     sumIF <- function(L) if (length(L)) Reduce(`+`, L) else 0
-    Pwin_pro  <- sum(pro$winP);  Ploss_pro  <- sum(pro$losP)
-    DPwin_T  <- DPwin_T  + sumIF(pro$winIFwin); DPwin_C  <- DPwin_C  + sumIF(pro$winIFlos)
-    DPloss_C <- DPloss_C + sumIF(pro$losIFwin); DPloss_T <- DPloss_T + sumIF(pro$losIFlos)
+    ## rescale the PRO block to the hard-tier residual reach (coherent hierarchy)
+    rEng <- max(1e-6, unname(1 - base["Pwin"] - base["Ploss"]))
+    s <- rEng / max(pro$reachEmp, 1e-6)
+    Pwin_pro  <- s * sum(pro$winP);  Ploss_pro  <- s * sum(pro$losP)
+    DPwin_T  <- DPwin_T  + s * sumIF(pro$winIFwin); DPwin_C  <- DPwin_C  + s * sumIF(pro$winIFlos)
+    DPloss_C <- DPloss_C + s * sumIF(pro$losIFwin); DPloss_T <- DPloss_T + s * sumIF(pro$losIFlos)
   }
   Ntot <- trt$n + ctl$n; piT <- trt$n / Ntot; piC <- ctl$n / Ntot; z <- stats::qnorm(1 - Signif / 2)
   Pwin  <- unname(base["Pwin"]  + Pwin_pro  + mean(DPwin_T)  + mean(DPwin_C))     # one-step
@@ -396,7 +414,13 @@
     Dt <- (1 / piT) * (gw * DPwin_T + gl * DPloss_T); Dc <- (1 / piC) * (gw * DPwin_C + gl * DPloss_C)
     sqrt((sum(Dt^2) + sum(Dc^2)) / Ntot^2)
   }
-  ratioRow <- function(label, val, gw, gl) { se <- seGrad(gw, gl); sl <- se / val
+  ratioRow <- function(label, val, gw, gl) {
+    if (!is.finite(val) || val <= 0 || !all(is.finite(c(gw, gl)))) {
+      warning(label, ": near-zero denominator; ratio undefined, inference set to NA.")
+      return(data.table::data.table(Estimand = label, `Pt Est` = val, se = NA_real_,
+                                    `CI Low` = NA_real_, `CI Hi` = NA_real_, pValue = NA_real_))
+    }
+    se <- seGrad(gw, gl); sl <- se / val
     data.table::data.table(Estimand = label, `Pt Est` = val, se = se,
       `CI Low` = val * exp(-z * sl), `CI Hi` = val * exp(z * sl),
       pValue = 2 * stats::pnorm(-abs(log(val) / sl))) }
