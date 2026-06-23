@@ -1,5 +1,30 @@
 # concrete 1.1.1.9000
 
+## Audit round 3: ratio p-values, horizons, denominators, censoring learner
+
+* **Ratio p-values are now log-scale**, consistent with the log-scale ratio CIs:
+  `addWaldInference()` tests relative risk / RMST ratio as `log(est)/se_log`
+  (and ratio non-inferiority margins on the log scale), instead of the
+  natural-scale `(est-1)/se`.
+* **Explicit, covariate-adjusted censoring/crossover learner.** The time-varying /
+  crossover censoring hazard previously borrowed the *treatment* SuperLearner
+  library, which in an RCT is `SL.mean` -- making the censoring/crossover model
+  intercept-only. It now defaults to a covariate-adjusted `c("SL.mean", "SL.glm")`
+  and is settable via a new `CensoringTVLibrary` argument to `formatArguments()`.
+* **Horizon snapping / validation for `getWinRatio()` and `getRMTIF()`**: both now
+  snap an off-grid `Horizon` to the last target time below it (and report that),
+  and `stop()` cleanly if no target time is at or below the horizon -- matching
+  `getRMST()`/`targetRMST()`.
+* **Zero-denominator guards** in the ratio estimators: `getWinRatio()` (P(loss)),
+  `targetWinRatio()` (any ratio denominator), and `clinicalPSNB()` (PSWR
+  denominator) now warn when the denominator is ~0 (result reported as Inf/NaN)
+  instead of silently dividing by zero.
+* Documented design choice: the PRO tiers use an IPCW reach-weighted two-sample
+  generalized pairwise comparison (which supports stacked PRO tiers, responder
+  rules, and reproduces the TRISCEND II win ratio), not a single-marker
+  conditional-CDF Super Learner; the latter remains an option for a lone
+  continuous PRO but does not stack.
+
 ## Audit round 2: inference & robustness fixes
 
 * **Relative-risk CIs are now actually log-scale.** A previous fix set log-scale RR

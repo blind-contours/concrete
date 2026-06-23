@@ -257,6 +257,8 @@ targetWinRatio <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
 
   z <- stats::qnorm(1 - Signif / 2)
   ratioRow <- function(label, num, den, Dnum, Dden) {
+    if (!is.finite(den) || abs(den) < 1e-10)
+      warning(label, ": denominator is ~0; the ratio is unstable / undefined (Inf/NaN).")
     est <- num / den
     Dlog <- Dnum / num - Dden / den
     sl <- seIF(Dlog)

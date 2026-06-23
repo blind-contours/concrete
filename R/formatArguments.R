@@ -85,6 +85,14 @@
 #'                      negative log-likelihood of the weighted hazard, instead of
 #'                      the default discrete (winner-take-all) selection. The
 #'                      treatment propensity already uses an ensemble Super Learner.
+#' @param CensoringTVLibrary optional character vector: the SuperLearner library for
+#'                      the time-varying / crossover censoring hazard (the
+#'                      discrete-time logistic model used when `CensoringTV` or
+#'                      `Crossover` is supplied). Default `c("SL.mean", "SL.glm")` --
+#'                      a covariate-adjusted binary-hazard library. Set this to
+#'                      control the censoring/crossover learner explicitly; it is
+#'                      deliberately separate from the treatment/propensity model
+#'                      (which in an RCT is `SL.mean`, i.e. intercept-only).
 #' @param CensoringTV optional `data.frame` (default NULL) of \strong{time-varying
 #'                      covariates for the censoring model}, in long form with the
 #'                      id column (the same name passed to `ID`), a `time` column,
@@ -262,6 +270,7 @@ formatArguments <- function(DataTable,
                             CrossFit = FALSE,
                             HazEnsemble = FALSE,
                             CensoringTV = NULL,
+                            CensoringTVLibrary = NULL,
                             Crossover = NULL,
                             Strata = NULL,
                             ...)
@@ -283,6 +292,7 @@ formatArguments <- function(DataTable,
                                      CrossFit = CrossFit,
                                      HazEnsemble = HazEnsemble,
                                      CensoringTV = CensoringTV,
+                                     CensoringTVLibrary = CensoringTVLibrary,
                                      Crossover = Crossover,
                                      Strata = Strata)
   }
@@ -350,6 +360,7 @@ formatArguments <- function(DataTable,
       }
       attr(DataTable, "CrossoverTime") <- xt
     }
+    if (!is.null(CensoringTVLibrary)) attr(DataTable, "CensoringTVLibrary") <- CensoringTVLibrary
     if (!is.null(StrataVals)) attr(DataTable, "Strata") <- StrataVals
 
 
@@ -391,8 +402,8 @@ makeConcreteArgs <- function(DataTable, EventTime, EventType, Treatment, Interve
                              MaxUpdateIter, OneStepEps, MinNuisance,
                              Verbose, GComp, ReturnModels, ID, RenameCovs, UpdateMethod,
                              EICStopRule, EICStopAbsTol, CrossFit = FALSE,
-                             HazEnsemble = FALSE, CensoringTV = NULL, Crossover = NULL,
-                             Strata = NULL) {
+                             HazEnsemble = FALSE, CensoringTV = NULL, CensoringTVLibrary = NULL,
+                             Crossover = NULL, Strata = NULL) {
   ConcreteArgs <- new.env()
   with(ConcreteArgs, {
     DataTable <- DataTable

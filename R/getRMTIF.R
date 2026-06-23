@@ -66,6 +66,9 @@ getRMTIF <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
   K <- length(TargetEvent)
   if (is.null(Horizon)) Horizon <- max(TargetTime)
   grid <- sort(unique(TargetTime[TargetTime <= Horizon]))
+  if (!length(grid))
+    stop("No target time is at or below Horizon (", Horizon, "); refit doConcrete() ",
+         "with TargetTime values up to the horizon.")
   if (length(grid) < 2L)
     warning("RMT-IF is integrated over fewer than two target times; refit with a ",
             "denser TargetTime grid.")

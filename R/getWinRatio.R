@@ -90,6 +90,16 @@ getWinRatio <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
   K <- length(TargetEvent)
   if (is.null(Horizon)) Horizon <- max(TargetTime)
   grid <- sort(unique(TargetTime[TargetTime <= Horizon]))
+  if (!length(grid))
+    stop("No target time is at or below Horizon (", Horizon, "); refit doConcrete() ",
+         "with TargetTime values up to the horizon.")
+  ## snap the horizon to the integration grid and report THAT (like getRMST()): the
+  ## win ratio cannot reach a horizon that is not on the TargetTime grid.
+  if (Horizon > max(grid) + 1e-9) {
+    message("Win ratio: requested Horizon (", Horizon, ") is not on the TargetTime ",
+            "grid; integrating to the last target time below it (", max(grid), ").")
+    Horizon <- max(grid)
+  }
   if (length(grid) < 2L)
     warning("The win ratio is integrated over fewer than two target times; ",
             "refit with a denser TargetTime grid.")
@@ -158,6 +168,9 @@ getWinRatio <- function(ConcreteEst, Horizon = NULL, Intervention = c(1, 2),
   Ploss <- loss$P; Dloss <- loss$D
   Ptie <- max(0, 1 - Pwin - Ploss)
   Dtie <- -(Dwin + Dloss)
+  if (!is.finite(Ploss) || Ploss < 1e-8)
+    warning("estimated P(loss) is ~0; the win ratio P(win)/P(loss) and win odds are ",
+            "unstable / undefined (reported as Inf/NaN). Net benefit is unaffected.")
 
   z <- stats::qnorm(1 - Signif / 2)
   ## covariate-adaptive randomization: strata-corrected SEs when available; the

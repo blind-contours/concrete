@@ -157,7 +157,11 @@ pairwise comparison} on the joint marker vectors --- pairs restricted to
 reachers and inverse-probability weighted for both pre-horizon censoring
 (\eqn{1/G(\tau\mid W)}) and missing landmark visits (a per-arm attendance model)
 --- so the markers may be arbitrarily correlated and the sequential
-tie-passing among PRO tiers is exact. Inference is the two-sample U-statistic
+tie-passing among PRO tiers is exact. \strong{PRO-tier SEs are mildly
+optimistic}: the U-statistic influence function treats the landmark-attendance
+model, the censoring weights, and the hard-tier reach-rescaling factor as known
+(it does not propagate their estimation uncertainty). Inference is the two-sample
+U-statistic
 (Hajek) influence function; hard-event tiers above keep the engine's
 covariate-adjusted, doubly-robust influence-function inference. \strong{Scope}:
 the PRO landmark must equal the horizon (final-visit design); a PRO ranked above

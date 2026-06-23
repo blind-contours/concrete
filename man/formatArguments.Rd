@@ -31,6 +31,7 @@ formatArguments(
   CrossFit = FALSE,
   HazEnsemble = FALSE,
   CensoringTV = NULL,
+  CensoringTVLibrary = NULL,
   Crossover = NULL,
   Strata = NULL,
   ...
@@ -160,6 +161,15 @@ censoring model (never the outcome hazards), so the marginal
 post-treatment mediators). An \code{ID} column is required.
 The crossover hazard (see \code{Crossover}) inherits these same
 covariates by default. No effect on results when omitted.}
+
+\item{CensoringTVLibrary}{optional character vector: the SuperLearner library for
+the time-varying / crossover censoring hazard (the
+discrete-time logistic model used when \code{CensoringTV} or
+\code{Crossover} is supplied). Default \code{c("SL.mean", "SL.glm")} --
+a covariate-adjusted binary-hazard library. Set this to
+control the censoring/crossover learner explicitly; it is
+deliberately separate from the treatment/propensity model
+(which in an RCT is \code{SL.mean}, i.e. intercept-only).}
 
 \item{Crossover}{optional character (default NULL): the column name of a
 per-subject \strong{treatment-switching (crossover) time}

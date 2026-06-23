@@ -157,7 +157,11 @@ clinicalPSNB <- function(data, arm, illness.time, terminal.time, terminal.status
   IFpsnb_C <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*(IFw_C[[k]] - IFl_C[[k]])))
   sePsnb <- seGrad(IFpsnb_T, IFpsnb_C)
   ## PSWR = wbar / lbar
-  wbar <- sum(alpha * wk); lbar <- sum(alpha * lk); pswr <- wbar / lbar
+  wbar <- sum(alpha * wk); lbar <- sum(alpha * lk)
+  if (!is.finite(lbar) || lbar < 1e-10)
+    warning("PSWR denominator (sum_k alpha_k * l_k) is ~0; PSWR is unstable / undefined ",
+            "(Inf/NaN). PSNB is unaffected.")
+  pswr <- wbar / lbar
   IFwbar_T <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFw_T[[k]]))
   IFwbar_C <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFw_C[[k]]))
   IFlbar_T <- Reduce(`+`, lapply(seq_len(K), function(k) alpha[k]*IFl_T[[k]]))
