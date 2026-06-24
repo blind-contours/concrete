@@ -94,6 +94,45 @@ test_that("Treatment is a numeric vector", {
     }
 })
 
+test_that("Treatment duplicates are not allowed as baseline covariates", {
+    leak <- data.table::copy(data)
+    leak[, trt_copy := trt]
+    expect_error(
+        formatArguments(DataTable = leak, EventTime = "time", EventType = "status",
+                        Treatment = "trt", ID = "id", Intervention = 0:1,
+                        TargetTime = stats::median(leak[["time"]]),
+                        TargetEvent = setdiff(unique(leak[["status"]]), 0)),
+        regexp = "leaks treatment"
+    )
+
+    leak[, trt_comp := 1 - trt][, trt_copy := NULL]
+    expect_error(
+        formatArguments(DataTable = leak, EventTime = "time", EventType = "status",
+                        Treatment = "trt", ID = "id", Intervention = 0:1,
+                        TargetTime = stats::median(leak[["time"]]),
+                        TargetEvent = setdiff(unique(leak[["status"]]), 0)),
+        regexp = "leaks treatment"
+    )
+
+    leak[, trt_copy := trt][1, trt_copy := NA][, trt_comp := NULL]
+    expect_error(
+        formatArguments(DataTable = leak, EventTime = "time", EventType = "status",
+                        Treatment = "trt", ID = "id", Intervention = 0:1,
+                        TargetTime = stats::median(leak[["time"]]),
+                        TargetEvent = setdiff(unique(leak[["status"]]), 0)),
+        regexp = "leaks treatment"
+    )
+
+    leak[, trt_label := ifelse(trt == 1, "treated", "control")][, trt_copy := NULL]
+    expect_error(
+        formatArguments(DataTable = leak, EventTime = "time", EventType = "status",
+                        Treatment = "trt", ID = "id", Intervention = 0:1,
+                        TargetTime = stats::median(leak[["time"]]),
+                        TargetEvent = setdiff(unique(leak[["status"]]), 0)),
+        regexp = "leaks treatment"
+    )
+})
+
 test_that("Intervention specifications", {
     test_vals <- list(NaN, NA, Inf, "a", matrix(1, 3, 3),
                       function(...) return(list(...)),

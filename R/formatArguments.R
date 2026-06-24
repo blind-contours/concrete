@@ -473,6 +473,7 @@ formatDataTable <- function(DT, EventTime, EventType, Treatment, ID, LongTime, V
     stop("The EventTime, EventType, Treatment, and ID columns must be complete: ",
          "no missing or infinite values.")
   CovCols <- setdiff(colnames(DT), ReqCols)
+  checkTreatmentLeakage(DT = DT, Treatment = Treatment, CovCols = CovCols)
   for (j in CovCols) {
     if (is.numeric(DT[[j]]) && any(is.infinite(DT[[j]])))
       stop("Covariate '", j, "' contains infinite values; regression models may break.")
@@ -596,6 +597,55 @@ checkTreatment <- function(Treatment, EventType, DataTable = NULL) {
     })
   } else
     stop("The `Treatment` argument input must be a character vector containing the column name(s) corresponding to the intervention variable(s).")
+  invisible(NULL)
+}
+
+checkTreatmentLeakage <- function(DT, Treatment, CovCols) {
+  if (!length(CovCols) || !length(Treatment)) return(invisible(NULL))
+  is_binary01 <- function(x) {
+    ux <- unique(x[!is.na(x)])
+    length(ux) <= 2L && all(ux %in% c(0, 1))
+  }
+  is_two_level_recode <- function(cov_val, trt_val, keep) {
+    cov_obs <- cov_val[keep]
+    trt_obs <- trt_val[keep]
+    if (length(unique(cov_obs)) != 2L || length(unique(trt_obs)) != 2L)
+      return(FALSE)
+    cov_chr <- as.character(cov_obs)
+    trt_chr <- as.character(trt_obs)
+    by_cov <- tapply(trt_chr, cov_chr, function(x) length(unique(x)))
+    by_trt <- tapply(cov_chr, trt_chr, function(x) length(unique(x)))
+    all(by_cov == 1L) && all(by_trt == 1L)
+  }
+  for (trt in Treatment) {
+    trt_val <- DT[[trt]]
+    if (is.null(trt_val)) next
+    for (cov in CovCols) {
+      cov_val <- DT[[cov]]
+      keep <- !is.na(cov_val) & !is.na(trt_val)
+      if (!any(keep)) next
+      missingTxt <- if (any(!keep)) " on all non-missing rows" else ""
+      same <- isTRUE(all.equal(cov_val[keep], trt_val[keep], check.attributes = FALSE))
+      complement <- is.numeric(cov_val) && is.numeric(trt_val) &&
+        is_binary01(cov_val[keep]) && is_binary01(trt_val[keep]) &&
+        isTRUE(all.equal(cov_val[keep], 1 - trt_val[keep], check.attributes = FALSE))
+      recode <- !same && !complement && is_two_level_recode(cov_val, trt_val, keep)
+      if (same || complement || recode) {
+        rel <- if (same) {
+          "an exact copy of"
+        } else if (complement) {
+          "the exact binary complement of"
+        } else {
+          "a deterministic two-level recoding of"
+        }
+        stop("Covariate column '", cov, "' is ", rel, " treatment column '", trt, "'",
+             missingTxt, ". ",
+             "This leaks treatment into nuisance models, especially the propensity score, ",
+             "and can produce invalid inference. Remove the duplicate column or set ",
+             "`Treatment = '", cov, "'` if that is the intended treatment variable.")
+      }
+    }
+  }
   invisible(NULL)
 }
 
