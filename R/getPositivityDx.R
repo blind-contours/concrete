@@ -21,9 +21,10 @@
 #' @param ConcreteEst a `"ConcreteEst"` object from [doConcrete()].
 #' @param Verbose logical (default TRUE): print a short interpreted summary.
 #'
-#' @return invisibly, a list with `summary` (one row per intervention) and
-#'   `byTime` (the per-evaluation-time ESS fraction, max weight, and minimum
-#'   observation probability for each intervention).
+#' @return invisibly, a list with `summary` (one row per intervention x nuisance:
+#'   propensity (g), dropout censoring, crossover if modeled, and OVERALL combined
+#'   IPCW) and `byTime` (the per-evaluation-time overall ESS fraction and max
+#'   weight for each intervention).
 #' @export getPositivityDx
 #' @examples
 #' \dontrun{
@@ -33,49 +34,69 @@
 getPositivityDx <- function(ConcreteEst, Verbose = TRUE) {
   if (!inherits(ConcreteEst, "ConcreteEst"))
     stop("getPositivityDx takes a 'ConcreteEst' object from doConcrete().")
+  mn <- attr(ConcreteEst, "MinNuisance")
   arms <- names(ConcreteEst)
-  summ <- list(); byTime <- list()
-  for (a in arms) {
-    w <- ConcreteEst[[a]][["NuisanceWeight"]]
-    if (is.null(w) || (!is.matrix(w) && length(w) == 1L)) {     # no censoring -> weights ~ 1
-      summ[[a]] <- data.frame(Intervention = a, n = NA_integer_, ESS_overall = 1,
-        ESS_worst = 1, max_weight = 1, min_obs_prob = 1, pct_at_bound = 0)
-      next
-    }
-    if (!is.matrix(w)) w <- matrix(w, nrow = 1)
-    n <- ncol(w)
-    essT  <- rowSums(w)^2 / rowSums(w^2) / n                    # ESS fraction at each eval time
-    maxwT <- apply(w, 1, max)
-    denom <- 1 / w                                             # truncated observation probability
-    minpT <- apply(denom, 1, min)
-    ## "at bound" = the denominator was actually clamped at the MinNuisance floor,
-    ## NOT merely equal to the smallest observed value (else a clean RCT with a
-    ## constant weight reports 100% at-bound when no truncation occurred).
-    mn <- attr(ConcreteEst, "MinNuisance")
-    floorVal <- if (is.numeric(mn) && length(mn) == 1L) mn else min(denom)
-    atBound <- denom <= floorVal * (1 + 1e-8)
-    byTime[[a]] <- data.frame(time_index = seq_len(nrow(w)), ESS_frac = round(essT, 3),
-                              max_weight = round(maxwT, 1), min_obs_prob = signif(minpT, 3))
-    summ[[a]] <- data.frame(Intervention = a, n = n,
-      ESS_overall = round(min(essT), 3),                        # whole-window ESS = its worst point
-      ESS_worst = round(min(essT), 3),
-      max_weight = round(max(w), 1),
-      min_obs_prob = signif(min(denom), 3),                     # smallest observed obs. probability
-      pct_at_bound = round(100 * mean(atBound), 1))             # % actually clamped at MinNuisance
+  rows <- list(); byTime <- list(); xoverSuspect <- character(0)
+
+  asMat <- function(x) if (is.matrix(x)) x else matrix(x, nrow = 1)
+  ## ESS(worst eval time), max weight, min observation probability for a weight matrix
+  wstat <- function(w) {
+    w <- asMat(w); essT <- rowSums(w)^2 / rowSums(w^2) / ncol(w)
+    list(ess = min(essT), maxw = max(w), minp = min(1 / w), n = ncol(w), essT = essT, maxwT = apply(w, 1, max))
   }
-  summ <- do.call(rbind, summ); rownames(summ) <- NULL
-  if (isTRUE(Verbose)) {
-    cat("Positivity / inverse-weight diagnostics\n")
-    cat("  (ESS = effective sample size as a fraction of n; lower = more weight-limited)\n\n")
-    print(summ, row.names = FALSE)
-    flag <- summ[summ$ESS_worst < 0.5 | summ$pct_at_bound > 5 | summ$max_weight > 20, , drop = FALSE]
-    if (nrow(flag)) {
-      cat("\n  CAUTION: low ESS / heavy truncation / large weights for: ",
-          paste(flag$Intervention, collapse = ", "), ".\n", sep = "")
-      cat("  Inference there is weight-limited (often near-positivity violation at later\n",
-          "  times). Consider a shorter horizon, fewer/Stabler censoring-or-crossover\n",
-          "  covariates, or interpret with caution.\n", sep = "")
+  addrow <- function(a, nuis, w, atbound = NA_real_) {
+    if (is.null(w)) return(invisible())
+    s <- wstat(w)
+    rows[[length(rows) + 1L]] <<- data.frame(
+      Intervention = a, Nuisance = nuis, n = s$n,
+      ESS_overall = round(s$ess, 3), max_weight = round(s$maxw, 2),
+      min_obs_prob = signif(s$minp, 3), pct_at_bound = atbound, stringsAsFactors = FALSE)
+  }
+
+  for (a in arms) {
+    E <- ConcreteEst[[a]]
+    g <- E[["PropScore"]]; cS <- E[["CensSurv"]]; xS <- E[["XoverSurv"]]; w <- E[["NuisanceWeight"]]
+    nT <- if (!is.null(w) && is.matrix(w)) nrow(w) else 1L
+    ## --- propensity (g): the treatment-assignment weight ---
+    if (!is.null(g)) addrow(a, "propensity (g)", 1 / as.numeric(g))
+    ## --- censoring: dropout (+ crossover) survival weights ---
+    if (!is.null(cS)) {
+      addrow(a, "dropout censoring", 1 / cS)
+    } else if (!is.null(w) && !is.null(g)) {
+      ## components not stored: derive the COMBINED censoring weight = (1/w)/g_inv = w * g
+      gmat <- matrix(as.numeric(g), nrow = nT, ncol = length(g), byrow = TRUE)
+      addrow(a, "censoring (combined)", asMat(w) * gmat)
     }
+    if (!is.null(xS)) {
+      addrow(a, "crossover", 1 / xS)
+      if (max(1 / xS) < 1.01) xoverSuspect <- union(xoverSuspect, a)   # present but ~no reweighting
+    }
+    ## --- OVERALL combined IPCW (what the inference actually uses) ---
+    if (!is.null(w)) {
+      atb <- if (is.numeric(mn) && length(mn) == 1L)
+               round(100 * mean((1 / asMat(w)) <= mn * (1 + 1e-8)), 1) else 0
+      addrow(a, "OVERALL", w, atb)
+      s <- wstat(w)
+      byTime[[a]] <- data.frame(time_index = seq_len(nT), ESS_frac = round(s$essT, 3),
+                                max_weight = round(s$maxwT, 1))
+    }
+  }
+  summ <- do.call(rbind, rows); rownames(summ) <- NULL
+  if (isTRUE(Verbose)) {
+    cat("Positivity / inverse-weight diagnostics by nuisance\n")
+    cat("  ESS = effective sample size (fraction of n) at the worst eval time; lower = more weight-limited.\n")
+    cat("  Components: propensity (g), dropout censoring, crossover (if modeled). OVERALL = combined IPCW used for inference.\n\n")
+    print(summ, row.names = FALSE)
+    ov <- summ[summ$Nuisance == "OVERALL", , drop = FALSE]
+    flag <- ov[ov$ESS_overall < 0.5 | (is.finite(ov$pct_at_bound) & ov$pct_at_bound > 5) | ov$max_weight > 20, , drop = FALSE]
+    if (nrow(flag))
+      cat("\n  CAUTION: low overall ESS / heavy truncation / large weights for: ",
+          paste(flag$Intervention, collapse = ", "),
+          ". Inference there is weight-limited (near-positivity violation) -- interpret with caution.\n", sep = "")
+    if (length(xoverSuspect))
+      cat("\n  WARNING: a crossover model is present for [", paste(xoverSuspect, collapse = ", "),
+          "] but its weights are ~1 (no reweighting). The crossover/censoring hazard may have failed ",
+          "or be intercept-only -- check the time-varying covariates (e.g. unimputed missingness) and learner library.\n", sep = "")
   }
   invisible(list(summary = summ, byTime = byTime))
 }

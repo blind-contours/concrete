@@ -110,6 +110,7 @@ getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent,
     ## (cross-fit internally by .tvCensoringInc) so the corrected IPCW flows
     ## throughout. Outcome hazards are untouched.
     Crossover <- attr(Data, "CrossoverTime")
+    LagDropMat <- NULL; LagXoverMat <- NULL          # per-nuisance survival components (for diagnostics)
     if (Censored && (!is.null(CensoringTV) || !is.null(Crossover))) {
         ## explicit CensoringTVLibrary if set, else a covariate-adjusted default
         ## (not the treatment library, which is SL.mean in an RCT -> intercept-only).
@@ -118,6 +119,7 @@ getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent,
         LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time, Crossover = Crossover,
                                    SL.library = .tvLib, n.folds = max(1L, length(CVFolds)))
         for (a in arms) LagCensFull[[a]][] <- LagTV
+        LagDropMat <- attr(LagTV, "Sdrop"); LagXoverMat <- attr(LagTV, "Sxover")
     }
 
     InitialEstimates <- lapply(arms, function(a) {
@@ -130,10 +132,15 @@ getCVInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent,
         }
         NuisanceWeight <- 1 / truncNuisanceWeight(NuisanceDenom = NuisanceDenom,
                                                   MinNuisance = MinNuisance, RegimeName = a)
+        ## per-nuisance survival components for positivity diagnostics; fall back to
+        ## the combined lagged censoring survival when no TV/crossover override exists.
+        censS <- if (!is.null(LagDropMat)) LagDropMat else LagCensFull[[a]]
         list("PropScore" = PropScore,
              "Hazards" = HazFull[[a]],
              "EvntFreeSurv" = SurvFull[[a]],
-             "NuisanceWeight" = NuisanceWeight)
+             "NuisanceWeight" = NuisanceWeight,
+             "CensSurv" = if (Censored) censS else NULL,
+             "XoverSurv" = LagXoverMat)
     })
     names(InitialEstimates) <- arms
     attr(InitialEstimates, "Times") <- EvalTimes

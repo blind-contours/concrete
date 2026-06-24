@@ -12,9 +12,10 @@ getPositivityDx(ConcreteEst, Verbose = TRUE)
 \item{Verbose}{logical (default TRUE): print a short interpreted summary.}
 }
 \value{
-invisibly, a list with \code{summary} (one row per intervention) and
-\code{byTime} (the per-evaluation-time ESS fraction, max weight, and minimum
-observation probability for each intervention).
+invisibly, a list with \code{summary} (one row per intervention x nuisance:
+propensity (g), dropout censoring, crossover if modeled, and OVERALL combined
+IPCW) and \code{byTime} (the per-evaluation-time overall ESS fraction and max
+weight for each intervention).
 }
 \description{
 Reports the practical-positivity health of the inverse-probability weights that

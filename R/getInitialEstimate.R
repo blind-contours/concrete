@@ -54,8 +54,11 @@ getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, T
           if (is.character(cl) && length(cl)) cl else c("SL.mean", "SL.glm") }
         LagTV <- .tvCensLaggedSurv(Data, CensoringTV, Hazards$Time, Crossover = Crossover,
                                    SL.library = .tvLib, n.folds = max(1L, length(CVFolds)))
-        for (a in seq_along(HazSurvPreds))
-            HazSurvPreds[[a]][["Survival"]][["LaggedCensSurv"]] <- LagTV
+        for (a in seq_along(HazSurvPreds)) {
+            HazSurvPreds[[a]][["Survival"]][["LaggedCensSurv"]]  <- LagTV
+            HazSurvPreds[[a]][["Survival"]][["LaggedDropSurv"]]  <- attr(LagTV, "Sdrop")    # dropout only
+            HazSurvPreds[[a]][["Survival"]][["LaggedXoverSurv"]] <- attr(LagTV, "Sxover")   # crossover (NULL if none)
+        }
     }
     InitialEstimates <- lapply(seq_along(PropScores), function(a) {
         if (Censored) {
@@ -69,10 +72,16 @@ getInitialEstimate <- function(Data, Model, CVFolds, MinNuisance, TargetEvent, T
         NuisanceWeight <- 1 / truncNuisanceWeight(NuisanceDenom = NuisanceDenom, 
                                                   MinNuisance = MinNuisance, 
                                                   RegimeName = names(PropScores)[a])
+        ## per-nuisance survival components for positivity diagnostics (dropout vs
+        ## crossover); fall back to the combined lagged censoring survival otherwise.
+        Srv0  <- HazSurvPreds[[a]][["Survival"]]
+        censS <- if (!is.null(Srv0[["LaggedDropSurv"]])) Srv0[["LaggedDropSurv"]] else Srv0[["LaggedCensSurv"]]
         return(list("PropScore" = PropScores[[a]],
                     "Hazards" = HazSurvPreds[[a]][["Hazards"]],
                     "EvntFreeSurv" = HazSurvPreds[[a]][["Survival"]][["TotalSurv"]],
-                    "NuisanceWeight" = NuisanceWeight))
+                    "NuisanceWeight" = NuisanceWeight,
+                    "CensSurv" = if (Censored) censS else NULL,
+                    "XoverSurv" = Srv0[["LaggedXoverSurv"]]))
     })
     
     names(InitialEstimates) <- names(Regime)
