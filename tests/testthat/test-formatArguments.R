@@ -408,3 +408,21 @@ test_that("Survival hazard learner aliases are parsed", {
     expect_s3_class(concrete.args$Model[["1"]][["Aareg"]], "Lrnr.Aareg")
     expect_s3_class(concrete.args$Model[["1"]][["HAL"]], "Lrnr.HAL")
 })
+
+test_that("bare-function Interventions are accepted (dynamic regimes)", {
+    data <- survival::pbc[, c("time", "status", "trt", "age", "sex", "albumin")]
+    data <- subset(data, subset = !is.na(data$trt))
+    data$trt <- data$trt - 1
+    TreatOver60 <- function(d) as.numeric(d$age > 60)
+    TreatUnder60 <- function(d) as.numeric(d$age <= 60)
+    args <- suppressMessages(formatArguments(
+        DataTable = data, EventTime = "time", EventType = "status", Treatment = "trt",
+        Intervention = list("Treat>60" = TreatOver60, "Treat<=60" = TreatUnder60),
+        TargetTime = 365.25 / 2 * (6:12), TargetEvent = 1:2, CVArg = list(V = 2),
+        RenameCovs = FALSE, Verbose = FALSE))
+    expect_s3_class(args, "ConcreteArgs")
+    reg <- args[["Regime"]]
+    expect_named(reg, c("Treat>60", "Treat<=60"))
+    expect_equal(as.numeric(unlist(reg[["Treat>60"]])), as.numeric(data$age > 60))
+    expect_equal(as.numeric(unlist(reg[["Treat<=60"]])), as.numeric(data$age <= 60))
+})

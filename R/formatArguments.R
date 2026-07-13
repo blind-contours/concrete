@@ -27,9 +27,16 @@
 # #' @param LongTime character (not used): the column name of the monitoring times for
 #'                                       longitudinal data structures
 #' @param Intervention list: a list of desired interventions on the treatment variable.
-#'                           Each intervention must be a list containing two named functions:
-#'                             'intervention' = function(treatment vector, covariate data) and
-#'                             'gstar' = function(treatment vector, covariate data)
+#'                           Each intervention may be specified as (in increasing generality):
+#'                           (1) `0:1` for the static treat-none / treat-all contrast;
+#'                           (2) a bare function of the data (treatment + covariates) returning
+#'                             the desired treatment assignment for each subject, e.g.
+#'                             `function(data) as.numeric(data$age > 60)` — the propensity for
+#'                             receiving the assigned treatment defaults to the indicator 1(A = a*);
+#'                           (3) a list containing two named functions:
+#'                             'intervention' = function(treatment, covariates, propensity) and
+#'                             'g.star' = function(treatment, covariates, propensity, intervened)
+#'                             for stochastic or propensity-dependent regimes.
 #'                           concrete::makeITT() can be used to specify an intent-to-treat analysis for a
 #'                           binary intervention variable
 #' @param TargetTime numeric: vector of target times. If NULL, the last observed non-censoring event
@@ -737,6 +744,19 @@ getRegime <- function(Intervention, Data) {
 
       # intervention fn ----
       # Regime input as function, dataframe, vector of individual trt values, single value
+      if (is.function(Regime)) {
+        ## bare function: interpreted as a*(data) returning the desired treatment
+        ## assignments, called with the combined treatment + covariate data
+        .aStarFn <- Regime
+        Regime <- list("intervention" = function(ObservedTrt, Covariates, PropScore) {
+          aStar <- .aStarFn(data.table::data.table(ObservedTrt, Covariates))
+          TrtNames <- colnames(ObservedTrt)
+          Intervened <- data.table::copy(ObservedTrt)
+          Intervened[, (TrtNames) := lapply(.SD, function(a) as.numeric(unlist(aStar))),
+                     .SDcols = TrtNames]
+          return(Intervened)
+        })
+      }
       if (is.list(Regime)) {
         if (is.function(Regime[[1]]) & length(Regime) <= 2) {
           # check intervention function
@@ -802,8 +822,8 @@ getRegime <- function(Intervention, Data) {
             all(Treatment[i, ] == Intervened[i, ])))
           return(Probability)
         }
-        message("No g.star function specified, defaulting to the indicator that observed",
-                "treatment equals the desired treatment assignment, 1(A = a*).\n", sep = "")
+        message("No g.star function specified, defaulting to the indicator that observed ",
+                "treatment equals the desired treatment assignment, 1(A = a*).\n")
       }
       PropScoreDummy <- data.table::copy(TrtVal)
       TrtNames <- colnames(TrtVal)
@@ -1144,7 +1164,15 @@ getUpdateMethod <- function(UpdateMethod) {
   return(UpdateMethod)
 }
 
-#' @describeIn formatArguments makeITT ...
+#' @describeIn formatArguments Construct the `Intervention` argument for an
+#'   intent-to-treat analysis of a binary treatment: returns the treat-all
+#'   ("A=1") and/or treat-none ("A=0") regimes, each a list with an
+#'   `intervention` function (sets every subject's treatment to 1 or 0) and a
+#'   `g.star` function (the indicator that observed treatment equals the
+#'   assigned treatment). Called with no arguments it returns both regimes.
+#'   Alternatively, named data.frames of per-subject desired treatment values
+#'   may be passed to construct the corresponding static regimes, e.g.
+#'   `makeITT("A=1" = data.frame(trt = rep(1, n)))`.
 # ObservedTrt : data.table containing treatment columns with observed treatment values
 # Covariates : data.table containing baseline covariates
 # PropScore : data.table with the same names and dimensions as ObservedTrt containing propensity scores

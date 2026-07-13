@@ -1,5 +1,28 @@
 # concrete 1.1.1.9000
 
+## Bug fix: random survival forest hazard learner
+
+* **The `"rsf"` (random survival forest) hazard learner was silently failing.**
+  `fitRsfHazLearner()` built its `rfsrc()` formula with a namespace-qualified
+  `survival::Surv(...)`, which `randomForestSRC` rejects ("formula is
+  incorrectly specified") because it parses the `Surv` token from the formula
+  string. Any hazard library that included `"rsf"` therefore dropped it as a
+  failed candidate (or errored entirely if it was the only candidate). Fixed to
+  use the unqualified `Surv(...)` (survival is imported). Random survival forests
+  — the flexible, non-proportional-hazards member of the hazard Super Learner —
+  now fit and predict correctly.
+
+## Referee-response usability fixes
+
+* **Bare-function `Intervention`s.** A dynamic regime can now be specified as a
+  plain function of the data returning each subject's desired treatment, e.g.
+  `Intervention = list("Treat>60" = function(d) as.numeric(d$age > 60))`; the
+  propensity for the assigned treatment defaults to the indicator `1(A = a*)`.
+  Addresses the RJournal reviewers' comments that the `list(intervention=,
+  g.star=)` form was hard to parse (Reviewer 2 Code; Reviewer 4 #14).
+* **`makeITT()` is now documented** (Reviewer 4 #16), and the `Intervention`
+  argument documentation enumerates all accepted forms.
+
 ## Audit round 3: ratio p-values, horizons, denominators, censoring learner
 
 * **Ratio p-values are now log-scale**, consistent with the log-scale ratio CIs:

@@ -405,7 +405,10 @@ fitRsfHazLearner <- function(Data, j, TimeCol, TypeCol, TrtCol, IDCol, Hazards) 
     FitData <- as.data.frame(Data[, .SD, .SDcols = c(TimeCol, TypeCol, CovCols)])
     FitData[[".event_j"]] <- as.integer(FitData[[TypeCol]] == j)
     FitData[[TypeCol]] <- NULL
-    fit_formula <- stats::as.formula(paste0("survival::Surv(", TimeCol, ", .event_j) ~ ."))
+    ## NB: randomForestSRC parses the "Surv" token in the formula string itself and
+    ## rejects a namespace-qualified "survival::Surv(...)"; use the unqualified name
+    ## (survival is imported, so Surv resolves in the package namespace).
+    fit_formula <- stats::as.formula(paste0("Surv(", TimeCol, ", .event_j) ~ ."))
     ntime <- max(10L, min(150L, length(unique(Data[[TimeCol]]))))
     ModelFit <- randomForestSRC::rfsrc(formula = fit_formula,
                                        data = FitData,
